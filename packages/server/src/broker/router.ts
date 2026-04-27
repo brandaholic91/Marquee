@@ -6,7 +6,7 @@ import { briefs, agentSessions, delegations, messages } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
 
-const WARM_ROLES = ["director", "content-lead", "eval-judge"] as const;
+const WARM_ROLES = ["director", "content-lead", "eval-judge", "distribution-lead", "insights-lead"] as const;
 
 export class AgentRouter {
 	private warmAgents = new Map<string, Agent>();
@@ -79,6 +79,10 @@ export class AgentRouter {
 
 		if (to === "content-lead") {
 			parts.push("Review this task and delegate it to the appropriate specialist (copywriter) using delegate_to_specialist.");
+		} else if (to === "distribution-lead") {
+			parts.push("Review this task and delegate it to the appropriate specialist (social-manager, seo-analyst) using delegate_to_specialist.");
+		} else if (to === "insights-lead") {
+			parts.push("Review this task and delegate it to the appropriate specialist (seo-analyst) using delegate_to_specialist.");
 		} else if (!this.warmAgents.has(to)) {
 			// Specialist: write the content and submit it
 			parts.push("Write the requested content, then call submit_deliverable with type, title, and contentMd (at least 50 characters).");
