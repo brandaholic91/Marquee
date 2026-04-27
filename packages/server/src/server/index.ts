@@ -28,6 +28,21 @@ export async function buildServer(opts: ServerOpts) {
 	} catch {
 		// ignore if webRoot doesn't exist in test environment
 	}
+
+	// API token auth guard for write endpoints
+	const apiToken = process.env.MARQUEE_API_TOKEN;
+	if (apiToken) {
+		app.addHook("preHandler", async (req, reply) => {
+			const writeMethods = ["POST", "PUT", "PATCH", "DELETE"];
+			if (!writeMethods.includes(req.method)) return;
+			if (!req.url.startsWith("/api/")) return;
+			const auth = req.headers.authorization;
+			if (!auth || auth !== `Bearer ${apiToken}`) {
+				return reply.code(401).send({ error: "Unauthorized" });
+			}
+		});
+	}
+
 	registerHealthRoute(app);
 	registerThreadRoutes(app, opts);
 	registerBriefRoutes(app, opts);
