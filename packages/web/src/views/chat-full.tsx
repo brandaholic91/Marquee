@@ -196,12 +196,6 @@ function BriefProposalInline({
   brief: BriefProposal;
   onRefresh: () => void;
 }) {
-  const deliverables = [
-    "Activation rate is a vanity metric — what to track instead",
-    "The second-touch problem: why day-2 retention lies",
-    "What to instrument before you A/B test onboarding",
-  ];
-
   return (
     <div style={{ display: "flex", gap: 14 }}>
       <Avatar who="content-lead" size="md" />
@@ -251,33 +245,6 @@ function BriefProposalInline({
                 {brief.description}
               </div>
             )}
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              {deliverables.map((p, i) => (
-                <div
-                  key={p}
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    alignItems: "baseline",
-                  }}
-                >
-                  <span
-                    className="mono"
-                    style={{ fontSize: 12, color: "var(--ink-3)" }}
-                  >
-                    P{i + 1}
-                  </span>
-                  <span className="body-md">{p}</span>
-                </div>
-              ))}
-            </div>
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
               <button
                 className="btn btn-primary"
@@ -435,6 +402,7 @@ function StickyInput({
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function handleSend() {
@@ -443,8 +411,11 @@ function StickyInput({
     setSending(true);
     try {
       await api.messages.post(threadId, trimmed);
+      setSendError(null);
       setText("");
       onSent();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -473,6 +444,9 @@ function StickyInput({
           onKeyDown={handleKeyDown}
           disabled={sending}
         />
+        {sendError && (
+          <div style={{ color: "var(--danger-deep)", fontSize: 12, marginTop: 4 }}>{sendError}</div>
+        )}
         <div
           style={{
             display: "flex",
@@ -510,25 +484,28 @@ export function ChatFullView() {
     snapshot?.threads.find((t) => t.id === activeThreadId) ?? null;
 
   useEffect(() => {
-    api.snapshot().then((data) => setSnapshot(data as SnapshotData));
+    api.snapshot().then((data) => setSnapshot(data as SnapshotData)).catch(console.error);
   }, []);
 
-  const loadMessages = () => {
-    if (!activeThreadId) return;
-    setLoading(true);
-    api.threads
-      .messages(activeThreadId)
-      .then((msgs) => {
-        setMessages(msgs as Message[]);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
   useEffect(() => {
+    if (!activeThreadId) return;
+    const load = () => {
+      setLoading(true);
+      api.threads.messages(activeThreadId).then((data) => {
+        setMessages(data as Message[]);
+        setLoading(false);
+      }).catch((err) => { console.error(err); setLoading(false); });
+    };
     setMessages([]);
-    loadMessages();
+    load();
   }, [activeThreadId]);
+
+  const refreshMessages = () => {
+    if (!activeThreadId) return;
+    api.threads.messages(activeThreadId).then((data) => {
+      setMessages(data as Message[]);
+    }).catch(console.error);
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -632,14 +609,14 @@ export function ChatFullView() {
               <MessageRenderer
                 key={msg.id}
                 msg={msg}
-                onRefresh={loadMessages}
+                onRefresh={refreshMessages}
               />
             ))}
             <div ref={bottomRef} />
           </div>
 
           {/* Sticky input */}
-          <StickyInput threadId={activeThreadId} onSent={loadMessages} />
+          <StickyInput threadId={activeThreadId} onSent={refreshMessages} />
         </div>
       </main>
 
