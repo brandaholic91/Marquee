@@ -8,12 +8,41 @@ import type { AvatarWho } from "../components/ui/index.js";
 
 // ---- Types ----
 
+// Shape returned by the DB / API
+interface RawMessage {
+  id: string;
+  sender: string;          // "human" | agent slug
+  type: string;
+  contentJson: { text?: string } | string | null;
+  agentSlug?: string;
+  createdAt: string;
+}
+
+// Normalised shape used for rendering
 interface Message {
   id: string;
   role: "user" | "assistant" | "event";
   text: string;
   agentSlug?: string;
   createdAt: string;
+}
+
+function normaliseMessage(raw: RawMessage): Message {
+  const content = typeof raw.contentJson === "string"
+    ? (JSON.parse(raw.contentJson) as { text?: string })
+    : (raw.contentJson ?? {});
+  const text = (content as { text?: string }).text ?? "";
+  const role: Message["role"] =
+    raw.sender === "human" ? "user"
+    : raw.type === "chat" ? "assistant"
+    : "event";
+  return {
+    id: raw.id,
+    role,
+    text,
+    agentSlug: raw.sender !== "human" ? raw.sender : undefined,
+    createdAt: raw.createdAt,
+  };
 }
 
 interface Thread {
@@ -493,7 +522,7 @@ export function ChatFullView() {
     const load = () => {
       setLoading(true);
       api.threads.messages(activeThreadId).then((data) => {
-        setMessages(data as Message[]);
+        setMessages((data as RawMessage[]).map(normaliseMessage));
         setLoading(false);
       }).catch((err) => { console.error(err); setLoading(false); });
     };
@@ -504,7 +533,7 @@ export function ChatFullView() {
   const refreshMessages = () => {
     if (!activeThreadId) return;
     api.threads.messages(activeThreadId).then((data) => {
-      setMessages(data as Message[]);
+      setMessages((data as RawMessage[]).map(normaliseMessage));
     }).catch(console.error);
   };
 
