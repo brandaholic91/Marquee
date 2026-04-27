@@ -35,6 +35,6 @@ echo "→ disable old wuphf service (if present)"
 ssh -i "$KEY" "$HOST" "sudo systemctl disable --now wuphf 2>/dev/null || true"
 
 echo "→ restart marquee"
-ssh -i "$KEY" "$HOST" "sudo systemctl enable --now marquee && sudo systemctl status marquee --no-pager"
+ssh -i "$KEY" "$HOST" "sudo systemctl enable marquee && sudo systemctl restart marquee && sudo systemctl status marquee --no-pager"
 
 echo "✓ deploy complete"
