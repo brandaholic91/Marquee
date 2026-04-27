@@ -1,5 +1,13 @@
 const json = (r: Response) => r.json();
 
+function post<T>(path: string, body: unknown): Promise<T> {
+  return fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(json);
+}
+
 export const api = {
   threads: {
     list: () => fetch("/api/threads").then(json),
@@ -23,6 +31,8 @@ export const api = {
     list: () => fetch("/api/briefs").then(json),
     dispatch: (id: string) =>
       fetch(`/api/briefs/${id}/dispatch`, { method: "POST" }).then(json),
+    create: (contentMd: string) =>
+      post<{ id: string; ok: boolean }>("/api/briefs", { contentMd }),
   },
   approvals: {
     decide: (
