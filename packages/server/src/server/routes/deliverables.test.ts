@@ -22,7 +22,7 @@ async function makeApp(db: AgencyDb, broker: Broker, router: AgentRouter, dir: s
 	return buildServer({ db, broker, router, dataDir: dir, webRoot: "/nonexistent" });
 }
 
-function seedDeliverable(db: AgencyDb, status = "awaiting_approval") {
+function seedDeliverable(db: AgencyDb, status: "drafting" | "awaiting_eval" | "awaiting_approval" | "shipped" | "archived" = "awaiting_approval") {
 	const dlgId = randomUUID();
 	const delId = randomUUID();
 	const revId = randomUUID();
