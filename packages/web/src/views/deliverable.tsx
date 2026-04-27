@@ -433,14 +433,15 @@ interface RevisionsTabProps {
   deliverableId: string;
   currentRevisionId: string | null;
   allRevisions: RevisionEntry[];
+  onSelectRevision: (revId: string) => void;
+  selectedRevId: string | null;
 }
 
-function RevisionsTab({ currentRevisionId, allRevisions }: RevisionsTabProps) {
-  // TODO: fetch all revisions from GET /api/deliverables/:id/revisions when available
+function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selectedRevId }: RevisionsTabProps) {
   if (allRevisions.length === 0) {
     return (
       <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
-        No revisions available yet.
+        No revisions yet.
       </div>
     );
   }
@@ -449,25 +450,33 @@ function RevisionsTab({ currentRevisionId, allRevisions }: RevisionsTabProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {allRevisions.map((r) => {
         const isCurrent = r.id === currentRevisionId;
+        const isSelected = r.id === selectedRevId;
         const timeLabel = r.createdAt
           ? new Date(r.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
           : "—";
 
         return (
-          <div
+          <button
             key={r.id}
+            onClick={() => onSelectRevision(r.id)}
             className="card"
             style={{
+              width: "100%",
+              textAlign: "left",
               padding: 12,
-              background: isCurrent ? "var(--white)" : "transparent",
-              borderColor: isCurrent ? "var(--rule-strong)" : "var(--rule)",
+              cursor: "pointer",
+              background: isSelected ? "var(--primary-soft)" : isCurrent ? "var(--white)" : "transparent",
+              borderColor: isSelected ? "var(--primary)" : isCurrent ? "var(--rule-strong)" : "var(--rule)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>
                 {r.revisionNumber ?? r.id}
               </div>
-              {isCurrent && <span className="badge badge-cream">current</span>}
+              <div style={{ display: "flex", gap: 4 }}>
+                {isCurrent && <span className="badge badge-cream">current</span>}
+                {isSelected && <span className="badge badge-primary-soft">viewing</span>}
+              </div>
             </div>
             {r.note && (
               <div className="body-sm" style={{ marginTop: 4 }}>{r.note}</div>
@@ -475,7 +484,7 @@ function RevisionsTab({ currentRevisionId, allRevisions }: RevisionsTabProps) {
             <div className="body-sm muted" style={{ marginTop: 4 }}>
               {r.agentSlug ?? "—"} · {timeLabel}
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -490,12 +499,81 @@ interface SidePanelProps {
   deliverableId: string;
   currentRevisionId: string | null;
   revision: RevisionData | null;
-  evalReport: EvalReport | null;
-  allRevisions: RevisionEntry[];
 }
 
-function SidePanel({ deliverableId, currentRevisionId, revision, evalReport, allRevisions }: SidePanelProps) {
+function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProps) {
   const [tab, setTab] = useState<TabId>("thread");
+
+  // Eval tab state — loaded lazily when tab becomes "eval"
+  const [evalReport, setEvalReport] = useState<EvalReport | null>(null);
+  const [evalLoaded, setEvalLoaded] = useState(false);
+
+  // Revisions tab state — loaded lazily when tab becomes "revisions"
+  const [allRevisions, setAllRevisions] = useState<RevisionEntry[]>([]);
+  const [revisionsLoaded, setRevisionsLoaded] = useState(false);
+  const [selectedRevId, setSelectedRevId] = useState<string | null>(null);
+  const [selectedRevContent, setSelectedRevContent] = useState<RevisionData | null>(null);
+  const [revContentLoading, setRevContentLoading] = useState(false);
+
+  useEffect(() => {
+    if (tab === "eval" && !evalLoaded) {
+      api.deliverables.eval(deliverableId)
+        .then((data: Record<string, unknown> | null) => {
+          if (!data) { setEvalReport(null); setEvalLoaded(true); return; }
+          // Normalise flat scores shape { brand_voice, factual_accuracy, usp_usage, ... }
+          // into the EvalReport format that EvalTab expects.
+          const SCORE_KEYS = ["brand_voice", "factual_accuracy", "usp_usage"];
+          let dimensions: EvalDimension[] | undefined;
+          if (!data.dimensions) {
+            dimensions = SCORE_KEYS
+              .filter((k) => typeof data[k] === "number")
+              .map((k) => ({ dim: k, score: data[k] as number }));
+          }
+          const report: EvalReport = {
+            dimensions: dimensions ?? (data.dimensions as EvalDimension[] | undefined),
+            summary: data.summary as string | undefined,
+            revisionId: data.revisionId as string | undefined,
+            judgeSlug: data.judgeSlug as string | undefined,
+            createdAt: data.createdAt as string | undefined,
+          };
+          setEvalReport(report);
+          setEvalLoaded(true);
+        })
+        .catch(() => {
+          setEvalReport(null);
+          setEvalLoaded(true);
+        });
+    }
+  }, [tab, evalLoaded, deliverableId]);
+
+  useEffect(() => {
+    if (tab === "revisions" && !revisionsLoaded) {
+      api.deliverables.revisions(deliverableId)
+        .then((data: RevisionEntry[]) => {
+          const list = Array.isArray(data) ? data : [];
+          setAllRevisions(list);
+          setRevisionsLoaded(true);
+        })
+        .catch(() => {
+          setAllRevisions([]);
+          setRevisionsLoaded(true);
+        });
+    }
+  }, [tab, revisionsLoaded, deliverableId]);
+
+  useEffect(() => {
+    if (!selectedRevId) { setSelectedRevContent(null); return; }
+    setRevContentLoading(true);
+    api.deliverables.revision(deliverableId, selectedRevId)
+      .then((data: RevisionData) => {
+        setSelectedRevContent(data);
+        setRevContentLoading(false);
+      })
+      .catch(() => {
+        setSelectedRevContent(null);
+        setRevContentLoading(false);
+      });
+  }, [selectedRevId, deliverableId]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "thread", label: "Thread" },
@@ -530,13 +608,49 @@ function SidePanel({ deliverableId, currentRevisionId, revision, evalReport, all
       </div>
       <div className="scroll" style={{ flex: 1, padding: 18, overflowY: "auto" }}>
         {tab === "thread" && <ThreadTab deliverableId={deliverableId} />}
-        {tab === "eval" && <EvalTab evalReport={evalReport} revision={revision} />}
+        {tab === "eval" && (
+          evalLoaded
+            ? <EvalTab evalReport={evalReport} revision={revision} />
+            : <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
+        )}
         {tab === "revisions" && (
-          <RevisionsTab
-            deliverableId={deliverableId}
-            currentRevisionId={currentRevisionId}
-            allRevisions={allRevisions}
-          />
+          revisionsLoaded
+            ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <RevisionsTab
+                  deliverableId={deliverableId}
+                  currentRevisionId={currentRevisionId}
+                  allRevisions={allRevisions}
+                  onSelectRevision={setSelectedRevId}
+                  selectedRevId={selectedRevId}
+                />
+                {selectedRevId && (
+                  <div style={{
+                    marginTop: 8,
+                    padding: 14,
+                    background: "var(--white)",
+                    borderRadius: 6,
+                    border: "1px solid var(--rule)",
+                  }}>
+                    {revContentLoading ? (
+                      <div className="body-sm muted" style={{ fontSize: 13 }}>Loading revision…</div>
+                    ) : selectedRevContent ? (
+                      <>
+                        <div className="caption" style={{ marginBottom: 8 }}>
+                          {selectedRevContent.revisionNumber ?? selectedRevId}
+                        </div>
+                        <div className="body-sm" style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto" }}>
+                          {selectedRevContent.contentMd}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="body-sm muted" style={{ fontSize: 13 }}>Could not load revision content.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+            : <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
         )}
       </div>
     </aside>
@@ -549,8 +663,6 @@ export function DeliverableView() {
   const { selectedDeliverableId, setView } = useAgencyStore();
   const [deliverable, setDeliverable] = useState<DeliverableData | null>(null);
   const [revision, setRevision] = useState<RevisionData | null>(null);
-  const [evalReport] = useState<EvalReport | null>(null);
-  const [allRevisions, setAllRevisions] = useState<RevisionEntry[]>([]);
 
   const refresh = useCallback(() => {
     if (!selectedDeliverableId) return;
@@ -561,7 +673,6 @@ export function DeliverableView() {
           .revision(selectedDeliverableId, d.currentRevisionId)
           .then((rev: RevisionData) => {
             setRevision(rev);
-            setAllRevisions([rev]);
           })
           .catch(() => setRevision(null));
       }
@@ -612,8 +723,6 @@ export function DeliverableView() {
             deliverableId={deliverable.id}
             currentRevisionId={deliverable.currentRevisionId ?? null}
             revision={revision}
-            evalReport={evalReport}
-            allRevisions={allRevisions}
           />
         </div>
       </main>

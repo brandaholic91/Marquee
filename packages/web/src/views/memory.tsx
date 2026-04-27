@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment } from "react";
+import { api } from "../lib/api.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
 import { AgentBadge } from "../components/ui/index.js";
 import { Bulb } from "../components/ui/Bulb.js";
@@ -267,10 +268,61 @@ type TabId = "read" | "history";
 interface MainContentProps {
   fileContent: MemoryFileContent | null;
   loading: boolean;
+  selectedFile: string | null;
+  onSaved: () => void;
 }
 
-function MainContent({ fileContent, loading }: MainContentProps) {
+function MainContent({ fileContent, loading, selectedFile, onSaved }: MainContentProps) {
   const [tab, setTab] = useState<TabId>("read");
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Reset edit state when selected file changes
+  useEffect(() => {
+    setEditing(false);
+    setEditContent("");
+    setSaving(false);
+  }, [selectedFile]);
+
+  function handleEditClick() {
+    // Build raw file content: frontmatter + body
+    if (!fileContent) return;
+    const fm = fileContent.frontmatter ?? {};
+    const fmEntries = Object.entries(fm);
+    let raw = "";
+    if (fmEntries.length > 0) {
+      raw += "---\n";
+      for (const [k, v] of fmEntries) {
+        raw += `${k}: ${v}\n`;
+      }
+      raw += "---\n\n";
+    }
+    raw += fileContent.body ?? "";
+    setEditContent(raw);
+    setEditing(true);
+  }
+
+  function handleCancel() {
+    setEditing(false);
+    setEditContent("");
+  }
+
+  function handleSave() {
+    if (!selectedFile || saving) return;
+    const filename = selectedFile.endsWith(".md") ? selectedFile : `${selectedFile}.md`;
+    setSaving(true);
+    api.memory.put(filename, editContent)
+      .then(() => {
+        setSaving(false);
+        setEditing(false);
+        setEditContent("");
+        onSaved();
+      })
+      .catch(() => {
+        setSaving(false);
+      });
+  }
 
   if (loading) {
     return (
@@ -300,7 +352,7 @@ function MainContent({ fileContent, loading }: MainContentProps) {
   return (
     <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
       <article className="card" style={{ background: "var(--white)", padding: 0, maxWidth: 920 }}>
-        {/* File title + status */}
+        {/* File title + status + edit button */}
         <div style={{ padding: "24px 32px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <h1
@@ -310,39 +362,94 @@ function MainContent({ fileContent, loading }: MainContentProps) {
               {fileContent.name}
             </h1>
             <span className="badge badge-success-soft" style={{ marginLeft: "auto" }}>clean</span>
+            {!editing && (
+              <button
+                className="btn btn-secondary"
+                style={{ fontSize: 12, padding: "4px 12px" }}
+                onClick={handleEditClick}
+              >
+                Edit
+              </button>
+            )}
           </div>
 
-          {/* Tabs */}
-          <div style={{
-            display: "flex",
-            gap: 16,
-            marginTop: 14,
-            borderBottom: "1px solid var(--rule)",
-          }}>
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  padding: "10px 0",
-                  fontSize: 13,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: tab === t.id ? "var(--ink-1)" : "var(--ink-3)",
-                  fontWeight: tab === t.id ? 600 : 500,
-                  boxShadow: tab === t.id ? "inset 0 -2px 0 var(--ink-1)" : "none",
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          {/* Tabs (hidden while editing) */}
+          {!editing && (
+            <div style={{
+              display: "flex",
+              gap: 16,
+              marginTop: 14,
+              borderBottom: "1px solid var(--rule)",
+            }}>
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  style={{
+                    padding: "10px 0",
+                    fontSize: 13,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: tab === t.id ? "var(--ink-1)" : "var(--ink-3)",
+                    fontWeight: tab === t.id ? 600 : 500,
+                    boxShadow: tab === t.id ? "inset 0 -2px 0 var(--ink-1)" : "none",
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Tab content */}
-        {tab === "read" && <ReadTab frontmatter={frontmatter} body={body} />}
-        {tab === "history" && <HistoryTab history={history} />}
+        {/* Inline editor */}
+        {editing ? (
+          <div style={{ padding: "24px 32px" }}>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              style={{
+                width: "100%",
+                minHeight: 300,
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                lineHeight: 1.6,
+                padding: "12px 14px",
+                border: "1px solid var(--rule)",
+                borderRadius: 6,
+                background: "var(--cream)",
+                color: "var(--ink-1)",
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 13 }}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 13 }}
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tab content */}
+            {tab === "read" && <ReadTab frontmatter={frontmatter} body={body} />}
+            {tab === "history" && <HistoryTab history={history} />}
+          </>
+        )}
       </article>
     </main>
   );
@@ -393,24 +500,33 @@ export function MemoryView() {
       .catch(() => setProposals([]));
   }, []);
 
-  // Load file content when selection changes
+  // Load file content when selection changes (also called after a save)
+  const [contentVersion, setContentVersion] = useState(0);
+
   useEffect(() => {
     if (!selectedFile) { setFileContent(null); return; }
     setContentLoading(true);
     const controller = new AbortController();
-    fetch(`/api/memory/files/${encodeURIComponent(selectedFile)}`, { signal: controller.signal })
-      .then((r) => r.json())
+    const filename = selectedFile.endsWith(".md") ? selectedFile : `${selectedFile}.md`;
+    api.memory.get(filename)
       .then((data: MemoryFileContent) => {
+        if (controller.signal.aborted) return;
         setFileContent(data);
         setContentLoading(false);
       })
       .catch((err: Error) => {
-        if (err.name === "AbortError") return;
+        if (err.name === "AbortError" || controller.signal.aborted) return;
         setFileContent({ name: selectedFile } as MemoryFileContent);
         setContentLoading(false);
       });
     return () => controller.abort();
-  }, [selectedFile]);
+  // contentVersion triggers a reload after save
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFile, contentVersion]);
+
+  function handleSaved() {
+    setContentVersion((v) => v + 1);
+  }
 
   return (
     <div style={{
@@ -425,7 +541,12 @@ export function MemoryView() {
         onSelect={setSelectedFile}
         proposals={proposals}
       />
-      <MainContent fileContent={fileContent} loading={contentLoading} />
+      <MainContent
+        fileContent={fileContent}
+        loading={contentLoading}
+        selectedFile={selectedFile}
+        onSaved={handleSaved}
+      />
     </div>
   );
 }
