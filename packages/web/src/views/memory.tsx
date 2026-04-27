@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Sidebar } from "../components/layout/Sidebar.js";
 import { AgentBadge } from "../components/ui/index.js";
 import { Bulb } from "../components/ui/Bulb.js";
@@ -193,10 +193,10 @@ function ReadTab({ frontmatter, body }: ReadTabProps) {
             columnGap: 16,
           }}>
             {fmEntries.map(([k, v]) => (
-              <>
-                <div key={`k-${k}`} className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>{k}</div>
-                <div key={`v-${k}`} className="body-md" style={{ fontSize: 14 }}>{v}</div>
-              </>
+              <Fragment key={k}>
+                <div className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>{k}</div>
+                <div className="body-md" style={{ fontSize: 14 }}>{v}</div>
+              </Fragment>
             ))}
           </div>
         </div>
@@ -395,21 +395,21 @@ export function MemoryView() {
 
   // Load file content when selection changes
   useEffect(() => {
-    if (!selectedFile) {
-      setFileContent(null);
-      return;
-    }
+    if (!selectedFile) { setFileContent(null); return; }
     setContentLoading(true);
-    fetch(`/api/memory/files/${encodeURIComponent(selectedFile)}`)
+    const controller = new AbortController();
+    fetch(`/api/memory/files/${encodeURIComponent(selectedFile)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data: MemoryFileContent) => {
         setFileContent(data);
+        setContentLoading(false);
       })
-      .catch(() => {
-        // Fallback: show file name only
-        setFileContent({ name: selectedFile });
-      })
-      .finally(() => setContentLoading(false));
+      .catch((err: Error) => {
+        if (err.name === "AbortError") return;
+        setFileContent({ name: selectedFile } as MemoryFileContent);
+        setContentLoading(false);
+      });
+    return () => controller.abort();
   }, [selectedFile]);
 
   return (
