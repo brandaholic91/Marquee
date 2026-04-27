@@ -98,23 +98,31 @@ export class AgentRouter {
 		let agent = this.chatAgents.get(threadId);
 		if (!agent) {
 			const sessionId = randomUUID();
+			// Chat agents use no tools — pure conversational director
 			agent = makeAgent({
 				role: "director", dataDir: this.dataDir, db: this.db, sessionId, threadId,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "director", sessionId }),
 			} satisfies MakeAgentOpts);
+			// Strip tools so the model responds with text, not tool calls
+			agent.state.tools = [];
 			this.db.insert(agentSessions).values({
 				id: sessionId, agentSlug: "director", lifecycle: "transient",
 			}).run();
 			const a = agent;
 			a.subscribe(async (evt) => {
-				if (evt.type !== "message_end") return;
-				const msg = (evt as { type: string; message: { role: string; content: Array<{ type: string; text?: string }> } }).message;
-				if (msg.role !== "assistant") return;
+				type AnyEvt = { type: string; message?: { role: string; content: Array<{ type: string; text?: string }> } };
+				const e = evt as AnyEvt;
+				// Capture text from any assistant message (message_end or turn_end)
+				if (e.type !== "message_end" && e.type !== "turn_end") return;
+				const msg = e.message;
+				if (!msg || msg.role !== "assistant") return;
 				const responseText = msg.content
 					.filter((c) => c.type === "text")
 					.map((c) => c.text ?? "")
-					.join("");
-				if (!responseText.trim()) return;
+					.join("")
+					.trim();
+				if (!responseText) return;
+				console.log(`[chat:${threadId.slice(0, 8)}] director responded: ${responseText.slice(0, 60)}`);
 				this.db.insert(messages).values({
 					id: randomUUID(), threadId,
 					sender: "director", type: "chat",
@@ -126,7 +134,7 @@ export class AgentRouter {
 		}
 		void (async () => {
 			await agent!.waitForIdle();
-			agent!.prompt(text).catch(console.error);
+			agent!.prompt(text).catch((e) => console.error("[chat] agent.prompt error:", e));
 		})();
 	}
 
