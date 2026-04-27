@@ -7,8 +7,8 @@ import { briefs } from "../../db/schema.js";
 export function registerBriefRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get("/api/briefs", async () => opts.db.select().from(briefs).all());
 
-	app.post<{ Body: { title?: string; contentMd: string } }>("/api/briefs", async (req, reply) => {
-		const { title, contentMd } = req.body;
+	app.post<{ Body: { contentMd: string } }>("/api/briefs", async (req, reply) => {
+		const { contentMd } = req.body;
 		if (!contentMd?.trim()) {
 			return reply.status(400).send({ error: "contentMd is required" });
 		}
