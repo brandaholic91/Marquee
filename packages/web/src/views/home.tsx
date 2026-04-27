@@ -349,10 +349,6 @@ function ConversationsWidget({ threads }: { threads: Thread[] }) {
                 fontWeight: 500,
                 lineHeight: 1.3,
                 background: "none",
-                border: "none",
-                borderBottomColor: "var(--rule)",
-                borderBottomStyle: "solid",
-                borderBottomWidth: i < threads.length - 1 ? 1 : 0,
                 cursor: "pointer",
                 textAlign: "left",
               }}
@@ -397,7 +393,7 @@ export function HomeView() {
             ts: Date.now(),
           },
           ...prev,
-        ].slice(0, 50)
+        ].slice(-50)
       );
       refresh();
     });
