@@ -413,13 +413,13 @@ export function HomeView() {
     refresh();
     agencyEvents.start();
     const unsub = agencyEvents.on("*", (ev) => {
-      const typed = ev as { type?: string; payload?: unknown };
+      const typed = ev as { type?: string; agentSlug?: string };
       setLiveEvents((prev) =>
         [
           {
             type: typed.type ?? "event",
-            agentSlug: (typed.payload as { agentSlug?: string })?.agentSlug,
-            payload: typed.payload,
+            agentSlug: typed.agentSlug,
+            payload: ev,
             ts: Date.now(),
           },
           ...prev,

@@ -10,11 +10,12 @@ export class AgencyEvents {
     this.es = new EventSource(url);
     this.es.onmessage = (msg) => {
       try {
-        const payload = JSON.parse(msg.data);
+        const payload = JSON.parse(msg.data) as Record<string, unknown>;
         const id = Number(msg.lastEventId);
         if (id) localStorage.setItem("agency:lastEventId", String(id));
-        for (const h of this.subs.get(msg.type) ?? []) h(payload, id);
-        for (const h of this.subs.get("*") ?? []) h({ type: msg.type, payload }, id);
+        const type = (payload.type as string | undefined) ?? "message";
+        for (const h of this.subs.get(type) ?? []) h(payload, id);
+        for (const h of this.subs.get("*") ?? []) h(payload, id);
       } catch {}
     };
     this.es.onerror = () => {

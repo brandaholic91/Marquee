@@ -16,19 +16,22 @@ export function registerSseRoute(app: FastifyInstance, opts: { db: AgencyDb; bro
 		const lastIdHeader = req.headers["last-event-id"];
 		const lastId = lastIdHeader ? Number.parseInt(String(lastIdHeader), 10) : 0;
 
+		const send = (id: number, type: string, payload: unknown) =>
+			reply.raw.write(`id: ${id}\ndata: ${JSON.stringify({ type, ...payload as object })}\n\n`);
+
 		if (lastId > 0) {
 			for (const e of eventsAfter(opts.db, lastId)) {
-				reply.raw.write(`id: ${e.id}\nevent: ${e.type}\ndata: ${JSON.stringify(e.payloadJson)}\n\n`);
+				send(e.id as number, e.type, e.payloadJson ?? {});
 			}
 		} else {
 			for (const e of recentEvents(opts.db, 100).reverse()) {
-				reply.raw.write(`id: ${e.id}\nevent: ${e.type}\ndata: ${JSON.stringify(e.payloadJson)}\n\n`);
+				send(e.id as number, e.type, e.payloadJson ?? {});
 			}
 		}
 
 		const heartbeat = setInterval(() => reply.raw.write(": keepalive\n\n"), 15_000);
 		const unsub = opts.broker.subscribe((e) => {
-			reply.raw.write(`id: ${e.id}\nevent: ${e.type}\ndata: ${JSON.stringify(e.payload)}\n\n`);
+			send(e.id, e.type, e.payload);
 		});
 		req.raw.on("close", () => {
 			clearInterval(heartbeat);
