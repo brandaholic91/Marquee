@@ -39,13 +39,15 @@ describe("AgentRouter", () => {
 		expect(router.getWarmRoles()).toContain("eval-judge");
 	});
 
-	it("dispatchBrief queues the brief for processing", () => {
+	it("dispatches the brief to the director without throwing", () => {
 		router.boot();
 		const briefId = randomUUID();
 		db.insert(briefs).values({
 			id: briefId, status: "dispatched", contentMd: "# Test\n\n**Scope:** test",
 		}).run();
+		// queueBrief now dispatches directly to the director agent — no queue to inspect
 		expect(() => router.queueBrief(briefId)).not.toThrow();
-		expect(router.getBriefQueue()).toContain(briefId);
+		// getBriefQueue is a no-op stub in the new implementation
+		expect(router.getBriefQueue()).toEqual([]);
 	});
 });

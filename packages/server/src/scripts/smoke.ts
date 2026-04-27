@@ -27,13 +27,16 @@ writeFileSync(join(dataDir, "memory/brand_guidelines.md"),
 		contentMd: "# Test\n\n**Scope:** write a 200-word blog post about PLG metrics\n\n**Deliverables:** blog_post",
 	}).run();
 
+	// Log all broker events so we can see what's happening
+	broker.subscribe((evt) => console.log(`[event] ${evt.type}`, JSON.stringify(evt.payload).slice(0, 120)));
+
 	console.log("Queuing brief:", briefId);
 	router.queueBrief(briefId);
 
 	const start = Date.now();
 	let found = false;
-	while (Date.now() - start < 10_000) {
-		await new Promise((r) => setTimeout(r, 500));
+	while (Date.now() - start < 120_000) {
+		await new Promise((r) => setTimeout(r, 1_000));
 		const ds = db.select().from(deliverables).all();
 		if (ds.some((d) => d.status === "awaiting_approval" || d.status === "awaiting_eval")) {
 			console.log("✓ deliverable progressed in", Math.round((Date.now() - start) / 1000), "s");
@@ -43,7 +46,7 @@ writeFileSync(join(dataDir, "memory/brand_guidelines.md"),
 	}
 
 	if (!found) {
-		console.log("ℹ smoke script complete — broker is wired but actual LLM dispatch requires HERMES_PROVIDER_MODE=api and API keys");
+		console.log("✗ 120s timeout — pipeline did not complete (set OPENCODE_API_KEY for full run)");
 	}
 	close();
 	process.exit(0);

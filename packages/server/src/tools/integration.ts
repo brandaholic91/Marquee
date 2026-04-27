@@ -15,6 +15,13 @@ export function makeReadMemory(dataDir: string): AgentToolDef<
 	return {
 		name: "read_memory",
 		description: "Read the current contents of a memory file. Returns parsed frontmatter and body.",
+		schema: {
+			type: "object",
+			properties: {
+				file: { type: "string" },
+			},
+			required: ["file"],
+		},
 		input: readMemoryInput,
 		async execute(input) {
 			if (!ALLOWED_MEMORY.has(input.file))
@@ -33,6 +40,13 @@ export const webFetch: AgentToolDef<
 > = {
 	name: "web_fetch",
 	description: "GET a URL and return its text content. Use sparingly.",
+	schema: {
+		type: "object",
+		properties: {
+			url: { type: "string", format: "uri" },
+		},
+		required: ["url"],
+	},
 	input: webFetchInput,
 	async execute(input) {
 		const res = await fetch(input.url, {

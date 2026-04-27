@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { delegations, deliverableRevisions, deliverables } from "../db/schema.js";
+import { agentSessions, delegations, deliverableRevisions, deliverables } from "../db/schema.js";
 import { Broker } from "./event-bus.js";
 import { EvalTrigger } from "./eval-trigger.js";
 
@@ -30,15 +30,24 @@ describe("EvalTrigger", () => {
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it("schedules an eval-judge config when deliverable_submitted is emitted", () => {
+	it("attaches and detaches without throwing", () => {
+		const trigger = new EvalTrigger(db, broker, dir);
+		expect(() => {
+			trigger.attach();
+			trigger.detach();
+		}).not.toThrow();
+	});
+
+	it("spawns an eval-judge agent session when deliverable_submitted is emitted", () => {
 		const trigger = new EvalTrigger(db, broker, dir);
 		trigger.attach();
-		const scheduled: unknown[] = [];
-		trigger.onEvalScheduled((config) => scheduled.push(config));
 
 		const dlgId = randomUUID();
 		const deliverableId = randomUUID();
 		const revisionId = randomUUID();
+		const artifactPath = join(dir, "artifact.md");
+		writeFileSync(artifactPath, "# Test content\n\nSome deliverable content here.");
+
 		db.insert(delegations).values({
 			id: dlgId, fromAgent: "content-lead", toAgent: "copywriter",
 			status: "in_progress", payloadJson: {} as never,
@@ -48,10 +57,15 @@ describe("EvalTrigger", () => {
 			title: "T", status: "awaiting_eval", currentRevisionId: revisionId,
 		}).run();
 		db.insert(deliverableRevisions).values({
-			id: revisionId, deliverableId, artifactPath: "/tmp/x.md", createdByAgent: "copywriter",
+			id: revisionId, deliverableId, artifactPath, createdByAgent: "copywriter",
 		}).run();
 
 		broker.emit("deliverable_submitted", { deliverableId, revisionId });
-		expect(scheduled).toHaveLength(1);
+
+		// The EvalTrigger should have created a new agent session for eval-judge
+		const sessions = db.select().from(agentSessions).all();
+		expect(sessions.length).toBeGreaterThan(0);
+		const evalSession = sessions.find((s) => s.agentSlug === "eval-judge");
+		expect(evalSession).toBeDefined();
 	});
 });

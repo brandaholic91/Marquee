@@ -14,6 +14,17 @@ const proposeBriefInput = z.object({
 export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { briefId: string }> = {
 	name: "propose_brief",
 	description: "Propose a structured brief in the chat. Human reviews and approves to dispatch.",
+	schema: {
+		type: "object",
+		properties: {
+			threadId: { type: "string" },
+			title: { type: "string" },
+			scope: { type: "string" },
+			deliverables: { type: "array", items: { type: "string" }, minItems: 1 },
+			deadline: { type: "string" },
+		},
+		required: ["threadId", "title", "scope", "deliverables"],
+	},
 	input: proposeBriefInput,
 	async execute(input, ctx) {
 		const id = randomUUID();
@@ -42,6 +53,15 @@ const proposeMemoryUpdateInput = z.object({
 export const proposeMemoryUpdate: AgentToolDef<z.infer<typeof proposeMemoryUpdateInput>, { proposalId: string }> = {
 	name: "propose_memory_update",
 	description: "Propose a unified-diff patch to a memory file. Human approves, then git-committed.",
+	schema: {
+		type: "object",
+		properties: {
+			file: { type: "string" },
+			patch: { type: "string", minLength: 10 },
+			rationale: { type: "string" },
+		},
+		required: ["file", "patch"],
+	},
 	input: proposeMemoryUpdateInput,
 	async execute(input, ctx) {
 		// Validate input explicitly so the schema constraints are enforced at runtime.

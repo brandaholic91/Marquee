@@ -19,6 +19,16 @@ const delegateToLeadInput = z.object({
 export const delegateToLead: AgentToolDef<z.infer<typeof delegateToLeadInput>, { delegationId: string }> = {
 	name: "delegate_to_lead",
 	description: "Delegate a task to a Lead agent. Use this only as the Director.",
+	schema: {
+		type: "object",
+		properties: {
+			lead: { type: "string" },
+			task: { type: "string", minLength: 1 },
+			briefId: { type: "string" },
+			context: { type: "string" },
+		},
+		required: ["lead", "task"],
+	},
 	input: delegateToLeadInput,
 	async execute(input, ctx) {
 		if (!KNOWN_LEADS.has(input.lead)) {
@@ -43,6 +53,15 @@ const delegateToSpecialistInput = z.object({
 export const delegateToSpecialist: AgentToolDef<z.infer<typeof delegateToSpecialistInput>, { delegationId: string }> = {
 	name: "delegate_to_specialist",
 	description: "Delegate a task to a Specialist agent under your supervision. Lead-only.",
+	schema: {
+		type: "object",
+		properties: {
+			specialist: { type: "string" },
+			task: { type: "string", minLength: 1 },
+			context: { type: "string" },
+		},
+		required: ["specialist", "task"],
+	},
 	input: delegateToSpecialistInput,
 	async execute(input, ctx) {
 		const allowed = KNOWN_SPECIALISTS_BY_LEAD[ctx.agentSlug];
@@ -67,6 +86,14 @@ const submitToDirectorInput = z.object({
 export const submitToDirector: AgentToolDef<z.infer<typeof submitToDirectorInput>, { ok: true }> = {
 	name: "submit_to_director",
 	description: "Forward your synthesized output up to the Director. Lead-only.",
+	schema: {
+		type: "object",
+		properties: {
+			summary: { type: "string", minLength: 1 },
+			deliverableId: { type: "string" },
+		},
+		required: ["summary"],
+	},
 	input: submitToDirectorInput,
 	async execute(input, ctx) {
 		if (!ctx.delegationId) throw new Error("submit_to_director requires an active delegation context");

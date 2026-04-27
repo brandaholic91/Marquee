@@ -34,13 +34,15 @@ describe("recoverState", () => {
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it("re-queues dispatched briefs that have no active delegation", () => {
+	it("re-dispatches dispatched briefs to the director without throwing", () => {
 		const briefId = randomUUID();
 		db.insert(briefs).values({
 			id: briefId, status: "dispatched", contentMd: "# Test",
 		}).run();
-		recoverState(db, router);
-		expect(router.getBriefQueue()).toContain(briefId);
+		// recoverState now dispatches directly — no queue to inspect
+		expect(() => recoverState(db, router)).not.toThrow();
+		// getBriefQueue is a no-op stub; briefs are dispatched immediately via queueBrief
+		expect(router.getBriefQueue()).toEqual([]);
 	});
 
 	it("marks orphaned warm sessions as ended", () => {

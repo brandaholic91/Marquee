@@ -1,19 +1,9 @@
-// Note: @mariozechner/pi-ai v0.70.2 cannot be imported at runtime due to a broken
-// typebox peer dependency (requires typebox/build/index.mjs which does not exist in
-// typebox v1.x). We return plain typed objects matching the pi-ai Model shape so that
-// the rest of the codebase can switch to getModel() once the dependency is resolved.
+import { getModel, getEnvApiKey } from "@mariozechner/pi-ai";
 
 export type ProviderMode = "flat" | "api";
-
-export interface ModelDescriptor {
-	provider: string;
-	id: string;
-}
-
 export const providerMode = (): ProviderMode =>
-	(process.env.HERMES_PROVIDER_MODE as ProviderMode) ?? "flat";
+	(process.env.MARQUEE_PROVIDER_MODE as ProviderMode) ?? "flat";
 
-// opencode-go local models (OpenCode Go runner)
 const FLAT_MAP: Record<string, string> = {
 	director: "kimi-k2.6",
 	"content-lead": "kimi-k2.6",
@@ -21,7 +11,6 @@ const FLAT_MAP: Record<string, string> = {
 	"eval-judge": "minimax-m2.7",
 };
 
-// OpenRouter cloud model IDs (verified against pi-ai models.generated registry)
 const API_MAP: Record<string, string> = {
 	director: "anthropic/claude-sonnet-4.6",
 	"content-lead": "anthropic/claude-haiku-4.5",
@@ -29,16 +18,14 @@ const API_MAP: Record<string, string> = {
 	"eval-judge": "anthropic/claude-haiku-4.5",
 };
 
-export function modelForRole(role: string): ModelDescriptor {
+export function modelForRole(role: string) {
 	const mode = providerMode();
 	if (mode === "flat") {
-		return {
-			provider: "opencode-go",
-			id: FLAT_MAP[role] ?? "kimi-k2.6",
-		};
+		const id = FLAT_MAP[role] ?? "kimi-k2.6";
+		return getModel("opencode-go", id as never)!;
 	}
-	return {
-		provider: "openrouter",
-		id: API_MAP[role] ?? "anthropic/claude-haiku-4.5",
-	};
+	const id = API_MAP[role] ?? "anthropic/claude-haiku-4.5";
+	return getModel("openrouter", id as never)!;
 }
+
+export { getEnvApiKey };

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
 import { makeAgent } from "./factory.js";
+import type { Agent } from "@mariozechner/pi-agent-core";
 
 describe("agent factory", () => {
 	let dir: string;
@@ -36,93 +37,94 @@ describe("agent factory", () => {
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it("creates an AgentConfig without throwing", () => {
-		const cfg = makeAgent({
+	it("creates an Agent without throwing", () => {
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		expect(cfg).toBeDefined();
+		expect(agent).toBeDefined();
 	});
 
-	it("has the correct role and sessionId", () => {
-		const cfg = makeAgent({
+	it("returns an Agent instance", () => {
+		const { Agent } = require("@mariozechner/pi-agent-core");
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		expect(cfg.role).toBe("copywriter");
-		expect(cfg.sessionId).toBe("s1");
+		expect(agent).toBeInstanceOf(Agent);
 	});
 
-	it("assigns a model descriptor", () => {
-		const cfg = makeAgent({
+	it("assigns a model with provider and id", () => {
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		expect(cfg.model).toHaveProperty("provider");
-		expect(cfg.model).toHaveProperty("id");
-		expect(cfg.model.provider).toBeTruthy();
-		expect(cfg.model.id).toBeTruthy();
+		const model = agent.state.model;
+		expect(model).toHaveProperty("provider");
+		expect(model).toHaveProperty("id");
+		expect(model.provider).toBeTruthy();
+		expect(model.id).toBeTruthy();
 	});
 
 	it("copywriter gets submit_deliverable tool but not delegate_to_lead", () => {
-		const cfg = makeAgent({
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		const toolNames = cfg.tools.map((t) => t.name);
+		const toolNames = agent.state.tools.map((t) => t.name);
 		expect(toolNames).toContain("submit_deliverable");
 		expect(toolNames).not.toContain("delegate_to_lead");
 	});
 
 	it("director gets delegate_to_lead tool but not submit_deliverable", () => {
-		const cfg = makeAgent({
+		const agent = makeAgent({
 			role: "director",
 			dataDir: dir,
 			db,
 			sessionId: "s2",
 			emit: () => {},
 		});
-		const toolNames = cfg.tools.map((t) => t.name);
+		const toolNames = agent.state.tools.map((t) => t.name);
 		expect(toolNames).toContain("delegate_to_lead");
 		expect(toolNames).not.toContain("submit_deliverable");
 	});
 
 	it("system prompt includes role and skill recipe", () => {
-		const cfg = makeAgent({
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		expect(cfg.systemPrompt).toContain("copywriter");
+		expect(agent.state.systemPrompt).toContain("copywriter");
 		// Skill recipe body should be rendered with memory context
-		expect(cfg.systemPrompt).toContain("blog_post_writer");
-		expect(cfg.systemPrompt).toContain("Write for T");
+		expect(agent.state.systemPrompt).toContain("blog_post_writer");
+		expect(agent.state.systemPrompt).toContain("Write for T");
 	});
 
-	it("exposes convertToLlm and transformContext functions", () => {
-		const cfg = makeAgent({
+	it("exposes convertToLlm and transformContext functions on the agent", () => {
+		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
 			db,
 			sessionId: "s1",
 			emit: () => {},
 		});
-		expect(typeof cfg.convertToLlm).toBe("function");
-		expect(typeof cfg.transformContext).toBe("function");
+		expect(typeof agent.convertToLlm).toBe("function");
+		expect(typeof agent.transformContext).toBe("function");
 	});
 
 	it("throws for unknown role", () => {

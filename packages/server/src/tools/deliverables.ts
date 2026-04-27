@@ -19,6 +19,15 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 	return {
 		name: "submit_deliverable",
 		description: "Submit a completed deliverable. Triggers the eval pipeline. Specialist-only.",
+		schema: {
+			type: "object",
+			properties: {
+				type: { type: "string" },
+				title: { type: "string" },
+				contentMd: { type: "string", minLength: 50 },
+			},
+			required: ["type", "title", "contentMd"],
+		},
 		input: submitDeliverableInput,
 		async execute(input, ctx) {
 			if (!ctx.delegationId) throw new Error("submit_deliverable requires an active delegation context");
@@ -50,6 +59,13 @@ export const readDeliverable: AgentToolDef<
 > = {
 	name: "read_deliverable",
 	description: "Read the current revision of a deliverable.",
+	schema: {
+		type: "object",
+		properties: {
+			deliverableId: { type: "string" },
+		},
+		required: ["deliverableId"],
+	},
 	input: readDeliverableInput,
 	async execute(input, ctx) {
 		const d = ctx.db.select().from(deliverables).where(eq(deliverables.id, input.deliverableId)).get();
@@ -66,6 +82,13 @@ const respondToLeadInput = z.object({ note: z.string().min(1) });
 export const respondToLead: AgentToolDef<z.infer<typeof respondToLeadInput>, { ok: true }> = {
 	name: "respond_to_lead",
 	description: "Send a free-form note up to your Lead without closing the delegation.",
+	schema: {
+		type: "object",
+		properties: {
+			note: { type: "string", minLength: 1 },
+		},
+		required: ["note"],
+	},
 	input: respondToLeadInput,
 	async execute(input, ctx) {
 		if (!ctx.delegationId) throw new Error("respond_to_lead requires an active delegation context");

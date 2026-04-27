@@ -12,6 +12,14 @@ const requestInputInput = z.object({
 export const requestInput: AgentToolDef<z.infer<typeof requestInputInput>, { pending: true }> = {
 	name: "request_input",
 	description: "Ask the human a question and pause for their reply.",
+	schema: {
+		type: "object",
+		properties: {
+			threadId: { type: "string" },
+			question: { type: "string" },
+		},
+		required: ["threadId", "question"],
+	},
 	input: requestInputInput,
 	async execute(input, ctx) {
 		// threadId is a soft reference stored in contentJson; the FK column is left null
@@ -39,6 +47,23 @@ const submitEvalReportInput = z.object({
 export const submitEvalReport: AgentToolDef<z.infer<typeof submitEvalReportInput>, { evalId: string }> = {
 	name: "submit_eval_report",
 	description: "Submit a 3-dim evaluation. Eval Judge only. Advisory — does not block approval.",
+	schema: {
+		type: "object",
+		properties: {
+			deliverableRevisionId: { type: "string" },
+			scores: {
+				type: "object",
+				properties: {
+					brand_voice: { type: "number", minimum: 1, maximum: 5 },
+					factual_accuracy: { type: "number", minimum: 1, maximum: 5 },
+					usp_usage: { type: "number", minimum: 1, maximum: 5 },
+				},
+				required: ["brand_voice", "factual_accuracy", "usp_usage"],
+			},
+			summary: { type: "string", minLength: 10 },
+		},
+		required: ["deliverableRevisionId", "scores", "summary"],
+	},
 	input: submitEvalReportInput,
 	async execute(input, ctx) {
 		const id = randomUUID();

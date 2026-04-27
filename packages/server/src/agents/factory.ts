@@ -1,27 +1,16 @@
-// NOTE: @mariozechner/pi-ai v0.70.2 cannot be imported at runtime due to a broken
-// typebox peer dependency (requires typebox/build/index.mjs which does not exist
-// in typebox v1.x). The Agent class from @mariozechner/pi-agent-core transitively
-// imports pi-ai, so it also cannot be constructed at runtime.
-//
-// This factory therefore returns a plain AgentConfig object rather than a live
-// Agent instance. Once the typebox issue is resolved upstream (or the dependency
-// is updated to a compatible version), replace the return value with:
-//   new Agent({ initialState: { systemPrompt, model, tools }, convertToLlm, transformContext })
-//
-// The AgentConfig shape mirrors the AgentOptions accepted by the Agent constructor,
-// minus the runtime-only callback fields that depend on pi-ai types.
-
+import { Agent } from "@mariozechner/pi-agent-core";
+import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { TSchema } from "@mariozechner/pi-ai";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { AgencyDb } from "../db/index.js";
 import { readMemoryFile } from "../memory/read.js";
-import { modelForRole, type ModelDescriptor } from "../providers/index.js";
+import { modelForRole, getEnvApiKey } from "../providers/index.js";
 import { loadSkillsForRole } from "../skills/loader.js";
 import { toolsForRole } from "../tools/registry.js";
-import type { AgentToolDef, ToolContext } from "../tools/types.js";
+import type { ToolContext } from "../tools/types.js";
 import { convertToLlm } from "./convert-to-llm.js";
 import { makeTransformContext } from "./transform-context.js";
-import type { AgencyMessage } from "./messages.js";
 
 export interface MakeAgentOpts {
 	role: string;
@@ -31,36 +20,6 @@ export interface MakeAgentOpts {
 	delegationId?: string;
 	threadId?: string;
 	emit: (eventType: string, payload: Record<string, unknown>) => void;
-}
-
-/** Wired tool ready for execution — mirrors the AgentTool shape without the TypeBox dependency. */
-export interface WiredTool {
-	name: string;
-	description: string;
-	execute(raw: unknown): Promise<unknown>;
-}
-
-/**
- * Plain configuration object returned by makeAgent.
- *
- * This is a serialisable snapshot that captures everything needed to construct a
- * live pi-agent-core Agent once the typebox runtime issue is resolved:
- *
- *   new Agent({
- *     initialState: { systemPrompt: cfg.systemPrompt, model: cfg.model },
- *     convertToLlm:      cfg.convertToLlm,
- *     transformContext:  cfg.transformContext,
- *   })
- *   agent.state.tools = cfg.tools;  // set after construction
- */
-export interface AgentConfig {
-	role: string;
-	sessionId: string;
-	systemPrompt: string;
-	model: ModelDescriptor;
-	tools: WiredTool[];
-	convertToLlm: (messages: AgencyMessage[]) => ReturnType<typeof convertToLlm>;
-	transformContext: (messages: AgencyMessage[]) => Promise<AgencyMessage[]>;
 }
 
 const buildSystemPrompt = (role: string, dataDir: string): string => {
@@ -86,19 +45,7 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 		.join("\n\n");
 };
 
-const wrapTool = (
-	t: AgentToolDef<unknown, unknown>,
-	toolCtx: ToolContext,
-): WiredTool => ({
-	name: t.name,
-	description: t.description,
-	execute: async (raw: unknown) => {
-		const parsed = t.input.parse(raw);
-		return t.execute(parsed, toolCtx);
-	},
-});
-
-export function makeAgent(opts: MakeAgentOpts): AgentConfig {
+export function makeAgent(opts: MakeAgentOpts): Agent {
 	const toolCtx: ToolContext = {
 		db: opts.db,
 		agentSlug: opts.role,
@@ -109,18 +56,46 @@ export function makeAgent(opts: MakeAgentOpts): AgentConfig {
 	};
 
 	const rawTools = toolsForRole(opts.role, opts.dataDir);
-	const tools = rawTools.map((t) => wrapTool(t, toolCtx));
-	const systemPrompt = buildSystemPrompt(opts.role, opts.dataDir);
 	const model = modelForRole(opts.role);
-	const transformContext = makeTransformContext({ dataDir: opts.dataDir, role: opts.role });
 
-	return {
-		role: opts.role,
-		sessionId: opts.sessionId,
-		systemPrompt,
-		model,
-		tools,
-		convertToLlm,
-		transformContext: transformContext as (messages: AgencyMessage[]) => Promise<AgencyMessage[]>,
-	};
+	const agentTools: AgentTool<TSchema>[] = rawTools.map((t) => ({
+		name: t.name,
+		label: t.name,
+		description: t.description,
+		parameters: t.schema as unknown as TSchema,
+		execute: async (
+			_toolCallId: string,
+			params: unknown,
+		): Promise<AgentToolResult<unknown>> => {
+			try {
+				const parsed = t.input.parse(params);
+				const value = await t.execute(parsed, toolCtx);
+				const text = typeof value === "string" ? value : JSON.stringify(value);
+				return {
+					content: [{ type: "text", text }],
+					details: value,
+				};
+			} catch (e) {
+				const message = e instanceof Error ? e.message : String(e);
+				return {
+					content: [{ type: "text", text: `Error: ${message}` }],
+					details: { error: message },
+					terminate: false,
+				};
+			}
+		},
+	}));
+
+	const transformContextFn = makeTransformContext({ dataDir: opts.dataDir, role: opts.role });
+
+	return new Agent({
+		initialState: {
+			systemPrompt: buildSystemPrompt(opts.role, opts.dataDir),
+			model,
+			tools: agentTools,
+		},
+		convertToLlm: convertToLlm as never,
+		transformContext: transformContextFn as never,
+		getApiKey: (provider: string) => getEnvApiKey(provider) ?? undefined,
+	});
 }

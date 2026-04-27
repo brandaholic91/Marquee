@@ -12,5 +12,8 @@
     "@biomejs/biome": "^1.9.4",
     "typescript": "^5.6.3"
   },
-  "engines": { "node": ">=22.0.0" }
+  "engines": { "node": ">=22.0.0" },
+  "overrides": {
+    "typebox": "1.1.24"
+  }
 }
