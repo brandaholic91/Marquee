@@ -20,7 +20,10 @@ export interface EmitMeta {
 
 export class Broker {
 	private ee = new EventEmitter();
-	constructor(private db: AgencyDb) {
+	constructor(
+		private db: AgencyDb,
+		private webhookUrl?: string,
+	) {
 		this.ee.setMaxListeners(0);
 	}
 
@@ -43,6 +46,14 @@ export class Broker {
 			payload,
 		};
 		this.ee.emit("event", evt);
+		if (this.webhookUrl) {
+			// fire-and-forget, never throws
+			fetch(this.webhookUrl, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(evt),
+			}).catch(() => {});
+		}
 		return evt;
 	}
 

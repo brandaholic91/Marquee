@@ -16,7 +16,8 @@ seedDefaultSkills(dataDir);
 
 async function main() {
 	const { db, close } = openDb(join(dataDir, "state.db"));
-	const broker = new Broker(db);
+	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
+	const broker = new Broker(db, webhookUrl);
 	const router = new AgentRouter(db, broker, dataDir);
 	router.boot();
 	recoverState(db, router);
