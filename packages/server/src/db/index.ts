@@ -1,13 +1,18 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import * as schema from "./schema";
+import * as schema from "./schema.js";
 
 export type AgencyDb = BetterSQLite3Database<typeof schema>;
 
-export function openDb(path: string): AgencyDb {
+export interface DbHandle {
+	db: AgencyDb;
+	close: () => void;
+}
+
+export function openDb(path: string): DbHandle {
 	const dir = dirname(path);
 	if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 	const sqlite = new Database(path);
@@ -16,5 +21,5 @@ export function openDb(path: string): AgencyDb {
 	sqlite.pragma("foreign_keys = ON");
 	const db = drizzle(sqlite, { schema });
 	migrate(db, { migrationsFolder: new URL("../../drizzle", import.meta.url).pathname });
-	return db;
+	return { db, close: () => sqlite.close() };
 }

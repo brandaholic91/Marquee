@@ -5,7 +5,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
-import * as schema from "./schema";
+import * as schema from "./schema.js";
 
 describe("schema", () => {
 	it("exports all expected tables", () => {

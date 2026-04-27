@@ -3,19 +3,23 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { openDb, type AgencyDb } from "./index";
-import { chatThreads } from "./schema";
+import { openDb, type AgencyDb } from "./index.js";
+import { chatThreads } from "./schema.js";
 
 describe("openDb", () => {
 	let dir: string;
 	let db: AgencyDb;
+	let close: () => void;
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "agency-test-"));
-		db = openDb(join(dir, "test.db"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
 	});
 
 	afterEach(() => {
+		close();
 		rmSync(dir, { recursive: true, force: true });
 	});
 
