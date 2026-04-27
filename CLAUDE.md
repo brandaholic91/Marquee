@@ -164,10 +164,39 @@ Főbb event típusok: `brief_proposed`, `delegation_created`, `deliverable_submi
         └── rev_001.md
 ```
 
-## v0.1 ismert hiányosságok (v0.2-re halasztva)
+## v0.2 állapot (aktuális)
 
-- **Pipeline view:** a nav gomb no-op, deliverable lista nincs megvalósítva
-- **Eval tab:** placeholder, `GET /api/deliverables/:id/eval` endpoint hiányzik
-- **Revisions tab:** csak az aktuális revíziót mutatja, listázó endpoint hiányzik
-- **Memory szerkesztés:** read-only UI, szerkesztés csak agent proposal-on keresztül
-- **Skills:** `dataDir/skills/` mappa üres — az agenteknek nincs role-specifikus instrukciójuk, ezért a viselkedésük nem konzisztens prompt nélkül
+Jelenlegi verzió: **v0.2.0**
+
+### Aktív role-ok (8)
+
+director, content-lead, copywriter, eval-judge (warm/transient, v0.1-ből)
+distribution-lead, insights-lead, social-manager, seo-analyst (v0.2-ben hozzáadva)
+
+### Aktív deliverable típusok
+
+blog_post, linkedin_post, landing_page, seo_report
+
+### Új endpointok (v0.2)
+
+- `GET /api/deliverables/:id/revisions` — revision lista
+- `GET /api/deliverables/:id/eval` — eval rekord
+- `PATCH /api/deliverables/:id/status` — státuszváltás (kanban)
+- `GET /api/memory/files` — memory fájl lista
+- `GET /api/memory/:filename` — memory fájl olvasása
+- `PUT /api/memory/:filename` — memory fájl írása (inline editor)
+
+### n8n integráció
+
+- Outbound: `N8N_WEBHOOK_URL` env var → minden broker event POST-olódik n8n-nek
+- Inbound: REST API védve `MARQUEE_API_TOKEN` Bearer token-nel (ha env var be van állítva)
+
+### v0.3-ra halasztva
+
+- Budget widget + Quality trend widget
+- OpenRouter / Helicone integráció
+- Playwright E2E
+- Paid Specialist, Repurposer, Analytics Analyst
+- Memory auto-commit cron (02:00)
+- Revision diff view
+- Cron rutinok (morning_brief, weekly_report)
