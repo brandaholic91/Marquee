@@ -2,10 +2,10 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { openDb } from "../src/db/index.js";
-import { Broker } from "../src/broker/event-bus.js";
-import { AgentRouter } from "../src/broker/router.js";
-import { briefs, deliverables } from "../src/db/schema.js";
+import { openDb } from "../db/index.js";
+import { Broker } from "../broker/event-bus.js";
+import { AgentRouter } from "../broker/router.js";
+import { briefs, deliverables } from "../db/schema.js";
 
 const dataDir = mkdtempSync(join(tmpdir(), "agency-smoke-"));
 console.log(`data dir: ${dataDir}`);
