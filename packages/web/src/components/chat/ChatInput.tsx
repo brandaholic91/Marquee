@@ -1,4 +1,5 @@
-import { useRef, KeyboardEvent } from "react";
+import { useRef } from "react";
+import type { KeyboardEvent } from "react";
 import { Button } from "../ui/button";
 
 interface ChatInputProps {
