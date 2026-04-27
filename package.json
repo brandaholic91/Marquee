@@ -1,8 +1,11 @@
 {
   "name": "marquee-monorepo",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
+    "dev": "concurrently --names server,web --prefix-colors cyan,magenta \"npm run dev --workspace=packages/server\" \"npm run dev --workspace=packages/web\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces --if-present",
     "check": "biome check .",
@@ -13,9 +16,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "concurrently": "^9.2.1",
     "typescript": "^5.6.3"
   },
-  "engines": { "node": ">=22.0.0" },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "overrides": {
     "typebox": "1.1.24"
   }
