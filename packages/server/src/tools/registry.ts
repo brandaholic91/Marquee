@@ -17,6 +17,14 @@ export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknow
 			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch] as never;
 		case "eval-judge":
 			return [submitEvalReport, readMemory, readDeliverable] as never;
+		case "distribution-lead":
+			return [delegateToSpecialist, submitToDirector, readMemory, requestInput] as never;
+		case "insights-lead":
+			return [delegateToSpecialist, submitToDirector, readMemory, requestInput] as never;
+		case "social-manager":
+			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch] as never;
+		case "seo-analyst":
+			return [submitDeliverable, respondToLead, readMemory, webFetch] as never;
 		default:
 			throw new Error(`unknown role: ${role}`);
 	}

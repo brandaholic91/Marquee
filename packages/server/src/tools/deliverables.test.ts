@@ -80,3 +80,50 @@ describe("deliverable tools", () => {
 		expect(result.title).toBe("Read Test");
 	});
 });
+
+describe("submit_deliverable — new deliverable types", () => {
+	let dir: string;
+	let close: () => void;
+	let db: AgencyDb;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "agency-del-test-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+		// seed a delegation so delegationId is valid
+		db.insert(delegations).values({
+			id: "dlg-1", fromAgent: "distribution-lead", toAgent: "social-manager",
+			status: "in_progress", payloadJson: {} as never,
+		}).run();
+	});
+
+	afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+	it("accepts linkedin_post type", async () => {
+		const tool = makeSubmitDeliverable(dir);
+		const result = await tool.execute(
+			{ type: "linkedin_post", title: "PLG metrics post", contentMd: "A".repeat(50) },
+			{ db, agentSlug: "social-manager", agentSessionId: randomUUID(), delegationId: "dlg-1", emit: vi.fn() },
+		);
+		expect(result.deliverableId).toBeDefined();
+	});
+
+	it("accepts landing_page type", async () => {
+		const tool = makeSubmitDeliverable(dir);
+		const result = await tool.execute(
+			{ type: "landing_page", title: "Stackly PLG Landing", contentMd: "B".repeat(50) },
+			{ db, agentSlug: "copywriter", agentSessionId: randomUUID(), delegationId: "dlg-1", emit: vi.fn() },
+		);
+		expect(result.deliverableId).toBeDefined();
+	});
+
+	it("accepts seo_report type", async () => {
+		const tool = makeSubmitDeliverable(dir);
+		const result = await tool.execute(
+			{ type: "seo_report", title: "PLG keyword research", contentMd: "C".repeat(50) },
+			{ db, agentSlug: "seo-analyst", agentSessionId: randomUUID(), delegationId: "dlg-1", emit: vi.fn() },
+		);
+		expect(result.deliverableId).toBeDefined();
+	});
+});

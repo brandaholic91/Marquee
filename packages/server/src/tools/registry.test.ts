@@ -31,4 +31,31 @@ describe("tool registry — hierarchy enforcement", () => {
 		expect(names).toContain("read_deliverable");
 		expect(names).not.toContain("submit_deliverable");
 	});
+
+	it("distribution-lead has delegate_to_specialist and submit_to_director tools", () => {
+		const tools = toolsForRole("distribution-lead", "/tmp");
+		const names = tools.map((t) => t.name);
+		expect(names).toContain("delegate_to_specialist");
+		expect(names).toContain("submit_to_director");
+		expect(names).not.toContain("delegate_to_lead");
+	});
+
+	it("social-manager has submit_deliverable but not delegate_to_specialist", () => {
+		const tools = toolsForRole("social-manager", "/tmp");
+		const names = tools.map((t) => t.name);
+		expect(names).toContain("submit_deliverable");
+		expect(names).not.toContain("delegate_to_specialist");
+	});
+
+	it("seo-analyst has submit_deliverable but not delegate_to_specialist", () => {
+		const tools = toolsForRole("seo-analyst", "/tmp");
+		const names = tools.map((t) => t.name);
+		expect(names).toContain("submit_deliverable");
+		expect(names).not.toContain("delegate_to_specialist");
+	});
+
+	it("insights-lead has delegate_to_specialist", () => {
+		const tools = toolsForRole("insights-lead", "/tmp");
+		expect(tools.map((t) => t.name)).toContain("delegate_to_specialist");
+	});
 });
