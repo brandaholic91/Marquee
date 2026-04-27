@@ -47,4 +47,41 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 			.where(eq(evals.revisionId, d.currentRevisionId))
 			.get() ?? null;
 	});
+
+	const VALID_TRANSITIONS: Record<string, string[]> = {
+		drafting: ["awaiting_eval"],
+		awaiting_eval: ["awaiting_approval", "drafting"],
+		awaiting_approval: ["shipped", "drafting"],
+		shipped: ["archived"],
+		archived: [],
+	};
+
+	app.patch<{ Params: { id: string }; Body: { status: string } }>(
+		"/api/deliverables/:id/status",
+		async (req, reply) => {
+			const d = opts.db
+				.select()
+				.from(deliverables)
+				.where(eq(deliverables.id, req.params.id))
+				.get();
+			if (!d) return reply.code(404).send({ error: "not found" });
+			const allowed = VALID_TRANSITIONS[d.status] ?? [];
+			if (!allowed.includes(req.body.status)) {
+				return reply.code(400).send({
+					error: `cannot transition ${d.status} → ${req.body.status}`,
+				});
+			}
+			opts.db
+				.update(deliverables)
+				.set({ status: req.body.status as typeof d.status, updatedAt: new Date() })
+				.where(eq(deliverables.id, req.params.id))
+				.run();
+			opts.broker.emit("deliverable_status_changed", {
+				deliverableId: req.params.id,
+				from: d.status,
+				to: req.body.status,
+			});
+			return { ok: true };
+		},
+	);
 }
