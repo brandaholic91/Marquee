@@ -11,15 +11,18 @@ export function App() {
   const setView = useAgencyStore((s) => s.setView);
 
   useEffect(() => {
-    if (currentView !== "home") return;
+    let cancelled = false;
     fetch("/api/memory/files")
       .then((r) => r.json())
       .then((files: Array<{ name: string }>) => {
+        if (cancelled) return;
         const hasProfile = files.some((f) => f.name === "client_profile.md");
         if (!hasProfile) setView("onboarding");
       })
       .catch(() => {}); // fail silently — show home on error
-  }, []); // run once on mount
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount; setView is a stable Zustand setter
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
