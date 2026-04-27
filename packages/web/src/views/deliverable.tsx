@@ -344,7 +344,6 @@ interface EvalTabProps {
 }
 
 function EvalTab({ evalReport, revision }: EvalTabProps) {
-  // TODO: wire to GET /api/deliverables/:id/eval when endpoint is available
   if (!evalReport) {
     return (
       <div>

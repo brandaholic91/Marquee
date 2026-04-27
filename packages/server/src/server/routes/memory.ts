@@ -66,10 +66,14 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 			writeFileSync(filePath, content, "utf8");
 			try {
 				const git = simpleGit(opts.dataDir);
-				await git.add(filePath);
-				await git.commit(`memory: update ${name}.md`, [filePath]);
+				const isRepo = await git.checkIsRepo().catch(() => false);
+				if (isRepo) {
+					await git.add(filePath);
+					await git.commit(`memory: update ${name}.md`, [filePath]);
+				}
 			} catch {
-				// git not initialised in test env — ignore
+				try { await simpleGit(opts.dataDir).checkout([filePath]); } catch { /* best effort */ }
+				return reply.code(500).send({ error: "git commit failed, change reverted" });
 			}
 			opts.broker.emit("memory_updated", { file: `${name}.md`, by: "human" });
 			return { ok: true };

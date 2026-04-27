@@ -92,3 +92,46 @@ describe("PUT /api/memory/:filename", () => {
 		cleanup();
 	});
 });
+
+describe("MARQUEE_API_TOKEN auth guard", () => {
+	it("returns 401 on POST /api/briefs when token set and no Authorization header", async () => {
+		process.env.MARQUEE_API_TOKEN = "test-secret";
+		const { app, cleanup } = await makeTestApp();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/briefs",
+			headers: { "content-type": "application/json" },
+			payload: { contentMd: "test brief" },
+		});
+		expect(res.statusCode).toBe(401);
+		delete process.env.MARQUEE_API_TOKEN;
+		cleanup();
+	});
+
+	it("passes through when correct Bearer token provided", async () => {
+		process.env.MARQUEE_API_TOKEN = "test-secret";
+		const { app, cleanup } = await makeTestApp();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/briefs",
+			headers: {
+				"content-type": "application/json",
+				"authorization": "Bearer test-secret",
+			},
+			payload: { contentMd: "test brief" },
+		});
+		// 200 or other non-401 response means auth passed
+		expect(res.statusCode).not.toBe(401);
+		delete process.env.MARQUEE_API_TOKEN;
+		cleanup();
+	});
+
+	it("passes through GET requests without token", async () => {
+		process.env.MARQUEE_API_TOKEN = "test-secret";
+		const { app, cleanup } = await makeTestApp();
+		const res = await app.inject({ method: "GET", url: "/api/memory/files" });
+		expect(res.statusCode).toBe(200);
+		delete process.env.MARQUEE_API_TOKEN;
+		cleanup();
+	});
+});
