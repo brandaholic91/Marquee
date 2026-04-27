@@ -1,4 +1,4 @@
-import { Avatar } from "../ui/Avatar.js";
+import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
 
@@ -33,6 +33,7 @@ export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarP
     if (id === "home" || id === "memory") {
       setView(id);
     }
+    // "pipeline" view added in Task 46 (App routing)
   }
 
   if (collapsed) {
@@ -91,7 +92,7 @@ export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarP
             key={t.slug}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
           >
-            <Avatar who={t.slug as Parameters<typeof Avatar>[0]["who"]} />
+            <Avatar who={t.slug as AvatarWho} />
             <Bulb active />
           </div>
         ))}

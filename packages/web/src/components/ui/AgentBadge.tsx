@@ -8,7 +8,7 @@ export interface AgentBadgeProps {
 export function AgentBadge({ slug, active }: AgentBadgeProps) {
   return (
     <span
-      className="badge-agent"
+      className="badge badge-agent"
       style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
     >
       {active != null && <Bulb active={active} />}
