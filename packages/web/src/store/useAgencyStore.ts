@@ -19,7 +19,7 @@ export const useAgencyStore = create<AgencyState>((set) => ({
   currentView: "home",
   selectedDeliverableId: null,
   selectedMemoryFile: null,
-  setActiveThread: (id) => set({ activeThreadId: id, drawerOpen: id !== null }),
+  setActiveThread: (id) => set({ activeThreadId: id }),
   setDrawerOpen: (open) => set({ drawerOpen: open }),
   setView: (view) => set({ currentView: view }),
   setSelectedDeliverable: (id) => set({ selectedDeliverableId: id, currentView: "deliverable" }),

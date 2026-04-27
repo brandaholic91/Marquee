@@ -4,7 +4,7 @@ import { agencyEvents } from "../lib/sse.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { Badge, AgentBadge } from "../components/ui/index.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
-import { ChatDrawer } from "../components/chat/ChatDrawer.js";
+
 
 // ---- Types ----
 
@@ -442,7 +442,7 @@ export function HomeView() {
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-3)", fontSize: 14 }}>
           Loading…
         </main>
-        <ChatDrawer />
+
       </div>
     );
   }
@@ -466,7 +466,7 @@ export function HomeView() {
         </div>
       </main>
 
-      <ChatDrawer />
+
     </div>
   );
 }
