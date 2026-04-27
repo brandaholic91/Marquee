@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
@@ -29,17 +29,18 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 			.select()
 			.from(deliverableRevisions)
 			.where(eq(deliverableRevisions.deliverableId, req.params.id))
-			.orderBy(deliverableRevisions.createdAt)
+			.orderBy(asc(deliverableRevisions.createdAt))
 			.all();
 	});
 
-	app.get<{ Params: { id: string } }>("/api/deliverables/:id/eval", async (req) => {
+	app.get<{ Params: { id: string } }>("/api/deliverables/:id/eval", async (req, reply) => {
 		const d = opts.db
 			.select()
 			.from(deliverables)
 			.where(eq(deliverables.id, req.params.id))
 			.get();
-		if (!d || !d.currentRevisionId) return null;
+		if (!d) return reply.code(404).send({ error: "not found" });
+		if (!d.currentRevisionId) return null;
 		return opts.db
 			.select()
 			.from(evals)
