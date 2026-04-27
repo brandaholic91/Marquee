@@ -8,6 +8,7 @@ import { registerApprovalRoutes } from "./routes/approvals.js";
 import { registerMemoryRoutes } from "./routes/memory.js";
 import { registerDeliverableRoutes } from "./routes/deliverables.js";
 import { registerThreadRoutes } from "./routes/threads.js";
+import { registerHealthRoute } from "./routes/dashboard.js";
 import { registerSseRoute } from "./sse.js";
 
 export interface ServerOpts {
@@ -27,6 +28,7 @@ export async function buildServer(opts: ServerOpts) {
 	} catch {
 		// ignore if webRoot doesn't exist in test environment
 	}
+	registerHealthRoute(app);
 	registerThreadRoutes(app, opts);
 	registerBriefRoutes(app, opts);
 	registerMessageRoutes(app, opts);
