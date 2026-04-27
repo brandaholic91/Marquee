@@ -14,6 +14,7 @@ interface Deliverable {
   status: string;
   type?: string;
   currentRevisionId?: string;
+  agentSlug?: string;
 }
 
 interface Thread {
@@ -198,12 +199,12 @@ function ApprovalsWidget({
                     <Badge kind="cream" mono>{d.type}</Badge>
                   )}
                   {d.type && <span style={{ color: "var(--ink-3)", fontSize: 11 }}>·</span>}
-                  <AgentBadge slug="copywriter" active />
+                  {d.agentSlug && <AgentBadge slug={d.agentSlug} active />}
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
                     className="btn btn-primary btn-sm"
-                    onClick={() => api.approvals.decide(d.id, "approved").then(onRefresh)}
+                    onClick={() => api.approvals.decide(d.id, "approved").then(onRefresh).catch(console.error)}
                   >
                     Approve
                   </button>
@@ -243,12 +244,12 @@ function LiveFeedWidget({ events }: { events: LiveEvent[] }) {
             Waiting for activity…
           </div>
         ) : (
-          [...events].reverse().map((ev, i) => {
+          events.map((ev, i) => {
             const ts = new Date(ev.ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
             const active = Boolean(ev.agentSlug);
             return (
               <div
-                key={i}
+                key={ev.ts + '-' + ev.type + '-' + i}
                 style={{
                   padding: "6px 18px",
                   borderBottom: i < events.length - 1 ? "1px solid rgba(226, 219, 203, 0.5)" : "none",
@@ -371,8 +372,16 @@ export function HomeView() {
   const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [showBriefForm, setShowBriefForm] = useState(false);
+  const refreshPendingRef = useRef(false);
 
-  const refresh = () => api.snapshot().then(setSnapshot);
+  const refresh = () => {
+    if (refreshPendingRef.current) return;
+    refreshPendingRef.current = true;
+    api.snapshot().then((data) => {
+      setSnapshot(data as SnapshotData);
+      refreshPendingRef.current = false;
+    });
+  };
 
   useEffect(() => {
     refresh();
