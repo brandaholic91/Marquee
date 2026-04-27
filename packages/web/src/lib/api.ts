@@ -48,8 +48,26 @@ export const api = {
     get: (id: string) => fetch(`/api/deliverables/${id}`).then(json),
     revision: (id: string, revId: string) =>
       fetch(`/api/deliverables/${id}/revisions/${revId}`).then(json),
+    revisions: (id: string) =>
+      fetch(`/api/deliverables/${id}/revisions`).then(json),
+    eval: (id: string) =>
+      fetch(`/api/deliverables/${id}/eval`).then(json),
+    patchStatus: (id: string, status: string) =>
+      fetch(`/api/deliverables/${id}/status`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      }).then(json),
   },
   memory: {
+    files: () => fetch("/api/memory/files").then(json),
+    get: (filename: string) => fetch(`/api/memory/${filename}`).then(json),
+    put: (filename: string, content: string) =>
+      fetch(`/api/memory/${filename}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content }),
+      }).then(json),
     proposals: () => fetch("/api/memory-proposals").then(json),
     approve: (id: string) =>
       fetch(`/api/memory-proposals/${id}/approve`, {
