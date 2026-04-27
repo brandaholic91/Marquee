@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "../lib/api.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { AgentBadge } from "../components/ui/index.js";
@@ -265,7 +265,7 @@ function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
     <div style={{ padding: "24px 32px", overflow: "auto" }}>
       <article className="card" style={{ background: "var(--white)", padding: "40px 48px", maxWidth: 720 }}>
         <div className="caption" style={{ marginBottom: 8, color: "var(--ink-3)" }}>
-          MARQUEE · DRAFT
+          {`${deliverable.type?.replace(/_/g, " ").toUpperCase() ?? "DRAFT"} · ${deliverable.status.toUpperCase()}`}
         </div>
         <h1 className="headline-lg" style={{ margin: 0 }}>
           {revision?.title ?? deliverable.title}
@@ -323,9 +323,8 @@ function SysLine({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ThreadTab({ deliverableId }: { deliverableId: string }) {
+function ThreadTab({ deliverableId: _deliverableId }: { deliverableId: string }) {
   // No thread endpoint exists in api.ts for deliverables — show placeholder with static design
-  void deliverableId; // acknowledged: not used until API supports it
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -345,6 +344,7 @@ interface EvalTabProps {
 }
 
 function EvalTab({ evalReport, revision }: EvalTabProps) {
+  // TODO: wire to GET /api/deliverables/:id/eval when endpoint is available
   if (!evalReport) {
     return (
       <div>
@@ -436,6 +436,7 @@ interface RevisionsTabProps {
 }
 
 function RevisionsTab({ currentRevisionId, allRevisions }: RevisionsTabProps) {
+  // TODO: fetch all revisions from GET /api/deliverables/:id/revisions when available
   if (allRevisions.length === 0) {
     return (
       <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
@@ -551,7 +552,7 @@ export function DeliverableView() {
   const [evalReport] = useState<EvalReport | null>(null);
   const [allRevisions, setAllRevisions] = useState<RevisionEntry[]>([]);
 
-  function refresh() {
+  const refresh = useCallback(() => {
     if (!selectedDeliverableId) return;
     api.deliverables.get(selectedDeliverableId).then((d: DeliverableData) => {
       setDeliverable(d);
@@ -565,12 +566,11 @@ export function DeliverableView() {
           .catch(() => setRevision(null));
       }
     }).catch(() => setDeliverable(null));
-  }
+  }, [selectedDeliverableId]);
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeliverableId]);
+  }, [refresh]);
 
   if (!selectedDeliverableId || !deliverable) {
     return (
