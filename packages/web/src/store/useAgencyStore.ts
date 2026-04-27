@@ -3,7 +3,7 @@ import { create } from "zustand";
 interface AgencyState {
   activeThreadId: string | null;
   drawerOpen: boolean;
-  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding";
+  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding" | "pipeline";
   selectedDeliverableId: string | null;
   selectedMemoryFile: string | null;
   setActiveThread: (id: string | null) => void;

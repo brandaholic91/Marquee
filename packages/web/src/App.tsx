@@ -5,6 +5,7 @@ import { OnboardingView } from "./views/onboarding";
 import { DeliverableView } from "./views/deliverable";
 import { MemoryView } from "./views/memory";
 import { ChatFullView } from "./views/chat-full";
+import { PipelineView } from "./views/pipeline";
 
 export function App() {
   const currentView = useAgencyStore((s) => s.currentView);
@@ -31,6 +32,7 @@ export function App() {
       {currentView === "deliverable" && <DeliverableView />}
       {currentView === "memory" && <MemoryView />}
       {currentView === "chat" && <ChatFullView />}
+      {currentView === "pipeline" && <PipelineView />}
     </div>
   );
 }

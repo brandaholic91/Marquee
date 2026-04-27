@@ -32,10 +32,9 @@ export function Sidebar({ activeNav, collapsed: initialCollapsed = false, active
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   function handleNav(id: NavId) {
-    if (id === "home" || id === "memory") {
+    if (id === "home" || id === "memory" || id === "pipeline") {
       setView(id);
     }
-    // "pipeline" view added in Task 46 (App routing)
   }
 
   if (collapsed) {
