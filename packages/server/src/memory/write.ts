@@ -1,6 +1,6 @@
 import { mkdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import simpleGit from "simple-git";
+import { simpleGit } from "simple-git";
 
 export async function writeMemoryFile(dataDir: string, name: string, content: string): Promise<void> {
 	const memDir = join(dataDir, "memory");
