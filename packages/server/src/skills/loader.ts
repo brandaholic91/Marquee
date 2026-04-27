@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, existsSync as fsExists, mkdirSync as fsMkdir, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import { interpolate } from "../memory/template.js";
 
@@ -31,4 +32,12 @@ export function loadSkillsForRole(dataDir: string, role: string): SkillRecipe[] 
 		return [];
 	}
 	return files.map((f) => loadSkill(dataDir, role, f.replace(/\.md$/, "")));
+}
+
+export function seedDefaultSkills(dataDir: string): void {
+	const defaultsDir = join(dirname(fileURLToPath(import.meta.url)), "defaults");
+	const targetDir = join(dataDir, "skills");
+	if (!fsExists(defaultsDir)) return;
+	if (!fsExists(targetDir)) fsMkdir(targetDir, { recursive: true });
+	cpSync(defaultsDir, targetDir, { recursive: true, force: false });
 }

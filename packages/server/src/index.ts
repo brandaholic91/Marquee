@@ -6,10 +6,13 @@ import { AgentRouter } from "./broker/router.js";
 import { recoverState } from "./broker/recovery.js";
 import { EvalTrigger } from "./broker/eval-trigger.js";
 import { buildServer } from "./server/index.js";
+import { seedDefaultSkills } from "./skills/loader.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
 const port = Number(process.env.PORT ?? 7892);
+
+seedDefaultSkills(dataDir);
 
 async function main() {
 	const { db, close } = openDb(join(dataDir, "state.db"));
