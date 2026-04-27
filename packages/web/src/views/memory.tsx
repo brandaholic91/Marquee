@@ -415,7 +415,7 @@ export function MemoryView() {
   return (
     <div style={{
       display: "flex",
-      minHeight: "calc(100vh - 36px)",
+      height: "100%",
       background: "var(--cream)",
     }}>
       <Sidebar activeNav="memory" />

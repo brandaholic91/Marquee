@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
@@ -26,8 +27,9 @@ export interface SidebarProps {
   activeAgents?: string[];
 }
 
-export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarProps) {
+export function Sidebar({ activeNav, collapsed: initialCollapsed = false, activeAgents }: SidebarProps) {
   const setView = useAgencyStore((s) => s.setView);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   function handleNav(id: NavId) {
     if (id === "home" || id === "memory") {
@@ -49,9 +51,15 @@ export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarP
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "20px 0",
+        padding: "12px 0 20px",
         gap: 18,
+        flexShrink: 0,
       }}>
+        <button
+          onClick={() => setCollapsed(false)}
+          title="Expand sidebar"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 16, padding: "4px 0", lineHeight: 1 }}
+        >›</button>
         <div
           className="mono"
           style={{
@@ -108,9 +116,10 @@ export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarP
       display: "flex",
       flexDirection: "column",
       padding: "20px 0",
+      flexShrink: 0,
     }}>
-      {/* Logo */}
-      <div style={{ padding: "0 20px 20px", borderBottom: "1px solid var(--rule)" }}>
+      {/* Logo + collapse button */}
+      <div style={{ padding: "0 20px 20px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 22,
@@ -133,8 +142,13 @@ export function Sidebar({ activeNav, collapsed = false, activeAgents }: SidebarP
             MARQUEE
           </div>
         </div>
-        <div className="body-sm" style={{ marginTop: 6 }}>your little marketing team</div>
+        <button
+          onClick={() => setCollapsed(true)}
+          title="Collapse sidebar"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 16, padding: "4px 6px", lineHeight: 1, marginTop: -4 }}
+        >‹</button>
       </div>
+      <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>your little marketing team</div>
 
       {/* Nav */}
       <nav style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>

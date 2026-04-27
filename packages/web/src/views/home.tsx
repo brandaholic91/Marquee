@@ -437,7 +437,7 @@ export function HomeView() {
 
   if (!snapshot) {
     return (
-      <div style={{ display: "flex", minHeight: "calc(100vh - 36px)", background: "var(--cream)" }}>
+      <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
         <Sidebar activeNav="home" />
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-3)", fontSize: 14 }}>
           Loading…
@@ -448,7 +448,7 @@ export function HomeView() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "calc(100vh - 36px)", background: "var(--cream)" }}>
+    <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
       <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
 
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>

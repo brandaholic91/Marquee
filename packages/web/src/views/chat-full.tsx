@@ -154,8 +154,10 @@ function CMsg({
     ? (who as AvatarWho)
     : "director";
 
+  const isHuman = who === "human";
+
   return (
-    <div style={{ display: "flex", gap: 14 }}>
+    <div style={{ display: "flex", gap: 14, flexDirection: isHuman ? "row-reverse" : "row" }}>
       <Avatar who={safeWho} size="md" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -164,6 +166,7 @@ function CMsg({
             alignItems: "center",
             gap: 8,
             marginBottom: 4,
+            flexDirection: isHuman ? "row-reverse" : "row",
           }}
         >
           <span style={{ fontSize: 13, fontWeight: 600 }}>{name}</span>
@@ -177,7 +180,7 @@ function CMsg({
             </span>
           )}
         </div>
-        <div className="body-md">{children}</div>
+        <div className="body-md" style={isHuman ? { textAlign: "right" } : undefined}>{children}</div>
       </div>
     </div>
   );
@@ -558,7 +561,7 @@ export function ChatFullView() {
       <div
         style={{
           display: "flex",
-          minHeight: "calc(100vh - 36px)",
+          height: "100%",
           background: "var(--cream)",
         }}
       >
@@ -583,7 +586,7 @@ export function ChatFullView() {
     <div
       style={{
         display: "flex",
-        minHeight: "calc(100vh - 36px)",
+        height: "100%",
         background: "var(--cream)",
       }}
     >
