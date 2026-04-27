@@ -37,6 +37,25 @@ describe("dashboard queries", () => {
 		expect(q.approvalsQueue(db)).toHaveLength(1);
 	});
 
+	it("pipelineCounts returns correct count per status", () => {
+		const dlgId = randomUUID();
+		db.insert(delegations).values({
+			id: dlgId, fromAgent: "director", toAgent: "content-lead",
+			status: "complete", payloadJson: {} as never,
+		}).run();
+		db.insert(deliverables).values({
+			id: randomUUID(), delegationId: dlgId, type: "blog_post",
+			title: "Draft 1", status: "drafting",
+		}).run();
+		db.insert(deliverables).values({
+			id: randomUUID(), delegationId: dlgId, type: "blog_post",
+			title: "Draft 2", status: "drafting",
+		}).run();
+		const rows = q.pipelineCounts(db);
+		const drafting = rows.find((r) => r.status === "drafting");
+		expect(drafting?.count).toBe(2);
+	});
+
 	it("topSpenderToday returns agent with highest cost in current day", () => {
 		const sId = randomUUID();
 		db.insert(agentSessions).values({

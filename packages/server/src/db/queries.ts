@@ -1,4 +1,4 @@
-import { desc, eq, gte, isNull, sum } from "drizzle-orm";
+import { count, desc, eq, gte, isNull, sum } from "drizzle-orm";
 import type { AgencyDb } from "./index.js";
 import { agentSessions, deliverables, events, turns } from "./schema.js";
 
@@ -7,7 +7,7 @@ export const approvalsQueue = (db: AgencyDb) =>
 
 export const pipelineCounts = (db: AgencyDb) =>
 	db
-		.select({ status: deliverables.status, count: sum(deliverables.id).mapWith(Number) })
+		.select({ status: deliverables.status, count: count() })
 		.from(deliverables)
 		.groupBy(deliverables.status)
 		.all();
@@ -23,7 +23,7 @@ export const activeAgents = (db: AgencyDb) =>
 
 export const topSpenderToday = (db: AgencyDb) => {
 	const dayStart = new Date();
-	dayStart.setHours(0, 0, 0, 0);
+	dayStart.setUTCHours(0, 0, 0, 0);
 	const rows = db
 		.select({
 			agentSlug: agentSessions.agentSlug,
