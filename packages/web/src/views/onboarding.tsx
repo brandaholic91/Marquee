@@ -136,7 +136,7 @@ function MemoryProposalCard({
         <div
           className="card"
           style={{
-            border: "1px solid var(--amber, #D97706)",
+            border: "2px solid var(--secondary)",
             borderRadius: 6,
             background: "var(--white)",
             overflow: "hidden",
@@ -149,14 +149,14 @@ function MemoryProposalCard({
               alignItems: "center",
               gap: 8,
               borderBottom: "1px solid var(--rule)",
-              background: "var(--amber-soft, #FEF3C7)",
+              background: "var(--secondary-soft)",
             }}
           >
             <span
               className="mono"
               style={{
                 fontSize: 11,
-                color: "var(--amber-deep, #92400E)",
+                color: "var(--warning-deep)",
                 letterSpacing: "0.08em",
                 fontWeight: 600,
               }}
@@ -165,7 +165,7 @@ function MemoryProposalCard({
             </span>
             <span
               className="body-sm"
-              style={{ color: "var(--amber-deep, #92400E)", marginLeft: "auto" }}
+              style={{ color: "var(--warning-deep)", marginLeft: "auto" }}
             >
               director · just now
             </span>

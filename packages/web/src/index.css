@@ -132,9 +132,46 @@ input {
 .avatar-analytics        { background: #BFCDC2; color: #2C5246; }
 
 /* Type utilities */
-.body-sm { font: 400 13px/1.5 var(--font-sans); color: var(--ink-2); }
-.caption { font: 500 12px/1.4 var(--font-sans); color: var(--ink-3); letter-spacing: 0.02em; text-transform: uppercase; }
-.mono { font-family: var(--font-mono); }
+.display-lg  { font: 600 40px/1.15 var(--font-serif); letter-spacing: -0.015em; }
+.headline-lg { font: 400 32px/1.18 var(--font-serif); letter-spacing: -0.015em; }
+.headline-md { font: 400 24px/1.25 var(--font-serif); letter-spacing: -0.01em; }
+.title-md    { font: 600 18px/1.35 var(--font-sans); letter-spacing: -0.005em; }
+.title-sm    { font: 600 15px/1.35 var(--font-sans); }
+.body-md     { font: 400 15px/1.55 var(--font-sans); }
+.body-sm     { font: 400 13px/1.5 var(--font-sans); color: var(--ink-2); }
+.caption     { font: 500 12px/1.4 var(--font-sans); color: var(--ink-3); letter-spacing: 0.02em; text-transform: uppercase; }
+.mono        { font-family: var(--font-mono); }
+.muted       { color: var(--ink-3); }
+.dim         { color: var(--ink-2); }
+
+/* Cards */
+.card          { background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-card); }
+.card-elevated { background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+
+/* Buttons */
+.btn         { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+               height: 32px; padding: 0 14px; border-radius: var(--r-btn);
+               font: 500 13px/1 var(--font-sans); transition: background 120ms; cursor: pointer; }
+.btn-primary   { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--white); color: var(--ink-1); border: 1px solid var(--rule-strong); }
+.btn-secondary:hover { background: var(--parchment); }
+.btn-ghost     { color: var(--ink-2); }
+.btn-ghost:hover { color: var(--ink-1); background: rgba(40,38,34,0.05); }
+.btn-sm        { height: 26px; padding: 0 10px; font-size: 12px; }
+
+/* Hairline */
+.hr { height: 1px; background: var(--rule); border: 0; margin: 0; }
+
+/* Chat textarea */
+.textarea-chat {
+  width: 100%; min-height: 80px; padding: 14px 16px;
+  background: var(--white); border: 1px solid var(--rule-strong);
+  border-radius: var(--r-card); resize: none;
+  font: 400 15px/1.5 var(--font-sans); color: var(--ink-1); outline: none;
+}
+.textarea-chat:focus { border-color: var(--ink-2); }
+.textarea-chat::placeholder { color: var(--ink-3); }
 
 /* Scrollbar styling */
 .scroll {
