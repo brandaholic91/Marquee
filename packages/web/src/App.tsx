@@ -1,41 +1,33 @@
+import { useEffect } from "react";
 import { useAgencyStore } from "./store/useAgencyStore";
 import { HomeView } from "./views/home";
 import { OnboardingView } from "./views/onboarding";
 import { DeliverableView } from "./views/deliverable";
 import { MemoryView } from "./views/memory";
-import { ChatDrawer } from "./components/chat/ChatDrawer";
+import { ChatFullView } from "./views/chat-full";
 
 export function App() {
-  const { currentView, setView } = useAgencyStore();
+  const currentView = useAgencyStore((s) => s.currentView);
+  const setView = useAgencyStore((s) => s.setView);
+
+  useEffect(() => {
+    if (currentView !== "home") return;
+    fetch("/api/memory/files")
+      .then((r) => r.json())
+      .then((files: Array<{ name: string }>) => {
+        const hasProfile = files.some((f) => f.name === "client_profile.md");
+        if (!hasProfile) setView("onboarding");
+      })
+      .catch(() => {}); // fail silently — show home on error
+  }, []); // run once on mount
 
   return (
-    <div className="h-screen flex flex-col bg-[hsl(var(--background))] overflow-hidden">
-      {/* Nav */}
-      <nav className="flex items-center gap-4 px-6 py-3 border-b border-[hsl(var(--border))]">
-        <span
-          className="font-serif font-semibold text-[hsl(var(--primary))] cursor-pointer"
-          onClick={() => setView("home")}
-        >
-          marquee
-        </span>
-        <button className="text-sm hover:text-[hsl(var(--primary))]" onClick={() => setView("home")}>Dashboard</button>
-        <button className="text-sm hover:text-[hsl(var(--primary))]" onClick={() => setView("memory")}>Memory</button>
-      </nav>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden">
-        {currentView === "home" && <HomeView />}
-        {currentView === "deliverable" && <DeliverableView />}
-        {currentView === "memory" && <MemoryView />}
-        {currentView === "chat" && (
-          <div className="flex items-center justify-center h-full text-[hsl(var(--muted-foreground))]">
-            Select a conversation
-          </div>
-        )}
-      </main>
-
-      {/* Always-mounted chat drawer */}
-      <ChatDrawer />
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {currentView === "home" && <HomeView />}
+      {currentView === "onboarding" && <OnboardingView />}
+      {currentView === "deliverable" && <DeliverableView />}
+      {currentView === "memory" && <MemoryView />}
+      {currentView === "chat" && <ChatFullView />}
     </div>
   );
 }
