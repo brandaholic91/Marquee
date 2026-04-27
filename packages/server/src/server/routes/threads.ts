@@ -16,6 +16,10 @@ export function registerThreadRoutes(app: FastifyInstance, opts: ServerOpts) {
 		return { id };
 	});
 
+	app.get<{ Params: { id: string } }>("/api/threads/:id", async (req) =>
+		opts.db.select().from(chatThreads).where(eq(chatThreads.id, req.params.id)).get() ?? null,
+	);
+
 	app.get<{ Params: { id: string } }>("/api/threads/:id/messages", async (req) =>
 		opts.db.select().from(messages).where(eq(messages.threadId, req.params.id)).all(),
 	);

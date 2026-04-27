@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
+import { agencyEvents } from "../lib/sse.js";
 import { api } from "../lib/api.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { Avatar, AgentBadge, Bulb } from "../components/ui/index.js";
@@ -510,6 +511,18 @@ export function ChatFullView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-refresh messages when agent replies to this thread
+  useEffect(() => {
+    if (!activeThreadId) return;
+    agencyEvents.start();
+    const unsub = agencyEvents.on("agent_message", (ev) => {
+      const e = ev as { threadId?: string };
+      if (e.threadId === activeThreadId) refreshMessages();
+    });
+    return () => { unsub(); agencyEvents.stop(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeThreadId]);
 
   if (!activeThreadId) {
     return (

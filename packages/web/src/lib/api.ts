@@ -12,11 +12,8 @@ export const api = {
   threads: {
     list: () => fetch("/api/threads").then(json),
     create: (title: string) =>
-      fetch("/api/threads", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title }),
-      }).then(json),
+      post<{ id: string }>("/api/threads", { title }),
+    get: (id: string) => fetch(`/api/threads/${id}`).then(json),
     messages: (threadId: string) => fetch(`/api/threads/${threadId}/messages`).then(json),
   },
   messages: {

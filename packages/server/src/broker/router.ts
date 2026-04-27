@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { Agent } from "@mariozechner/pi-agent-core";
 import type { AgencyDb } from "../db/index.js";
-import { briefs, agentSessions, delegations } from "../db/schema.js";
+import { briefs, agentSessions, delegations, messages } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
 
@@ -11,6 +11,7 @@ const WARM_ROLES = ["director", "content-lead", "eval-judge"] as const;
 export class AgentRouter {
 	private warmAgents = new Map<string, Agent>();
 	private warmSessionIds = new Map<string, string>();
+	private chatAgents = new Map<string, Agent>(); // one director per chat thread
 	private unsub?: () => void;
 	private booted = false;
 
@@ -39,6 +40,12 @@ export class AgentRouter {
 	}
 
 	private onEvent(evt: PersistedEvent): void {
+		if (evt.type === "human_message") {
+			const { threadId, text } = evt.payload as { threadId: string; text: string };
+			this.handleChatMessage(threadId, text as string);
+			return;
+		}
+
 		if (evt.type === "brief_proposed") {
 			const { briefId } = evt.payload as { briefId: string };
 			const director = this.warmAgents.get("director");
@@ -85,6 +92,42 @@ export class AgentRouter {
 		} else {
 			this.spawnAndPrompt(to, delegationId, userMessage);
 		}
+	}
+
+	private handleChatMessage(threadId: string, text: string): void {
+		let agent = this.chatAgents.get(threadId);
+		if (!agent) {
+			const sessionId = randomUUID();
+			agent = makeAgent({
+				role: "director", dataDir: this.dataDir, db: this.db, sessionId, threadId,
+				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "director", sessionId }),
+			} satisfies MakeAgentOpts);
+			this.db.insert(agentSessions).values({
+				id: sessionId, agentSlug: "director", lifecycle: "transient",
+			}).run();
+			const a = agent;
+			a.subscribe(async (evt) => {
+				if (evt.type !== "message_end") return;
+				const msg = (evt as { type: string; message: { role: string; content: Array<{ type: string; text?: string }> } }).message;
+				if (msg.role !== "assistant") return;
+				const responseText = msg.content
+					.filter((c) => c.type === "text")
+					.map((c) => c.text ?? "")
+					.join("");
+				if (!responseText.trim()) return;
+				this.db.insert(messages).values({
+					id: randomUUID(), threadId,
+					sender: "director", type: "chat",
+					contentJson: { text: responseText } as never,
+				}).run();
+				this.broker.emit("agent_message", { threadId, agentSlug: "director", text: responseText });
+			});
+			this.chatAgents.set(threadId, a);
+		}
+		void (async () => {
+			await agent!.waitForIdle();
+			agent!.prompt(text).catch(console.error);
+		})();
 	}
 
 	private spawnAndPrompt(role: string, delegationId: string, userMessage: string): void {

@@ -322,28 +322,58 @@ function PipelineWidget({ pipeline }: { pipeline: PipelineCount[] }) {
 
 // ---- ConversationsWidget ----
 
-function ConversationsWidget({ threads }: { threads: Thread[] }) {
-  const { setActiveThread } = useAgencyStore();
+function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefresh: () => void }) {
+  const { setActiveThread, setView } = useAgencyStore();
+  const [creating, setCreating] = useState(false);
+
+  async function handleNewChat() {
+    setCreating(true);
+    try {
+      const { id } = await api.threads.create("New conversation");
+      setActiveThread(id);
+      setView("chat");
+      onRefresh();
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function openThread(id: string) {
+    setActiveThread(id);
+    setView("chat");
+  }
 
   return (
-    <Widget title="Open chats">
+    <Widget
+      title="Open chats"
+      right={
+        <button className="btn btn-ghost btn-sm" onClick={handleNewChat} disabled={creating}>
+          + new
+        </button>
+      }
+    >
       {threads.length === 0 ? (
         <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>
-          No active threads.
+          No active threads.{" "}
+          <button
+            onClick={handleNewChat}
+            style={{ color: "var(--primary)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}
+          >
+            Start one
+          </button>
         </div>
       ) : (
         <div>
           {threads.map((t, i) => (
             <button
               key={t.id}
-              onClick={() => setActiveThread(t.id)}
+              onClick={() => openThread(t.id)}
               style={{
                 width: "100%",
                 padding: "14px 18px",
                 display: "flex",
                 alignItems: "center",
                 borderBottom: i < threads.length - 1 ? "1px solid var(--rule)" : "none",
-                textDecoration: "none",
                 color: "var(--ink-1)",
                 fontSize: 14,
                 fontWeight: 500,
@@ -432,7 +462,7 @@ export function HomeView() {
           <ApprovalsWidget approvals={snapshot.approvals} onRefresh={refresh} />
           <LiveFeedWidget events={liveEvents} />
           <PipelineWidget pipeline={snapshot.pipeline} />
-          <ConversationsWidget threads={snapshot.threads} />
+          <ConversationsWidget threads={snapshot.threads} onRefresh={refresh} />
         </div>
       </main>
 
