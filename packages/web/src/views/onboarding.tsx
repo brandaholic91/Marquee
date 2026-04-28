@@ -110,13 +110,14 @@ export function OnboardingView() {
 
   return (
     <div style={{
-      minHeight: "100vh",
+      height: "100vh",
+      overflow: "hidden",
       background: "radial-gradient(ellipse at top, #F2EBDA 0%, #EFE8DA 60%)",
       display: "flex",
       flexDirection: "column",
     }}>
       {/* Top bar */}
-      <div style={{ padding: "24px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ flexShrink: 0, padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--rule)" }}>
         <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--ink-2)", fontFamily: "var(--font-mono)" }}>
           MARQUEE
         </div>
@@ -128,137 +129,123 @@ export function OnboardingView() {
         </button>
       </div>
 
-      {/* Chat container */}
-      <div style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 32px 0" }}>
-        <div style={{ width: "100%", maxWidth: 768, display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Center column */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", justifyContent: "center" }}>
+        <div style={{ width: "100%", maxWidth: 768, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
           {/* Header */}
-          <div>
-            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          <div style={{ flexShrink: 0, padding: "28px 32px 20px" }}>
+            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>
               A marketing csapatod készen áll.
             </div>
-            <div style={{ color: "var(--ink-2)", marginTop: 12, maxWidth: 560, fontSize: 15, lineHeight: 1.5 }}>
-              A Direktor feltesz néhány kérdést, hogy felépítse azt a közös memóriát, amit az agensek minden kampányban használnak majd.
+            <div style={{ color: "var(--ink-2)", marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
+              A Direktor feltesz néhány kérdést a közös memória felépítéséhez.
             </div>
           </div>
 
-          <hr style={{ border: "none", borderTop: "1px solid var(--rule)" }} />
+          <hr style={{ flexShrink: 0, border: "none", borderTop: "1px solid var(--rule)", margin: "0 32px" }} />
 
-          {/* Messages */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            {msgs.map((m) => m.sender === "director" ? (
-              <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <Avatar who="director" size="sm" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Director</div>
-                  <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)", whiteSpace: "pre-wrap" }}>{m.text}</div>
-                </div>
-              </div>
-            ) : (
-              <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "flex-end" }}>
-                <div style={{ flex: 1, textAlign: "right" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>You</div>
-                  <div style={{
-                    fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)",
-                    background: "var(--white)", border: "1px solid var(--rule)",
-                    borderRadius: 6, padding: "8px 12px", display: "inline-block", maxWidth: "80%", textAlign: "left",
-                  }}>
-                    {m.text}
+          {/* Messages — scrollable */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 32px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {msgs.map((m) => m.sender === "director" ? (
+                <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <Avatar who="director" size="sm" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Direktor</div>
+                    <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)", whiteSpace: "pre-wrap" }}>{m.text}</div>
                   </div>
                 </div>
-                <Avatar who="human" size="sm" />
-              </div>
-            ))}
-
-            {typing && (
-              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <Avatar who="director" size="sm" />
-                <div style={{ color: "var(--ink-3)", fontSize: 13, paddingTop: 4 }}>Typing…</div>
-              </div>
-            )}
-
-            {/* Memory proposals */}
-            {proposals.map((p) => (
-              <div key={p.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <Avatar who="director" size="sm" />
-                <div style={{
-                  flex: 1, border: "2px solid var(--secondary)", borderRadius: 6,
-                  background: "var(--white)", overflow: "hidden",
-                }}>
-                  <div style={{
-                    padding: "12px 16px", display: "flex", alignItems: "center", gap: 8,
-                    borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)",
-                  }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
-                      MEMORY · PROPOSAL
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: "auto" }}>{p.file}</span>
-                  </div>
-                  <div style={{ padding: 16 }}>
-                    <pre style={{
-                      padding: "10px 14px", background: "var(--parchment)", borderRadius: 4,
-                      fontSize: 12, lineHeight: 1.7, color: "var(--ink-1)", whiteSpace: "pre-wrap", wordBreak: "break-word",
-                      margin: 0,
+              ) : (
+                <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "flex-end" }}>
+                  <div style={{ flex: 1, textAlign: "right" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Te</div>
+                    <div style={{
+                      fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)",
+                      background: "var(--white)", border: "1px solid var(--rule)",
+                      borderRadius: 6, padding: "8px 12px", display: "inline-block", maxWidth: "80%", textAlign: "left",
                     }}>
-                      {p.patch}
-                    </pre>
-                    {p.status === "pending" && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                        <button
-                          onClick={() => handleApprove(p.id)}
-                          style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
-                        >
-                          Jóváhagyás &amp; mentés
-                        </button>
-                        <button
-                          onClick={() => handleReject(p.id)}
-                          style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
-                        >
-                          Elutasítás
-                        </button>
-                      </div>
-                    )}
-                    {p.status === "approved" && (
-                      <div style={{ marginTop: 10, fontSize: 13, color: "var(--success, #2d7a4f)", fontWeight: 500 }}>✓ Saved</div>
-                    )}
-                    {p.status === "rejected" && (
-                      <div style={{ marginTop: 10, fontSize: 13, color: "var(--ink-3)" }}>Rejected</div>
-                    )}
+                      {m.text}
+                    </div>
+                  </div>
+                  <Avatar who="human" size="sm" />
+                </div>
+              ))}
+
+              {typing && (
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <Avatar who="director" size="sm" />
+                  <div style={{ color: "var(--ink-3)", fontSize: 13, paddingTop: 4 }}>Gépel…</div>
+                </div>
+              )}
+
+              {proposals.map((p) => (
+                <div key={p.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <Avatar who="director" size="sm" />
+                  <div style={{ flex: 1, border: "2px solid var(--secondary)", borderRadius: 6, background: "var(--white)", overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
+                        MEMÓRIA · JAVASLAT
+                      </span>
+                      <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: "auto" }}>{p.file}</span>
+                    </div>
+                    <div style={{ padding: 14 }}>
+                      <pre style={{ padding: "10px 14px", background: "var(--parchment)", borderRadius: 4, fontSize: 12, lineHeight: 1.7, color: "var(--ink-1)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                        {p.patch}
+                      </pre>
+                      {p.status === "pending" && (
+                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                          <button onClick={() => handleApprove(p.id)} style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}>
+                            Jóváhagyás &amp; mentés
+                          </button>
+                          <button onClick={() => handleReject(p.id)} style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}>
+                            Elutasítás
+                          </button>
+                        </div>
+                      )}
+                      {p.status === "approved" && <div style={{ marginTop: 10, fontSize: 13, color: "var(--success, #2d7a4f)", fontWeight: 500 }}>✓ Mentve</div>}
+                      {p.status === "rejected" && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ink-3)" }}>Elutasítva</div>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {/* Setup complete CTA */}
-            {allApproved && (
-              <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 32px" }}>
-                <button
-                  onClick={() => setView("home")}
-                  style={{ padding: "12px 32px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 15, fontWeight: 600 }}
-                >
-                  Tovább az irányítópultra →
-                </button>
-              </div>
-            )}
+              {allApproved && (
+                <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 8px" }}>
+                  <button onClick={() => setView("home")} style={{ padding: "12px 32px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 15, fontWeight: 600 }}>
+                    Tovább az irányítópultra →
+                  </button>
+                </div>
+              )}
 
-            <div ref={bottomRef} />
+              <div ref={bottomRef} />
+            </div>
           </div>
 
-          {/* Input */}
+          {/* Input — fixed at bottom */}
           {!allApproved && (
-            <div style={{ position: "sticky", bottom: 24, marginTop: 8, paddingBottom: 24 }}>
-              <div style={{ padding: 14, background: "var(--white)", border: "1px solid var(--rule-strong)", borderRadius: 6 }}>
+            <div style={{ flexShrink: 0, padding: "12px 32px 20px" }}>
+              <div style={{ padding: "10px 14px", background: "var(--white)", border: "1px solid var(--rule-strong)", borderRadius: 6 }}>
                 <textarea
-                  style={{ border: 0, padding: 4, minHeight: 56, width: "100%", resize: "none", fontSize: 14, fontFamily: "inherit", background: "transparent", outline: "none" }}
+                  style={{
+                    border: 0, padding: 4, width: "100%", resize: "none",
+                    fontSize: 14, fontFamily: "inherit", background: "transparent", outline: "none",
+                    minHeight: 40, maxHeight: 160, overflowY: "auto", display: "block",
+                  }}
                   placeholder="Válasz a Direktornak…"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
                   }}
                   disabled={sending || !threadId}
+                  rows={1}
                 />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                   <span style={{ fontSize: 12, color: "var(--ink-3)" }}>⏎ küldés</span>
                   <button
                     onClick={handleSend}
