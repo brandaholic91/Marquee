@@ -8,7 +8,7 @@ const { mockGetApiKey, mockRefreshToken } = vi.hoisted(() => ({
   mockRefreshToken: vi.fn(),
 }));
 
-vi.mock("@mariozechner/pi-ai", () => ({
+vi.mock("@mariozechner/pi-ai/oauth", () => ({
   refreshOpenAICodexToken: mockRefreshToken,
   openaiCodexOAuthProvider: { getApiKey: mockGetApiKey },
 }));

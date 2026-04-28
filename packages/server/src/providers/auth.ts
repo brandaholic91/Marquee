@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { openaiCodexOAuthProvider, refreshOpenAICodexToken } from "@mariozechner/pi-ai";
-import type { OAuthCredentials } from "@mariozechner/pi-ai";
+import { openaiCodexOAuthProvider, refreshOpenAICodexToken } from "@mariozechner/pi-ai/oauth";
+import type { OAuthCredentials } from "@mariozechner/pi-ai/oauth";
 
 type AuthFile = Record<string, OAuthCredentials>;
 
