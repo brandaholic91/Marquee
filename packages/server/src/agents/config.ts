@@ -7,6 +7,7 @@ export interface AgentConfig {
   tone?: "authoritative" | "friendly" | "neutral";
   response_length?: "concise" | "detailed";
   language?: string;
+  model?: string;
   system_prompt_override?: string;
 }
 

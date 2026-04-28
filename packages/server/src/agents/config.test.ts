@@ -22,6 +22,14 @@ describe("loadAgentConfig", () => {
     expect(config?.language).toBe("hu");
     expect(config?.tone).toBe("authoritative");
   });
+
+  it("parses model field from config.md", () => {
+    mkdirSync(join(dir, "agents", "director"), { recursive: true });
+    writeFileSync(join(dir, "agents", "director", "config.md"),
+      "---\nmodel: gpt-5.1\nlanguage: hu\n---\n");
+    const config = loadAgentConfig(dir, "director");
+    expect(config?.model).toBe("gpt-5.1");
+  });
 });
 
 describe("buildBehaviorBlock", () => {
@@ -46,5 +54,11 @@ describe("buildBehaviorBlock", () => {
     const block = buildBehaviorBlock({ system_prompt_override: "Custom instruction." });
     expect(block).toContain("Custom instruction.");
     expect(block).not.toContain("## Behavior");
+  });
+
+  it("does NOT include model in behavior block", () => {
+    const block = buildBehaviorBlock({ model: "gpt-5.1", language: "hu" });
+    expect(block).not.toContain("gpt-5.1");
+    expect(block).toContain("Language: hu");
   });
 });
