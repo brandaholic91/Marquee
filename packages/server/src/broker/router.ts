@@ -17,7 +17,7 @@ export class AgentRouter {
 	private unsub?: () => void;
 	private booted = false;
 	private turnStartTimes = new Map<string, number>(); // sessionId → start ms
-	private budgetWarnEmitted = false;
+	private budgetWarnDate: string | null = null; // "YYYY-MM-DD" — resets each day
 
 	constructor(
 		private db: AgencyDb,
@@ -243,14 +243,17 @@ export class AgentRouter {
 			costUsdCents: Math.round(msg.usage.cost.total * 100),
 			latencyMs: Date.now() - startedAt,
 		});
-		// Soft limit: warn once at 80%
+		// Soft limit: warn once per calendar day at 80%
 		const limit = this.telemetry.opts.dailyBudgetCents;
-		if (limit > 0 && !this.budgetWarnEmitted) {
-			const { totalCents } = this.telemetry.getTodayUsage();
-			const pct = totalCents / limit;
-			if (pct >= 0.8) {
-				this.budgetWarnEmitted = true;
-				this.broker.emit("budget_warning", { usedCents: totalCents, limitCents: limit, pct: Math.round(pct * 100) });
+		if (limit > 0) {
+			const today = new Date().toISOString().slice(0, 10);
+			if (this.budgetWarnDate !== today) {
+				const { totalCents } = this.telemetry.getTodayUsage();
+				const pct = totalCents / limit;
+				if (pct >= 0.8) {
+					this.budgetWarnDate = today;
+					this.broker.emit("budget_warning", { usedCents: totalCents, limitCents: limit, pct: Math.round(pct * 100) });
+				}
 			}
 		}
 	}

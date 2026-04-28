@@ -359,7 +359,7 @@ function UsageWidget({ stats }: { stats: UsageStats | null }) {
               <div style={{ height: 6, background: "var(--rule)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${Math.min(100, budgetUsedPct)}%`, background: barColor, borderRadius: 3, transition: "width 0.3s" }} />
               </div>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 3 }}>{budgetUsedPct}% of daily limit</div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 3 }}>{Math.round(budgetUsedPct)}% of daily limit</div>
             </div>
           )}
           <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 10 }}>
