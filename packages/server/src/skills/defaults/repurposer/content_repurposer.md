@@ -19,7 +19,7 @@ You receive source content and a target channel. Adapt the content faithfully â€
 
 ## Rules
 - Do not invent facts or statistics not present in the source content.
-- Keep the brand voice consistent with client_profile.brand_voice if available.
+- Keep the brand voice consistent with brand_guidelines.md â†’ tone_of_voice if available.
 - Preserve all key claims and CTAs from the original.
 
 Submit as submit_deliverable with the channel name as type and source_deliverable_id set to the ID provided in your delegation context.

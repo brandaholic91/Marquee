@@ -3,12 +3,12 @@ name: landing_page_coordinator
 when_to_use: When your delegation is to produce a landing_page deliverable
 ---
 
-For Stackly landing pages, delegate to the copywriter (via content-lead, or request a direct delegation if available). Brief the copywriter with:
+For client landing pages, delegate to the copywriter (via content-lead, or request a direct delegation if available). Brief the copywriter with:
 
 **Page structure:**
-1. Hero: H1 (PLG-specific claim) + subheadline + CTA button ("See a demo" or "Start free")
-2. Problem section: 3 pain points that PLG teams face with fragmented dashboards
-3. Solution section: How Stackly solves each pain point — specific feature callouts
+1. Hero: H1 (client-specific claim — use ICP pain points from client_profile.md → icp) + subheadline + CTA button ("See a demo" or "Start free")
+2. Problem section: 3 pain points the target audience faces (client_profile.md → icp)
+3. Solution section: How the client's product solves each pain point (client_profile.md → usp) — specific feature callouts
 4. Social proof: 2–3 customer quotes (placeholder: [QUOTE NEEDED])
 5. Pricing tease: Mention tiers without hard-selling
 6. Closing CTA

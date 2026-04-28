@@ -13,9 +13,9 @@ For LinkedIn posts, use modified scoring weights:
 **2. Factual accuracy** (same rubric as blog posts)
 
 **3. USP usage** (adapted for LinkedIn format)
-- 5: Stackly's PLG angle woven into the insight naturally — not forced
-- 3: Stackly mentioned but as an afterthought
-- 1: No PLG positioning, could be any SaaS company's post
+- 5: Client's positioning angle (client_profile.md → usp) woven into the insight naturally — not forced
+- 3: Client mentioned but as an afterthought
+- 1: No client-specific positioning, could be any company's post
 
 **Character count check** (bonus, not scored):
 - Note if the post is outside the 800–1200 character range

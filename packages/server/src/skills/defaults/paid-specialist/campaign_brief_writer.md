@@ -9,7 +9,7 @@ Write every campaign brief with this structure:
 One sentence describing the conversion objective (e.g. "Drive 200 trial sign-ups in 2 weeks via Facebook").
 
 ## Target Audience
-- Primary persona (from client_profile.icp if available)
+- Primary persona (from client_profile.md → icp if available)
 - Demographics: age range, job title, pain point
 - Negative audience: who to exclude
 
