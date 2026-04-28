@@ -6,7 +6,11 @@ import type { ServerOpts } from "../index.js";
 import { deliverableRevisions, deliverables, evals, delegations } from "../../db/schema.js";
 
 export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts) {
-	app.get("/api/deliverables", async () => opts.db.select().from(deliverables).all());
+	app.get<{ Querystring: { campaignId?: string } }>("/api/deliverables", async (req) => {
+		let result = opts.db.select().from(deliverables).all();
+		if (req.query.campaignId) result = result.filter((d) => d.campaignId === req.query.campaignId);
+		return result;
+	});
 
 	app.get<{ Params: { revisionId: string } }>(
 		"/api/deliverables/revisions/:revisionId/content",
@@ -108,6 +112,7 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 			if (d.status !== "shipped") {
 				return reply.code(400).send({ error: "only shipped deliverables can be repurposed" });
 			}
+			const campaignId = d.campaignId ?? null;
 			const { channels } = req.body;
 			if (!channels || channels.length === 0) {
 				return reply.code(400).send({ error: "channels must not be empty" });
@@ -134,6 +139,7 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 				fromAgent: "human",
 				toAgent: "content-lead",
 				status: "requested",
+				campaignId,
 				payloadJson: {
 					task: `Repurpose the following content for these channels: ${channels.join(", ")}. For each channel, delegate to a repurposer specialist using delegate_to_specialist. Include the source deliverable ID "${req.params.id}" and the source content in each delegation context so the repurposer can set source_deliverable_id when submitting.`,
 					context: `Source deliverable ID: ${req.params.id}\n\nSource content:\n${sourceContent}`,

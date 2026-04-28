@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDb, type AgencyDb } from "../../db/index.js";
-import { delegations, tasks } from "../../db/schema.js";
+import { campaigns, delegations, tasks } from "../../db/schema.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";
 import type { AgentRouter } from "../../broker/router.js";
@@ -101,5 +101,39 @@ describe("PATCH /api/tasks/:id", () => {
       body: JSON.stringify({ status: "done", current_version: 99 }),
     });
     expect(res.statusCode).toBe(409);
+  });
+});
+
+describe("GET /api/tasks?campaignId", () => {
+  let dir: string;
+  let db: AgencyDb;
+  let close: () => void;
+  let app: Awaited<ReturnType<typeof makeServer>>;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), "tasks-routes-test-"));
+    const handle = openDb(join(dir, "test.db"));
+    db = handle.db;
+    close = handle.close;
+    app = await makeServer(db, dir);
+  });
+
+  afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+  it("filters tasks by campaignId", async () => {
+    const campaignId = randomUUID();
+    db.insert(campaigns).values({ id: campaignId, title: "C", status: "active" }).run();
+    const dlgId1 = randomUUID(); const dlgId2 = randomUUID();
+    db.insert(delegations).values({ id: dlgId1, fromAgent: "director", toAgent: "copywriter", status: "requested", payloadJson: {} as never, campaignId }).run();
+    db.insert(delegations).values({ id: dlgId2, fromAgent: "director", toAgent: "copywriter", status: "requested", payloadJson: {} as never }).run();
+    const t1 = randomUUID(); const t2 = randomUUID();
+    db.insert(tasks).values({ id: t1, delegationId: dlgId1, title: "Task 1", status: "open", assignedTo: "copywriter", campaignId }).run();
+    db.insert(tasks).values({ id: t2, delegationId: dlgId2, title: "Task 2", status: "open", assignedTo: "copywriter" }).run();
+
+    const res = await app.inject({ method: "GET", url: `/api/tasks?campaignId=${campaignId}` });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ id: string }[]>();
+    expect(body).toHaveLength(1);
+    expect(body[0].id).toBe(t1);
   });
 });

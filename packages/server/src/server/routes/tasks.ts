@@ -4,10 +4,11 @@ import { tasks } from "../../db/schema.js";
 import { updateTaskInDb, ConflictError } from "../../tasks/manager.js";
 
 export function registerTaskRoutes(app: FastifyInstance, opts: ServerOpts) {
-  app.get<{ Querystring: { assigned_to?: string; status?: string } }>("/api/tasks", async (req) => {
+  app.get<{ Querystring: { assigned_to?: string; status?: string; campaignId?: string } }>("/api/tasks", async (req) => {
     let result = opts.db.select().from(tasks).all();
     if (req.query.assigned_to) result = result.filter((t) => t.assignedTo === req.query.assigned_to);
     if (req.query.status) result = result.filter((t) => t.status === req.query.status);
+    if (req.query.campaignId) result = result.filter((t) => t.campaignId === req.query.campaignId);
     return result;
   });
 

@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { openDb, type AgencyDb } from "../../db/index.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";
-import { delegations, deliverables, deliverableRevisions, evals } from "../../db/schema.js";
+import { campaigns, delegations, deliverables, deliverableRevisions, evals } from "../../db/schema.js";
 import type { AgentRouter } from "../../broker/router.js";
 
 function makeTestDep() {
@@ -266,5 +266,52 @@ describe("POST /api/deliverables/:id/repurpose", () => {
 			payload: { channels: ["twitter_thread"] },
 		});
 		expect(res.statusCode).toBe(404);
+	});
+});
+
+describe("POST /api/deliverables/:id/repurpose — campaignId propagation", () => {
+	let deps: ReturnType<typeof makeTestDep>;
+	beforeEach(() => { deps = makeTestDep(); });
+	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+
+	it("sets campaignId on the new delegation from source deliverable", async () => {
+		const { db, broker, router, dir } = deps;
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "Test Campaign", status: "active" }).run();
+		const { delId } = seedDeliverable(db, "shipped");
+		db.update(deliverables).set({ campaignId }).where(eq(deliverables.id, delId)).run();
+
+		const app = await makeApp(db, broker, router, dir);
+		await app.inject({
+			method: "POST", url: `/api/deliverables/${delId}/repurpose`,
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ channels: ["linkedin"] }),
+		});
+
+		const newDelegation = db.select().from(delegations).all()
+			.find(d => d.toAgent === "content-lead" && d.fromAgent === "human")!;
+		expect(newDelegation.campaignId).toBe(campaignId);
+	});
+});
+
+describe("GET /api/deliverables?campaignId", () => {
+	let deps: ReturnType<typeof makeTestDep>;
+	beforeEach(() => { deps = makeTestDep(); });
+	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+
+	it("filters deliverables by campaignId", async () => {
+		const { db, broker, router, dir } = deps;
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "C", status: "active" }).run();
+		const { delId: id1 } = seedDeliverable(db);
+		db.update(deliverables).set({ campaignId }).where(eq(deliverables.id, id1)).run();
+		seedDeliverable(db);
+
+		const app = await makeApp(db, broker, router, dir);
+		const res = await app.inject({ method: "GET", url: `/api/deliverables?campaignId=${campaignId}` });
+		expect(res.statusCode).toBe(200);
+		const body = res.json<{ id: string }[]>();
+		expect(body).toHaveLength(1);
+		expect(body[0].id).toBe(id1);
 	});
 });
