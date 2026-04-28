@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { deliverables, deliverableRevisions, messages } from "../db/schema.js";
+import { deliverables, deliverableRevisions, delegations, messages } from "../db/schema.js";
 import type { AgentToolDef } from "./types.js";
 
 const submitDeliverableInput = z.object({
@@ -33,6 +33,8 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 		input: submitDeliverableInput,
 		async execute(input, ctx) {
 			if (!ctx.delegationId) throw new Error("submit_deliverable requires an active delegation context");
+			const delegation = ctx.db.select().from(delegations).where(eq(delegations.id, ctx.delegationId)).get();
+			const campaignId = delegation?.campaignId ?? null;
 			const deliverableId = randomUUID();
 			const revisionId = randomUUID();
 			const artifactDir = join(dataDir, "artifacts", deliverableId);
@@ -45,6 +47,7 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 				type: input.type, title: input.title, status: "awaiting_eval",
 				currentRevisionId: revisionId,
 				sourceDeliverableId: input.source_deliverable_id ?? null,
+				campaignId,
 			}).run();
 			ctx.db.insert(deliverableRevisions).values({
 				id: revisionId, deliverableId, artifactPath, createdByAgent: ctx.agentSlug,

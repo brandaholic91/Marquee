@@ -62,6 +62,7 @@ export class TaskManager {
     this.db.insert(tasks).values({
       id: randomUUID(), delegationId, title,
       status: "open", assignedTo: delegation.toAgent,
+      campaignId: delegation.campaignId ?? null,
     }).run();
     this.broker.emit("task_created", { delegationId, assignedTo: delegation.toAgent });
   }

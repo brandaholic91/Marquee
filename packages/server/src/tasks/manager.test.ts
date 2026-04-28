@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { delegations, tasks, taskPendingUpdates } from "../db/schema.js";
+import { campaigns, delegations, tasks, taskPendingUpdates } from "../db/schema.js";
 import { Broker } from "../broker/event-bus.js";
 import { ConflictError, TaskManager, updateTaskInDb } from "./manager.js";
 import type { AgentRouter } from "../broker/router.js";
@@ -142,5 +142,24 @@ describe("TaskManager", () => {
     const pending = db.select().from(taskPendingUpdates).all();
     expect(pending).toHaveLength(1);
     expect(pending[0].deliveredAt).toBeNull();
+  });
+
+  it("copies campaignId from delegation to task", () => {
+    const router = makeRouter();
+    const manager = new TaskManager(db, broker, router);
+    manager.boot();
+
+    const campaignId = randomUUID();
+    db.insert(campaigns).values({ id: campaignId, title: "Test", status: "active" }).run();
+    const delegationId = randomUUID();
+    db.insert(delegations).values({
+      id: delegationId, fromAgent: "director", toAgent: "copywriter",
+      status: "requested", payloadJson: { task: "Write post" }, campaignId,
+    }).run();
+
+    broker.emit("delegation_created", { delegationId, from: "director", to: "copywriter" });
+
+    const task = db.select().from(tasks).all().find(t => t.delegationId === delegationId)!;
+    expect(task.campaignId).toBe(campaignId);
   });
 });

@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { delegations, deliverables } from "../db/schema.js";
+import { campaigns, delegations, deliverables } from "../db/schema.js";
 import { makeSubmitDeliverable, readDeliverable } from "./deliverables.js";
 
 describe("deliverable tools", () => {
@@ -190,5 +190,56 @@ describe("submit_deliverable — new deliverable types", () => {
 			{ db, agentSlug: "seo-analyst", agentSessionId: randomUUID(), delegationId: "dlg-1", emit: vi.fn() },
 		);
 		expect(result.deliverableId).toBeDefined();
+	});
+});
+
+describe("makeSubmitDeliverable — campaignId propagation", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "deliverables-tool-test-"));
+		mkdirSync(join(dir, "artifacts"), { recursive: true });
+		({ db, close } = openDb(join(dir, "test.db")));
+	});
+	afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+	it("copies campaignId from delegation onto deliverable", async () => {
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "Test", status: "active" }).run();
+		const delegationId = randomUUID();
+		db.insert(delegations).values({
+			id: delegationId, fromAgent: "content-lead", toAgent: "copywriter",
+			status: "in_progress", payloadJson: {}, campaignId,
+		}).run();
+
+		const emit = vi.fn();
+		const submitDeliverable = makeSubmitDeliverable(dir);
+		await submitDeliverable.execute(
+			{ type: "blog_post", title: "Test Post", contentMd: "x".repeat(50) },
+			{ db, agentSlug: "copywriter", agentSessionId: randomUUID(), delegationId, emit },
+		);
+
+		const d = db.select().from(deliverables).all().find(row => row.delegationId === delegationId)!;
+		expect(d.campaignId).toBe(campaignId);
+	});
+
+	it("sets campaignId to null when delegation has no campaign", async () => {
+		const delegationId = randomUUID();
+		db.insert(delegations).values({
+			id: delegationId, fromAgent: "content-lead", toAgent: "copywriter",
+			status: "in_progress", payloadJson: {},
+		}).run();
+
+		const emit = vi.fn();
+		const submitDeliverable = makeSubmitDeliverable(dir);
+		await submitDeliverable.execute(
+			{ type: "blog_post", title: "Test Post", contentMd: "x".repeat(50) },
+			{ db, agentSlug: "copywriter", agentSessionId: randomUUID(), delegationId, emit },
+		);
+
+		const d = db.select().from(deliverables).all().find(row => row.delegationId === delegationId)!;
+		expect(d.campaignId).toBeNull();
 	});
 });
