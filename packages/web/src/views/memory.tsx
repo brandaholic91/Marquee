@@ -65,10 +65,12 @@ interface FileListPanelProps {
   onSelect: (name: string) => void;
   proposals: MemoryProposal[];
   onCreateFile: () => void;
+  onApproveProposal: (id: string) => void;
+  onRejectProposal: (id: string) => void;
   fullWidth?: boolean;
 }
 
-function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile, fullWidth }: FileListPanelProps) {
+function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile, onApproveProposal, onRejectProposal, fullWidth }: FileListPanelProps) {
   const [newFileName, setNewFileName] = useState("");
   const [showNew, setShowNew] = useState(false);
 
@@ -182,19 +184,21 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
                 <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>
                   {p.file}
                 </div>
-                <div className="body-sm" style={{ fontSize: 12, lineHeight: 1.4 }}>{p.summary}</div>
-                <a
-                  href="#/memory"
-                  style={{
-                    display: "inline-block",
-                    marginTop: 6,
-                    fontSize: 11,
-                    color: "var(--primary-deep)",
-                    textDecoration: "none",
-                  }}
-                >
-                  Diff megtekintése →
-                </a>
+                <div className="body-sm" style={{ fontSize: 12, lineHeight: 1.4, color: "var(--ink-2)" }}>{p.summary}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button
+                    onClick={() => onApproveProposal(p.id)}
+                    style={{ flex: 1, padding: "5px 0", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 11, fontWeight: 500 }}
+                  >
+                    Jóváhagyás
+                  </button>
+                  <button
+                    onClick={() => onRejectProposal(p.id)}
+                    style={{ flex: 1, padding: "5px 0", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 11 }}
+                  >
+                    Elutasítás
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -597,6 +601,17 @@ export function MemoryView() {
     if (isMobile) setMobilePanel("content");
   }
 
+  async function handleApproveProposal(id: string) {
+    await api.memory.approve(id).catch(() => {});
+    setProposals((prev) => prev.filter((p) => p.id !== id));
+    loadFiles();
+  }
+
+  async function handleRejectProposal(id: string) {
+    await api.memory.reject(id).catch(() => {});
+    setProposals((prev) => prev.filter((p) => p.id !== id));
+  }
+
   return (
     <div style={{
       display: "flex",
@@ -612,6 +627,8 @@ export function MemoryView() {
             onSelect={handleFileSelect}
             proposals={proposals}
             onCreateFile={loadFiles}
+            onApproveProposal={handleApproveProposal}
+            onRejectProposal={handleRejectProposal}
             fullWidth
           />
         ) : (
@@ -631,6 +648,8 @@ export function MemoryView() {
             onSelect={setSelectedFile}
             proposals={proposals}
             onCreateFile={loadFiles}
+            onApproveProposal={handleApproveProposal}
+            onRejectProposal={handleRejectProposal}
           />
           <MainContent
             fileContent={fileContent}
