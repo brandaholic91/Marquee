@@ -165,3 +165,54 @@ Ha a tool bővül, a skill ezeket fedheti le:
 | 6 | competitor_analysis (seo-analyst) | Kutatási bővítés |
 | 7 | query_matomo tool bővítés + performance_report skill | Tool-függőség miatt utoljára |
 | – | brief_parser + lead_router frissítés | Mindig az új skill-ekkel együtt, nem önállóan |
+
+---
+
+## Elkészítendő skill-ek teljes listája
+
+### copywriter
+- `email_writer` — newsletter, nurture, promo email
+- `case_study_writer` — ügyfélsiker sztori
+- `video_script_writer` — YouTube, reel, webinar szkript
+- `white_paper_writer` — lead magnet, B2B hosszú tartalom
+
+### social-manager
+- `twitter_thread_writer` — X/Twitter thread
+- `instagram_caption_writer` — Instagram caption
+
+### content-lead
+- `email_brief_handoff` — email briefing a copywriternek
+- `case_study_brief_handoff` — case study briefing
+- `video_script_brief_handoff` — video szkript briefing
+- `white_paper_brief_handoff` — white paper briefing
+
+### distribution-lead
+- `twitter_brief_coordinator` — Twitter brief a social-managernek
+- `instagram_brief_coordinator` — Instagram brief a social-managernek
+- `email_campaign_coordinator` — email kampány koordinálás
+
+### paid-specialist
+- `ad_copy_writer` — Google/Meta konkrét hirdetésszöveg
+
+### seo-analyst
+- `competitor_analysis` — versenytárs tartalom és keyword elemzés
+- `content_gap_analysis` — hiányzó tartalom témák azonosítása
+
+### insights-lead
+- `competitor_insights_coordinator` — versenytárs elemzés koordinálása
+
+### eval-judge
+- `eval_base` — általános alap rubric (a jelenlegi `three_dim_review` helyett)
+- `eval_blog_post` — blog post specifikus rubric
+- `eval_linkedin_post` — LinkedIn specifikus (a jelenlegi `three_dim_review_extended` lecserélve)
+- `eval_email` — email specifikus rubric
+- `eval_case_study` — case study specifikus rubric
+- `eval_video_script` — video szkript specifikus rubric
+- `eval_landing_page` — landing page specifikus rubric
+
+### director (frissítés, nem új skill)
+- `brief_parser` — új deliverable típusok hozzáadása
+- `lead_router` — routing tábla bővítése
+
+**Összesen: ~25 új skill + 2 meglévő frissítés**
+Az eval-judge split factory változtatást is igényel a `buildSystemPrompt`-ban.
