@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -42,5 +43,29 @@ describe("runDailySummary", () => {
     await runDailySummary(db, dir);
     const today = new Date().toISOString().slice(0, 10);
     expect(existsSync(join(dir, "memory", "daily_notes", `${today}.md`))).toBe(true);
+  });
+});
+
+describe("runDailySummary — git commit", () => {
+  let dir: string;
+  let db: AgencyDb;
+  let close: () => void;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "cron-git-test-"));
+    execSync("git init", { cwd: dir });
+    execSync("git config user.email test@test.com", { cwd: dir });
+    execSync("git config user.name Test", { cwd: dir });
+    const handle = openDb(join(dir, "test.db"));
+    db = handle.db;
+    close = handle.close;
+  });
+
+  afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+  it("commits the daily notes file to git", async () => {
+    await runDailySummary(db, dir);
+    const log = execSync("git log --oneline", { cwd: dir }).toString();
+    expect(log).toContain("memory: daily summary");
   });
 });

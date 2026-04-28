@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { simpleGit } from "simple-git";
 import type { AgencyDb } from "../db/index.js";
 import { agentSessions, delegations, deliverables, evals, turns } from "../db/schema.js";
 
@@ -93,7 +94,16 @@ export async function runDailySummary(db: AgencyDb, dataDir: string): Promise<vo
     today, sessions, delegations: delegationStats, deliverables: deliverableStats, evals: evalStats,
   });
 
-  const dir = join(dataDir, "memory", "daily_notes");
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, `${today}.md`), md, "utf8");
+  const notesDir = join(dataDir, "memory", "daily_notes");
+  mkdirSync(notesDir, { recursive: true });
+  const filePath = join(notesDir, `${today}.md`);
+  writeFileSync(filePath, md, "utf8");
+
+  try {
+    const git = simpleGit(dataDir);
+    if (await git.checkIsRepo()) {
+      await git.add(filePath);
+      await git.commit(`memory: daily summary ${today}`);
+    }
+  } catch { /* best effort */ }
 }
