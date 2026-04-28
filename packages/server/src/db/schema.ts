@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 const ts = (col: string) =>
 	integer(col, { mode: "timestamp_ms" })
@@ -91,7 +92,7 @@ export const deliverables = sqliteTable(
 			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived"],
 		}).notNull(),
 		currentRevisionId: text("current_revision_id"),
-		sourceDeliverableId: text("source_deliverable_id").references(() => deliverables.id),
+		sourceDeliverableId: text("source_deliverable_id").references((): AnySQLiteColumn => deliverables.id),
 		createdAt: ts("created_at"),
 		updatedAt: ts("updated_at"),
 	},
