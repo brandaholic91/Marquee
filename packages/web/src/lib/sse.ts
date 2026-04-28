@@ -5,6 +5,7 @@ export class AgencyEvents {
   private subs = new Map<string, Set<Handler>>();
 
   start() {
+    if (this.es) return;
     const lastId = localStorage.getItem("agency:lastEventId");
     const url = lastId ? `/api/events?lastEventId=${lastId}` : "/api/events";
     this.es = new EventSource(url);
@@ -20,6 +21,7 @@ export class AgencyEvents {
     };
     this.es.onerror = () => {
       this.es?.close();
+      this.es = null;
       setTimeout(() => this.start(), 2000);
     };
   }
