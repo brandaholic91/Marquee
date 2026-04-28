@@ -5,14 +5,15 @@ import { useAgencyStore } from "../../store/useAgencyStore.js";
 import { api } from "../../lib/api.js";
 import { useBreakpoint } from "../../hooks/useBreakpoint.js";
 
-type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents" | "skills" | "calendar";
+type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents" | "skills" | "calendar" | "campaigns";
 
 const NAV: { id: NavId; label: string }[] = [
-  { id: "home",     label: "Home" },
-  { id: "pipeline", label: "Pipeline" },
-  { id: "tasks",    label: "Tasks" },
-  { id: "memory",   label: "Memory" },
-  { id: "agents",   label: "Agents" },
+  { id: "home",      label: "Home" },
+  { id: "campaigns", label: "Campaigns" },
+  { id: "pipeline",  label: "Pipeline" },
+  { id: "tasks",     label: "Tasks" },
+  { id: "memory",    label: "Memory" },
+  { id: "agents",    label: "Agents" },
   { id: "skills",    label: "Skills" },
   { id: "calendar",  label: "Calendar" },
 ];
