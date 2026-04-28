@@ -597,7 +597,7 @@ interface RevisionsTabProps {
   deliverableId: string;
   currentRevisionId: string | null;
   allRevisions: RevisionEntry[];
-  onSelectRevision: (revId: string) => void;
+  onSelectRevision: (revId: string | null) => void;
   selectedRevId: string | null;
 }
 
@@ -637,7 +637,7 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
         return (
           <button
             key={r.id}
-            onClick={() => onSelectRevision(r.id)}
+            onClick={() => onSelectRevision(r.id === selectedRevId ? null : r.id)}
             className="card"
             style={{
               width: "100%",
