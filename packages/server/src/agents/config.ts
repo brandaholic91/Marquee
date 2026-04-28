@@ -2,6 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
 
+export function loadAgentIdentity(dataDir: string, role: string): string | null {
+  const path = join(dataDir, "agents", role, "identity.md");
+  if (!existsSync(path)) return null;
+  return readFileSync(path, "utf8").trim();
+}
+
 export interface AgentConfig {
   style?: "terse" | "verbose" | "balanced";
   tone?: "authoritative" | "friendly" | "neutral";
@@ -9,7 +15,6 @@ export interface AgentConfig {
   language?: string;
   model?: string;
   thinking_level?: "off" | "minimal" | "low" | "medium" | "high";
-  identity?: string;
 }
 
 export function loadAgentConfig(dataDir: string, role: string): AgentConfig | null {

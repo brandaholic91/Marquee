@@ -8,7 +8,7 @@ import { toolsForRole } from "../tools/registry.js";
 import type { ToolContext } from "../tools/types.js";
 import { convertToLlm } from "./convert-to-llm.js";
 import { makeTransformContext } from "./transform-context.js";
-import { loadAgentConfig, buildBehaviorBlock } from "./config.js";
+import { loadAgentConfig, loadAgentIdentity, buildBehaviorBlock } from "./config.js";
 import type { AuthManager } from "../providers/auth.js";
 
 export interface MakeAgentOpts {
@@ -32,7 +32,7 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 	const skills = listSkillsForRole(dataDir, role);
 	const config = loadAgentConfig(dataDir, role);
 
-	const identity = config?.identity?.trim() || DEFAULT_IDENTITY(role);
+	const identity = loadAgentIdentity(dataDir, role) ?? DEFAULT_IDENTITY(role);
 
 	const skillList = skills.length === 0 ? "" : [
 		"## Available Skills",

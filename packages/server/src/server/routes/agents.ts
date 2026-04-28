@@ -3,7 +3,7 @@ import { join } from "node:path";
 import matter from "gray-matter";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { loadAgentConfig, buildBehaviorBlock } from "../../agents/config.js";
+import { loadAgentConfig, loadAgentIdentity, buildBehaviorBlock } from "../../agents/config.js";
 
 const VALID_ROLES = new Set([
   "director", "content-lead", "distribution-lead", "insights-lead",
@@ -27,6 +27,27 @@ export function registerAgentRoutes(app: FastifyInstance, opts: ServerOpts) {
       mkdirSync(dir, { recursive: true });
       const content = matter.stringify("", req.body);
       writeFileSync(join(dir, "config.md"), content, "utf8");
+      const warmRoles = opts.router.getWarmRoles();
+      if (warmRoles.includes(req.params.role)) {
+        opts.router.restartWarmAgent(req.params.role);
+      }
+      return { ok: true };
+    },
+  );
+
+  app.get<{ Params: { role: string } }>("/api/agents/:role/identity", async (req, reply) => {
+    if (!VALID_ROLES.has(req.params.role)) return reply.code(404).send({ error: "unknown role" });
+    const identity = loadAgentIdentity(opts.dataDir, req.params.role);
+    return { identity: identity ?? "" };
+  });
+
+  app.put<{ Params: { role: string }; Body: { identity: string } }>(
+    "/api/agents/:role/identity",
+    async (req, reply) => {
+      if (!VALID_ROLES.has(req.params.role)) return reply.code(404).send({ error: "unknown role" });
+      const dir = join(opts.dataDir, "agents", req.params.role);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "identity.md"), req.body.identity ?? "", "utf8");
       const warmRoles = opts.router.getWarmRoles();
       if (warmRoles.includes(req.params.role)) {
         opts.router.restartWarmAgent(req.params.role);

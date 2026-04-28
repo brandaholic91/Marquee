@@ -29,6 +29,7 @@ interface AgentConfig {
 
 function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: boolean }) {
   const [config, setConfig] = useState<AgentConfig>({});
+  const [identity, setIdentity] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -37,12 +38,16 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
       if (data?.config) setConfig(data.config);
       else setConfig({});
     }).catch(() => setConfig({}));
+    api.agents.getIdentity(role).then((data) => setIdentity(data.identity)).catch(() => {});
   }, [role]);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await api.agents.putConfig(role, config as Record<string, unknown>);
+      await Promise.all([
+        api.agents.putConfig(role, config as Record<string, unknown>),
+        api.agents.putIdentity(role, identity),
+      ]);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {
@@ -143,9 +148,9 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <label className="caption">Identity</label>
           <textarea
-            value={config.identity ?? ""}
-            onChange={(e) => setConfig({ ...config, identity: e.target.value || undefined })}
-            placeholder={`You are the [role] agent of the AI marketing agency.\nDescribe the agent's role, responsibilities, decision-making style, and relationship to other agents.`}
+            value={identity}
+            onChange={(e) => setIdentity(e.target.value)}
+            placeholder={`You are the [role] agent of this AI marketing agency.\n\nDescribe the agent's role, responsibilities, decision-making style, and relationship to other agents.`}
             rows={12}
             style={{ padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13, resize: "vertical", fontFamily: "var(--font-mono)" }}
           />

@@ -128,6 +128,14 @@ export const api = {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(config),
       }).then(json),
+    getIdentity: (role: string) =>
+      fetch(`/api/agents/${role}/identity`).then(json) as Promise<{ identity: string }>,
+    putIdentity: (role: string, identity: string) =>
+      fetch(`/api/agents/${role}/identity`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ identity }),
+      }).then(json),
   },
   skills: {
     list: () => fetch("/api/skills").then(json),
