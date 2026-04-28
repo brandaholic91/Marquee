@@ -147,7 +147,7 @@ function ConfigPanel({ role }: { role: string }) {
         </div>
       </div>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -158,6 +158,9 @@ function ConfigPanel({ role }: { role: string }) {
         >
           {saving ? "Saving…" : saved ? "Saved!" : "Save & restart agent"}
         </button>
+        <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
+          A mentés újraindítja az agentet — a meglévő kontextusa elvész.
+        </span>
       </div>
     </div>
   );
