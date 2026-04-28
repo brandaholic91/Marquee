@@ -39,7 +39,7 @@ async function main() {
 	router.boot();
 	recoverState(db, router);
 
-	const evalTrigger = new EvalTrigger(db, broker, dataDir);
+	const evalTrigger = new EvalTrigger(db, broker, dataDir, authManager);
 	evalTrigger.attach();
 
 	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
@@ -47,12 +47,14 @@ async function main() {
 
 	const cronTask = schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
 
-	process.on("SIGTERM", async () => {
+	const shutdown = async () => {
 		authManager?.stop();
 		cronTask.stop();
 		await app.close();
 		close();
-	});
+	};
+	process.on("SIGTERM", shutdown);
+	process.on("SIGINT", shutdown);
 
 	await app.listen({ host: "0.0.0.0", port });
 	console.log(`marquee server listening on :${port}`);

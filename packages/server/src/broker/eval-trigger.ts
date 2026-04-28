@@ -5,6 +5,7 @@ import type { AgencyDb } from "../db/index.js";
 import { agentSessions, deliverables, deliverableRevisions } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import type { Broker, PersistedEvent } from "./event-bus.js";
+import type { AuthManager } from "../providers/auth.js";
 
 export class EvalTrigger {
 	private unsub?: () => void;
@@ -13,6 +14,7 @@ export class EvalTrigger {
 		private db: AgencyDb,
 		private broker: Broker,
 		private dataDir: string,
+		private authManager?: AuthManager,
 	) {}
 
 	attach(): void {
@@ -51,6 +53,7 @@ export class EvalTrigger {
 				dataDir: this.dataDir,
 				db: this.db,
 				sessionId,
+				authManager: this.authManager,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "eval-judge", sessionId }),
 			} satisfies MakeAgentOpts);
 			this.db.insert(agentSessions).values({
