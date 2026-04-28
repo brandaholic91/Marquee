@@ -91,6 +91,7 @@ export const deliverables = sqliteTable(
 			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived"],
 		}).notNull(),
 		currentRevisionId: text("current_revision_id"),
+		sourceDeliverableId: text("source_deliverable_id").references(() => deliverables.id),
 		createdAt: ts("created_at"),
 		updatedAt: ts("updated_at"),
 	},

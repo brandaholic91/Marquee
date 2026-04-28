@@ -1,0 +1,1 @@
+ALTER TABLE `deliverables` ADD `source_deliverable_id` text REFERENCES deliverables(id);
