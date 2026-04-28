@@ -15,6 +15,13 @@ export const api = {
       post<{ id: string }>("/api/threads", { title }),
     get: (id: string) => fetch(`/api/threads/${id}`).then(json),
     messages: (threadId: string) => fetch(`/api/threads/${threadId}/messages`).then(json),
+    rename: (id: string, title: string) =>
+      fetch(`/api/threads/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title }),
+      }).then(json),
+    delete: (id: string) => fetch(`/api/threads/${id}`, { method: "DELETE" }).then(json),
   },
   messages: {
     post: (threadId: string, text: string) =>

@@ -23,4 +23,16 @@ export function registerThreadRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get<{ Params: { id: string } }>("/api/threads/:id/messages", async (req) =>
 		opts.db.select().from(messages).where(eq(messages.threadId, req.params.id)).all(),
 	);
+
+	app.patch<{ Params: { id: string }; Body: { title: string } }>("/api/threads/:id", async (req, reply) => {
+		const { title } = req.body;
+		if (!title?.trim()) return reply.code(400).send({ error: "title required" });
+		opts.db.update(chatThreads).set({ title: title.trim() }).where(eq(chatThreads.id, req.params.id)).run();
+		return { ok: true };
+	});
+
+	app.delete<{ Params: { id: string } }>("/api/threads/:id", async (req) => {
+		opts.db.update(chatThreads).set({ archivedAt: new Date() }).where(eq(chatThreads.id, req.params.id)).run();
+		return { ok: true };
+	});
 }

@@ -69,55 +69,71 @@ function ChatHeader({
   thread,
   messageCount,
   onBack,
+  onRename,
+  onDelete,
 }: {
   thread: Thread | null;
   messageCount: number;
   onBack: () => void;
+  onRename: (newTitle: string) => void;
+  onDelete: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  function startEdit() {
+    setDraft(thread?.title ?? "");
+    setEditing(true);
+  }
+
+  function commitEdit() {
+    const t = draft.trim();
+    if (t && t !== thread?.title) onRename(t);
+    setEditing(false);
+  }
+
   return (
     <div>
       <button
         className="body-sm"
-        style={{
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          color: "var(--ink-3)",
-          textDecoration: "none",
-        }}
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--ink-3)" }}
         onClick={onBack}
       >
         ← Home
       </button>
-      <div
-        style={{
-          marginTop: 14,
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 className="headline-md" style={{ margin: 0 }}>
-          {thread?.title ?? "Conversation"}
-        </h1>
-        <span
-          className="badge badge-cream"
-          style={{ fontFamily: "var(--font-mono)" }}
+      <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditing(false); }}
+            style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-serif)", border: "none", borderBottom: "2px solid var(--bulb)", outline: "none", background: "transparent", flex: 1 }}
+          />
+        ) : (
+          <h1
+            className="headline-md"
+            title="Click to rename"
+            onClick={startEdit}
+            style={{ margin: 0, cursor: "text", flex: 1 }}
+          >
+            {thread?.title ?? "Conversation"}
+          </h1>
+        )}
+        <button
+          title="Delete conversation"
+          onClick={onDelete}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 18, lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}
         >
-          thread · dispatched
-        </span>
+          ×
+        </button>
       </div>
-      <div
-        style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}
-      >
+      <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}>
         <AgentBadge slug="director" active />
         <AgentBadge slug="content-lead" active />
         <AgentBadge slug="copywriter" active />
-        <span
-          className="body-sm"
-          style={{ color: "var(--ink-3)", marginLeft: 6 }}
-        >
+        <span className="body-sm" style={{ color: "var(--ink-3)", marginLeft: 6 }}>
           · {messageCount} messages
         </span>
       </div>
@@ -405,16 +421,21 @@ function MessageRenderer({
 function OtherThreadsStrip({
   threads,
   activeThreadId,
+  onDelete,
 }: {
   threads: Thread[];
   activeThreadId: string | null;
+  onDelete: (id: string) => void;
 }) {
   const { setActiveThread } = useAgencyStore();
+
+  const others = threads.filter((t) => t.id !== activeThreadId);
+  if (others.length === 0) return null;
 
   return (
     <aside
       style={{
-        width: 44,
+        width: 52,
         background: "var(--parchment)",
         borderLeft: "1px solid var(--rule)",
         display: "flex",
@@ -425,21 +446,12 @@ function OtherThreadsStrip({
         flexShrink: 0,
       }}
     >
-      <div
-        className="caption"
-        style={{
-          writingMode: "vertical-rl",
-          transform: "rotate(180deg)",
-          color: "var(--ink-3)",
-        }}
-      >
+      <div className="caption" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "var(--ink-3)" }}>
         OTHER THREADS
       </div>
-      {threads
-        .filter((t) => t.id !== activeThreadId)
-        .map((t) => (
+      {others.map((t) => (
+        <div key={t.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
           <button
-            key={t.id}
             title={t.title}
             onClick={() => setActiveThread(t.id)}
             style={{
@@ -450,7 +462,6 @@ function OtherThreadsStrip({
               color: "var(--ink-3)",
               background: "none",
               border: "none",
-              borderLeft: "2px solid transparent",
               cursor: "pointer",
               maxHeight: 140,
               overflow: "hidden",
@@ -460,7 +471,15 @@ function OtherThreadsStrip({
           >
             {t.title}
           </button>
-        ))}
+          <button
+            title="Delete"
+            onClick={() => onDelete(t.id)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 14, lineHeight: 1, padding: "1px 4px" }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
     </aside>
   );
 }
@@ -557,6 +576,23 @@ export function ChatFullView() {
 
   const activeThread =
     snapshot?.threads.find((t) => t.id === activeThreadId) ?? null;
+
+  function handleRename(newTitle: string) {
+    if (!activeThreadId) return;
+    api.threads.rename(activeThreadId, newTitle).then(() => {
+      setSnapshot((s) => s ? {
+        ...s,
+        threads: s.threads.map((t) => t.id === activeThreadId ? { ...t, title: newTitle } : t),
+      } : s);
+    }).catch(console.error);
+  }
+
+  function handleDeleteThread(id: string) {
+    api.threads.delete(id).then(() => {
+      setSnapshot((s) => s ? { ...s, threads: s.threads.filter((t) => t.id !== id) } : s);
+      if (id === activeThreadId) setView("home");
+    }).catch(console.error);
+  }
 
   useEffect(() => {
     api.snapshot().then((data) => setSnapshot(data as SnapshotData)).catch(console.error);
@@ -665,6 +701,8 @@ export function ChatFullView() {
             thread={activeThread}
             messageCount={messages.length}
             onBack={() => setView("home")}
+            onRename={handleRename}
+            onDelete={() => handleDeleteThread(activeThreadId)}
           />
 
           {/* Messages */}
@@ -721,6 +759,7 @@ export function ChatFullView() {
       <OtherThreadsStrip
         threads={snapshot?.threads ?? []}
         activeThreadId={activeThreadId}
+        onDelete={handleDeleteThread}
       />
     </div>
   );
