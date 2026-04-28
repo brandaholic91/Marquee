@@ -51,10 +51,44 @@ const memoryBlock = (dataDir: string, role: string): StandardMessage => {
   return { role: "user", content: `<memory_block>\n${blocks.join("\n")}\n</memory_block>` };
 };
 
-const summarize = (toCompact: StandardMessage[]): StandardMessage => ({
-  role: "user",
-  content: `[earlier turns summarized: ${toCompact.length} messages omitted]`,
-});
+function summarizeToolResult(toolName: string, body: string): string {
+  switch (toolName) {
+    case "web_fetch":
+      return "[tool:web_fetch → content fetched]";
+    case "read_deliverable": {
+      try {
+        const obj = JSON.parse(body) as { title?: string; contentMd?: string };
+        const words = obj.contentMd ? obj.contentMd.split(/\s+/).length : 0;
+        return `[tool:read_deliverable → read "${obj.title ?? "unknown"}" (~${words} words)]`;
+      } catch { return "[tool:read_deliverable → content read]"; }
+    }
+    case "delegate_to_lead":
+    case "delegate_to_specialist": {
+      try {
+        const obj = JSON.parse(body) as { delegationId?: string };
+        return `[tool:${toolName} → delegated (id: ${obj.delegationId ?? "?"})]`;
+      } catch { return `[tool:${toolName} → delegated]`; }
+    }
+    case "submit_deliverable": {
+      try {
+        const obj = JSON.parse(body) as { id?: string; title?: string };
+        return `[tool:submit_deliverable → submitted "${obj.title ?? "?"}" (id: ${obj.id ?? "?"})]`;
+      } catch { return "[tool:submit_deliverable → submitted]"; }
+    }
+    default:
+      return `[tool:${toolName}]\n${body}`;
+  }
+}
+
+export function collapseToolPairs(messages: StandardMessage[]): StandardMessage[] {
+  return messages.map((msg) => {
+    if (msg.role !== "tool") return msg;
+    const match = msg.content.match(/^\[tool:([^\]]+)\]\n?([\s\S]*)/);
+    if (!match) return msg;
+    const [, toolName, body] = match;
+    return { ...msg, content: summarizeToolResult(toolName, body) };
+  });
+}
 
 export function makeTransformContext(opts: TransformContextOptions) {
   const keepRecent = opts.keepRecent ?? 50;
@@ -64,6 +98,6 @@ export function makeTransformContext(opts: TransformContextOptions) {
     if (llmMessages.length <= keepRecent) return [head, ...llmMessages];
     const old = llmMessages.slice(0, llmMessages.length - keepRecent);
     const recent = llmMessages.slice(llmMessages.length - keepRecent);
-    return [head, summarize(old), ...recent];
+    return [head, ...collapseToolPairs(old), ...recent];
   };
 }
