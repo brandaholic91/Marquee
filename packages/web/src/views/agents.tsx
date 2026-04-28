@@ -18,6 +18,7 @@ interface AgentConfig {
   tone?: string;
   response_length?: string;
   language?: string;
+  model?: string;
   system_prompt_override?: string;
 }
 
@@ -102,6 +103,26 @@ function ConfigPanel({ role }: { role: string }) {
               onChange={(e) => setConfig({ ...config, language: e.target.value || undefined })}
               placeholder="e.g. hu, en"
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13, boxSizing: "border-box" }}
+            />
+          </div>
+          <div>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>
+              Model{" "}
+              <span style={{ color: "var(--ink-3)", fontWeight: 400, fontSize: 11 }}>
+                (openai-subscription only)
+              </span>
+            </label>
+            <input
+              type="text"
+              value={config.model ?? ""}
+              onChange={(e) => setConfig({ ...config, model: e.target.value || undefined })}
+              placeholder="e.g. gpt-5.1, claude-sonnet-4-6"
+              style={{
+                width: "100%", padding: "6px 8px",
+                border: "1px solid var(--rule)", borderRadius: 4,
+                background: "var(--parchment)", fontSize: 13,
+                boxSizing: "border-box",
+              }}
             />
           </div>
           {preview && (
