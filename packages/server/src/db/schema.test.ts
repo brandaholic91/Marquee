@@ -15,6 +15,11 @@ describe("schema", () => {
 		expect(Object.keys(schema)).toContain("turns");
 	});
 
+	it("exports tasks and taskPendingUpdates tables", () => {
+		expect(Object.keys(schema)).toContain("tasks");
+		expect(Object.keys(schema)).toContain("taskPendingUpdates");
+	});
+
 	it("has no duplicate column names in any table", () => {
 		for (const [name, table] of Object.entries(schema)) {
 			const cols = getTableConfig(table as Parameters<typeof getTableConfig>[0]).columns.map((c) => c.name);

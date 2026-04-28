@@ -188,3 +188,29 @@ export const memoryProposals = sqliteTable("memory_proposals", {
 	status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
 	createdAt: ts("created_at"),
 });
+
+export const tasks = sqliteTable(
+	"tasks",
+	{
+		id: text("id").primaryKey(),
+		delegationId: text("delegation_id").notNull().references(() => delegations.id),
+		title: text("title").notNull(),
+		descriptionMd: text("description_md").notNull().default(""),
+		status: text("status", { enum: ["open", "in_progress", "done", "blocked"] }).notNull(),
+		assignedTo: text("assigned_to").notNull(),
+		version: integer("version").notNull().default(1),
+		createdAt: ts("created_at"),
+		updatedAt: ts("updated_at"),
+	},
+	(t) => ({
+		assignedStatusIdx: index("tasks_assigned_status_idx").on(t.assignedTo, t.status),
+	}),
+);
+
+export const taskPendingUpdates = sqliteTable("task_pending_updates", {
+	id: text("id").primaryKey(),
+	taskId: text("task_id").notNull().references(() => tasks.id),
+	message: text("message").notNull(),
+	deliveredAt: integer("delivered_at", { mode: "timestamp_ms" }),
+	createdAt: ts("created_at"),
+});
