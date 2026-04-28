@@ -95,6 +95,16 @@ export const api = {
     repurpose: (id: string, channels: string[]) =>
       post<{ delegationId: string }>(`/api/deliverables/${id}/repurpose`, { channels }),
   },
+  campaigns: {
+    list: () => fetch("/api/campaigns").then(json) as Promise<import("../store/useAgencyStore").Campaign[]>,
+    get: (id: string) => fetch(`/api/campaigns/${id}`).then(json),
+    patch: (id: string, body: { title?: string; description?: string; status?: string }) =>
+      fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(json),
+  },
   snapshot: () => fetch("/api/state/snapshot").then(json),
   tasks: {
     list: (params?: { assigned_to?: string; status?: string }) => {

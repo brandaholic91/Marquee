@@ -10,15 +10,28 @@ export interface Task {
   version: number;
   createdAt: string;
   updatedAt: string;
+  campaignId?: string | null;
+}
+
+export interface Campaign {
+  id: string;
+  title: string;
+  description: string | null;
+  status: "active" | "completed" | "archived";
+  createdAt: string;
+  deliverableCount?: number;
+  taskCount?: number;
+  pendingApprovals?: number;
 }
 
 interface AgencyState {
   activeThreadId: string | null;
   drawerOpen: boolean;
-  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding" | "pipeline" | "tasks" | "agents" | "skills" | "calendar";
+  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding" | "pipeline" | "tasks" | "agents" | "skills" | "calendar" | "campaigns";
   selectedDeliverableId: string | null;
   selectedMemoryFile: string | null;
   tasks: Task[];
+  campaigns: Campaign[];
   sidebarCollapsed: boolean;
   activeAgents: string[];
   setActiveThread: (id: string | null) => void;
@@ -30,6 +43,7 @@ interface AgencyState {
   setSelectedMemoryFile: (file: string | null) => void;
   setTasks: (tasks: Task[]) => void;
   upsertTask: (task: Task) => void;
+  setCampaigns: (campaigns: Campaign[]) => void;
 }
 
 export const useAgencyStore = create<AgencyState>((set) => ({
@@ -39,6 +53,7 @@ export const useAgencyStore = create<AgencyState>((set) => ({
   selectedDeliverableId: null,
   selectedMemoryFile: null,
   tasks: [],
+  campaigns: [],
   sidebarCollapsed: false,
   activeAgents: [],
   setActiveThread: (id) => set({ activeThreadId: id }),
@@ -57,4 +72,5 @@ export const useAgencyStore = create<AgencyState>((set) => ({
       next[idx] = task;
       return { tasks: next };
     }),
+  setCampaigns: (campaigns) => set({ campaigns }),
 }));
