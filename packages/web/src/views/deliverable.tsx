@@ -243,7 +243,7 @@ function RepurposeModal({ deliverableId, onClose }: RepurposeModalProps) {
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
-      onClick={onClose}
+      onClick={loading ? undefined : onClose}
     >
       <div
         style={{
@@ -362,7 +362,7 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-        {deliverable.status === "shipped" && onRepurpose && (
+        {onRepurpose && (
           <button className="btn btn-secondary" onClick={onRepurpose}>Repurpose</button>
         )}
         <button className="btn btn-primary" onClick={onApprove}>Approve &amp; ship</button>
@@ -890,7 +890,7 @@ export function DeliverableView() {
           onApprove={handleApprove}
           onRequestChanges={handleRequestChanges}
           onReject={handleReject}
-          onRepurpose={() => setRepurposeOpen(true)}
+          onRepurpose={deliverable.status === "shipped" ? () => setRepurposeOpen(true) : undefined}
         />
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: "60% 40%", minHeight: 0 }}>
           <MarkdownPreview deliverable={deliverable} revision={revision} />
