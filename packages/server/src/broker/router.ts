@@ -17,6 +17,7 @@ export class AgentRouter {
 	private unsub?: () => void;
 	private booted = false;
 	private turnStartTimes = new Map<string, number>(); // sessionId → start ms
+	private budgetWarnEmitted = false;
 
 	constructor(
 		private db: AgencyDb,
@@ -165,6 +166,16 @@ export class AgentRouter {
 	}
 
 	private spawnAndPrompt(role: string, delegationId: string, userMessage: string): void {
+		// Hard budget guard: block non-director specialists when daily limit is exceeded
+		if (this.telemetry && this.telemetry.opts.dailyBudgetCents > 0) {
+			try {
+				this.telemetry.checkBudget();
+			} catch {
+				this.broker.emit("budget_exceeded", { role, delegationId });
+				return;
+			}
+		}
+
 		// Fetch any undelivered task updates for this delegation
 		const task = this.db.select().from(tasks).where(eq(tasks.delegationId, delegationId)).get();
 		let fullMessage = userMessage;
@@ -232,12 +243,13 @@ export class AgentRouter {
 			costUsdCents: Math.round(msg.usage.cost.total * 100),
 			latencyMs: Date.now() - startedAt,
 		});
-		// Soft limit warning (80%) — used by Task 4, guard is no-op here
+		// Soft limit: warn once at 80%
 		const limit = this.telemetry.opts.dailyBudgetCents;
-		if (limit > 0) {
+		if (limit > 0 && !this.budgetWarnEmitted) {
 			const { totalCents } = this.telemetry.getTodayUsage();
 			const pct = totalCents / limit;
-			if (pct >= 0.8 && pct < 1.0) {
+			if (pct >= 0.8) {
+				this.budgetWarnEmitted = true;
 				this.broker.emit("budget_warning", { usedCents: totalCents, limitCents: limit, pct: Math.round(pct * 100) });
 			}
 		}
