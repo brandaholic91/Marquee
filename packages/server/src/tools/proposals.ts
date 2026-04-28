@@ -37,6 +37,8 @@ export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { bri
 			`**Deliverables:** ${input.deliverables.join(", ")}`,
 			input.deadline ? `**Deadline:** ${input.deadline}` : "",
 		].filter(Boolean).join("\n");
+		// sourceThreadId is a soft reference — store null to avoid FK constraint when thread
+		// hasn't been created yet (e.g. during early-stage proposal flows).
 		ctx.db.insert(briefs).values({
 			id, sourceThreadId: null, status: "draft", contentMd: md, campaignId,
 		}).run();
