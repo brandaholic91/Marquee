@@ -5,6 +5,7 @@ import type { AgencyDb } from "../db/index.js";
 import { briefs, agentSessions, delegations, messages, tasks, taskPendingUpdates } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
+import type { AuthManager } from "../providers/auth.js";
 
 const WARM_ROLES = ["director", "content-lead", "eval-judge", "distribution-lead", "insights-lead"] as const;
 
@@ -19,6 +20,7 @@ export class AgentRouter {
 		private db: AgencyDb,
 		private broker: Broker,
 		private dataDir: string,
+		private authManager?: AuthManager,
 	) {}
 
 	boot(): void {
@@ -26,6 +28,7 @@ export class AgentRouter {
 			const sessionId = randomUUID();
 			const agent = makeAgent({
 				role, dataDir: this.dataDir, db: this.db, sessionId,
+				authManager: this.authManager,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: role, sessionId }),
 			} satisfies MakeAgentOpts);
 			this.warmAgents.set(role, agent);
@@ -105,6 +108,7 @@ export class AgentRouter {
 			// Chat agents use no tools — pure conversational director
 			agent = makeAgent({
 				role: "director", dataDir: this.dataDir, db: this.db, sessionId, threadId,
+				authManager: this.authManager,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "director", sessionId }),
 			} satisfies MakeAgentOpts);
 			// Strip tools so the model responds with text, not tool calls
@@ -165,6 +169,7 @@ export class AgentRouter {
 		const sessionId = randomUUID();
 		const agent = makeAgent({
 			role, dataDir: this.dataDir, db: this.db, sessionId, delegationId,
+			authManager: this.authManager,
 			emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: role, sessionId }),
 		} satisfies MakeAgentOpts);
 		this.db.insert(agentSessions).values({
@@ -218,6 +223,7 @@ export class AgentRouter {
 		const sessionId = randomUUID();
 		const agent = makeAgent({
 			role, dataDir: this.dataDir, db: this.db, sessionId,
+			authManager: this.authManager,
 			emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: role, sessionId }),
 		} satisfies MakeAgentOpts);
 		this.warmAgents.set(role, agent);
@@ -255,6 +261,7 @@ export class AgentRouter {
 		const sessionId = randomUUID();
 		const agent = makeAgent({
 			role, dataDir: this.dataDir, db: this.db, sessionId, delegationId,
+			authManager: this.authManager,
 			emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: role, sessionId }),
 		} satisfies MakeAgentOpts);
 		this.db.insert(agentSessions).values({

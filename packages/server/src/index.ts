@@ -10,6 +10,8 @@ import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
 import { TaskManager } from "./tasks/manager.js";
 import { runDailySummary } from "./cron/daily-summary.js";
+import { providerMode } from "./providers/index.js";
+import { AuthManager } from "./providers/auth.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -21,7 +23,17 @@ async function main() {
 	const { db, close } = openDb(join(dataDir, "state.db"));
 	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
 	const broker = new Broker(db, webhookUrl);
-	const router = new AgentRouter(db, broker, dataDir);
+
+	let authManager: AuthManager | undefined;
+	if (providerMode() === "openai-subscription") {
+		const authFile = process.env.PI_AUTH_FILE
+			?? join(homedir(), ".pi", "agent", "auth.json");
+		authManager = new AuthManager(authFile);
+		await authManager.start();
+		console.log("[marquee] openai-subscription mode: auth loaded");
+	}
+
+	const router = new AgentRouter(db, broker, dataDir, authManager);
 	const taskManager = new TaskManager(db, broker, router);
 	taskManager.boot();
 	router.boot();
@@ -36,6 +48,7 @@ async function main() {
 	const cronTask = schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
 
 	process.on("SIGTERM", async () => {
+		authManager?.stop();
 		cronTask.stop();
 		await app.close();
 		close();
