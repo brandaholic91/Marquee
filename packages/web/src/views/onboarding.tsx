@@ -45,10 +45,14 @@ export function OnboardingView() {
       const e = ev as { threadId?: string; text?: string; agentSlug?: string };
       if (e.threadId !== threadId) return;
       setTyping(false);
+      // Strip any tool-call narration the model might prepend (e.g. use_skill("onboarding"))
+      const raw = e.text ?? "";
+      const text = raw.replace(/^(\s*use_skill\s*\([^)]*\)\s*)+/i, "").trim();
+      if (!text) return;
       setMsgs((prev) => [...prev, {
         id: Math.random().toString(36).slice(2),
         sender: "director",
-        text: e.text ?? "",
+        text,
       }]);
     }));
 
