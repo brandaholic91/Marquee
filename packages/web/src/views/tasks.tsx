@@ -4,7 +4,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
-import { useAgencyStore, type Task } from "../store/useAgencyStore";
+import { useAgencyStore, type Task, type Campaign } from "../store/useAgencyStore";
 import { api } from "../lib/api";
 import { Sidebar } from "../components/layout/Sidebar";
 import { useBreakpoint } from "../hooks/useBreakpoint";
@@ -73,6 +73,8 @@ function DraggableCard({ task }: { task: Task }) {
 
 export function TasksView() {
   const { tasks, setTasks, upsertTask } = useAgencyStore();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignFilter, setCampaignFilter] = useState<string>("");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const { isMobile } = useBreakpoint();
@@ -80,6 +82,10 @@ export function TasksView() {
   useEffect(() => {
     api.tasks.list().then(setTasks).catch(console.error);
   }, [setTasks]);
+
+  useEffect(() => {
+    api.campaigns.list().then(setCampaigns).catch(() => {});
+  }, []);
 
   function onDragStart(evt: DragStartEvent) {
     const task = tasks.find((t) => t.id === evt.active.id);
@@ -106,11 +112,35 @@ export function TasksView() {
     }
   }
 
+  const filteredTasks = campaignFilter
+    ? tasks.filter((t) => t.campaignId === campaignFilter)
+    : tasks;
+
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="tasks" />
       <main style={{ flex: 1, padding: isMobile ? "20px 12px 88px" : "28px 32px", overflow: "auto" }}>
         <h1 className="heading" style={{ marginBottom: 24 }}>Tasks</h1>
+        {campaigns.length > 0 && (
+          <select
+            value={campaignFilter}
+            onChange={(e) => setCampaignFilter(e.target.value)}
+            style={{
+              marginBottom: 16,
+              padding: "4px 8px",
+              border: "1px solid var(--rule)",
+              borderRadius: 4,
+              background: "var(--parchment)",
+              fontSize: 12,
+              color: "var(--ink-2)",
+            }}
+          >
+            <option value="">All campaigns</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        )}
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div style={{ display: "flex", gap: 16 }}>
             {COLUMNS.map((col) => (
@@ -118,7 +148,7 @@ export function TasksView() {
                 key={col.id}
                 status={col.id}
                 label={col.label}
-                tasks={tasks.filter((t) => t.status === col.id)}
+                tasks={filteredTasks.filter((t) => t.status === col.id)}
               />
             ))}
           </div>

@@ -10,7 +10,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { api } from "../lib/api.js";
-import { useAgencyStore } from "../store/useAgencyStore.js";
+import { useAgencyStore, type Campaign } from "../store/useAgencyStore.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
 import { useBreakpoint } from "../hooks/useBreakpoint.js";
 
@@ -20,6 +20,7 @@ interface Deliverable {
   type: string;
   status: string;
   updatedAt?: string;
+  campaignId?: string | null;
 }
 
 const COLUMNS = [
@@ -121,6 +122,8 @@ function Column({
 export function PipelineView() {
   const setSelectedDeliverable = useAgencyStore((s) => s.setSelectedDeliverable);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignFilter, setCampaignFilter] = useState<string>("");
   const [dragging, setDragging] = useState<Deliverable | null>(null);
   const { isMobile } = useBreakpoint();
 
@@ -132,7 +135,15 @@ export function PipelineView() {
 
   useEffect(() => { load(); }, [load]);
 
-  const byStatus = (status: string) => deliverables.filter((d) => d.status === status);
+  useEffect(() => {
+    api.campaigns.list().then(setCampaigns).catch(() => {});
+  }, []);
+
+  const filtered = campaignFilter
+    ? deliverables.filter((d) => d.campaignId === campaignFilter)
+    : deliverables;
+
+  const byStatus = (status: string) => filtered.filter((d) => d.status === status);
 
   const handleDragStart = ({ active }: { active: { id: string | number } }) => {
     setDragging(deliverables.find((d) => d.id === String(active.id)) ?? null);
@@ -164,8 +175,28 @@ export function PipelineView() {
         <div style={{ padding: isMobile ? "16px 16px 10px" : "20px 28px 12px", borderBottom: "1px solid var(--rule)", flexShrink: 0 }}>
           <div className="headline-md">Pipeline</div>
           <div className="body-sm" style={{ marginTop: 2 }}>
-            {deliverables.length} deliverable{deliverables.length !== 1 ? "s" : ""}
+            {filtered.length} deliverable{filtered.length !== 1 ? "s" : ""}
           </div>
+          {campaigns.length > 0 && (
+            <select
+              value={campaignFilter}
+              onChange={(e) => setCampaignFilter(e.target.value)}
+              style={{
+                marginTop: 8,
+                padding: "4px 8px",
+                border: "1px solid var(--rule)",
+                borderRadius: 4,
+                background: "var(--parchment)",
+                fontSize: 12,
+                color: "var(--ink-2)",
+              }}
+            >
+              <option value="">All campaigns</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+          )}
         </div>
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div style={{ flex: 1, overflow: "auto", padding: isMobile ? "16px 12px 88px" : "20px 24px", display: "flex", gap: 16 }}>
