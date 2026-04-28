@@ -27,7 +27,7 @@ export function loadSkillsForRole(dataDir: string, role: string): SkillRecipe[] 
 	const dir = join(skillsDir(dataDir), role);
 	let files: string[];
 	try {
-		files = readdirSync(dir).filter((f) => f.endsWith(".md"));
+		files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
 	} catch {
 		return [];
 	}
