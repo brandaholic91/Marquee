@@ -7,6 +7,7 @@ import type { ServerOpts } from "../index.js";
 const ALL_ROLES = [
 	"director", "content-lead", "distribution-lead", "insights-lead",
 	"copywriter", "social-manager", "seo-analyst", "eval-judge",
+	"paid-specialist", "repurposer", "analytics-analyst",
 ];
 
 interface SkillInfo {

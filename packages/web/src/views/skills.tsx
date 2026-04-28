@@ -4,14 +4,17 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const ALL_ROLES = [
-  { slug: "director",          label: "Director" },
-  { slug: "content-lead",      label: "Content Lead" },
-  { slug: "distribution-lead", label: "Distribution Lead" },
-  { slug: "insights-lead",     label: "Insights Lead" },
-  { slug: "copywriter",        label: "Copywriter" },
-  { slug: "social-manager",    label: "Social Manager" },
-  { slug: "seo-analyst",       label: "SEO Analyst" },
-  { slug: "eval-judge",        label: "Eval Judge" },
+  { slug: "director",           label: "Director" },
+  { slug: "content-lead",       label: "Content Lead" },
+  { slug: "distribution-lead",  label: "Distribution Lead" },
+  { slug: "insights-lead",      label: "Insights Lead" },
+  { slug: "copywriter",         label: "Copywriter" },
+  { slug: "social-manager",     label: "Social Manager" },
+  { slug: "seo-analyst",        label: "SEO Analyst" },
+  { slug: "eval-judge",         label: "Eval Judge" },
+  { slug: "paid-specialist",    label: "Paid Specialist" },
+  { slug: "repurposer",         label: "Repurposer" },
+  { slug: "analytics-analyst",  label: "Analytics Analyst" },
 ];
 
 interface Skill {
