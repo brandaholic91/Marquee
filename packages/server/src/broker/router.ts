@@ -120,6 +120,10 @@ export class AgentRouter {
 			a.subscribe(async (evt) => {
 				type AnyEvt = { type: string; message?: { role: string; content: Array<{ type: string; text?: string }> } };
 				const e = evt as AnyEvt;
+				if (e.type === "turn_start") {
+					this.broker.emit("agent_typing", { threadId, agentSlug: "director" });
+					return;
+				}
 				if (e.type !== "turn_end") return;
 				const msg = e.message;
 				if (!msg || msg.role !== "assistant") return;

@@ -300,6 +300,47 @@ function BriefProposalInline({
   );
 }
 
+// ---- TypingBubble ----
+
+function TypingBubble({ agentSlug }: { agentSlug: string }) {
+  const name = agentSlug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+  const safeWho: AvatarWho = (agentSlug as AvatarWho) in { human: 1, director: 1, "content-lead": 1, copywriter: 1, "eval-judge": 1, analytics: 1, "distribution-lead": 1, "insights-lead": 1 }
+    ? (agentSlug as AvatarWho)
+    : "director";
+  return (
+    <>
+      <style>{`
+        @keyframes mq-dot-bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+          40% { transform: translateY(-5px); opacity: 1; }
+        }
+        .mq-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); margin: 0 2px; animation: mq-dot-bounce 1.2s infinite ease-in-out; }
+        .mq-dot:nth-child(2) { animation-delay: 0.2s; }
+        .mq-dot:nth-child(3) { animation-delay: 0.4s; }
+      `}</style>
+      <div style={{ display: "flex", gap: 14 }}>
+        <Avatar who={safeWho} size="md" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{name}</span>
+          </div>
+          <div style={{
+            display: "inline-flex", alignItems: "center",
+            padding: "8px 14px",
+            background: "var(--parchment)",
+            border: "1px solid var(--rule)",
+            borderRadius: 12,
+          }}>
+            <span className="mq-dot" />
+            <span className="mq-dot" />
+            <span className="mq-dot" />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ---- MessageRenderer ----
 
 function MessageRenderer({
@@ -511,6 +552,7 @@ export function ChatFullView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [typingAgent, setTypingAgent] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const activeThread =
@@ -544,15 +586,22 @@ export function ChatFullView() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-refresh messages when agent replies to this thread
+  // Auto-refresh messages when agent replies + show typing indicator
   useEffect(() => {
     if (!activeThreadId) return;
     agencyEvents.start();
-    const unsub = agencyEvents.on("agent_message", (ev) => {
+    const unsubMsg = agencyEvents.on("agent_message", (ev) => {
       const e = ev as { threadId?: string };
-      if (e.threadId === activeThreadId) refreshMessages();
+      if (e.threadId === activeThreadId) {
+        setTypingAgent(null);
+        refreshMessages();
+      }
     });
-    return () => { unsub(); agencyEvents.stop(); };
+    const unsubTyping = agencyEvents.on("agent_typing", (ev) => {
+      const e = ev as { threadId?: string; agentSlug?: string };
+      if (e.threadId === activeThreadId) setTypingAgent(e.agentSlug ?? "director");
+    });
+    return () => { unsubMsg(); unsubTyping(); agencyEvents.stop(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeThreadId]);
 
@@ -657,6 +706,9 @@ export function ChatFullView() {
                 onRefresh={refreshMessages}
               />
             ))}
+            {typingAgent && (
+              <TypingBubble agentSlug={typingAgent} />
+            )}
             <div ref={bottomRef} />
           </div>
 
