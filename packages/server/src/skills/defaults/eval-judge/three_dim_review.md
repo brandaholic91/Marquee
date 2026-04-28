@@ -1,6 +1,6 @@
 ---
 name: three_dim_review
-description: Scores any deliverable on three dimensions (1–5 each): brand voice fit, factual accuracy, and USP usage. Produces a summary and flags issues if total score is below 9.
+description: "Scores any deliverable on three dimensions (1–5 each): brand voice fit, factual accuracy, and USP usage. Produces a summary and flags issues if total score is below 9."
 ---
 
 Score every deliverable on three dimensions, each 1–5:

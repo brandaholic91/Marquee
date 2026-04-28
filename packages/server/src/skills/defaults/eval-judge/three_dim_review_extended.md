@@ -1,6 +1,6 @@
 ---
 name: three_dim_review_extended
-description: Extended scoring rubric for linkedin_post deliverables. Uses modified weights: hook quality is prioritised, USP placement is evaluated for the LinkedIn format, and character count is checked.
+description: "Extended scoring rubric for linkedin_post deliverables. Uses modified weights: hook quality is prioritised, USP placement is evaluated for the LinkedIn format, and character count is checked."
 ---
 
 For LinkedIn posts, use modified scoring weights:
