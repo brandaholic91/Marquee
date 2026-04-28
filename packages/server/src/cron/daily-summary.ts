@@ -103,7 +103,7 @@ export async function runDailySummary(db: AgencyDb, dataDir: string): Promise<vo
     const git = simpleGit(dataDir);
     if (await git.checkIsRepo()) {
       await git.add(filePath);
-      await git.commit(`memory: daily summary ${today}`);
+      await git.commit(`memory: daily summary ${today}`, [filePath]);
     }
   } catch { /* best effort */ }
 }
