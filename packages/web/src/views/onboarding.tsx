@@ -10,13 +10,54 @@ interface Msg {
   text: string;
 }
 
+function PreviewCard({ label, filename, content, onChange, onApprove, saving }: {
+  label: string; filename: string; content: string;
+  onChange: (v: string) => void; onApprove: () => void; saving: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+      <Avatar who="director" size="sm" />
+      <div style={{ flex: 1, border: "2px solid var(--secondary)", borderRadius: 6, background: "var(--white)", overflow: "hidden" }}>
+        <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
+            {label}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto", fontFamily: "var(--font-mono)" }}>{filename}</span>
+        </div>
+        <div style={{ padding: 16 }}>
+          <textarea
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+              width: "100%", padding: "10px 12px", border: "1px solid var(--rule)",
+              borderRadius: 4, background: "var(--parchment)", fontSize: 12,
+              fontFamily: "var(--font-mono)", resize: "vertical", boxSizing: "border-box",
+              lineHeight: 1.7, minHeight: 180,
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={onApprove}
+              disabled={saving}
+              style={{ padding: "8px 20px", borderRadius: 4, border: "none", cursor: saving ? "default" : "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
+            >
+              {saving ? "Mentés…" : "Jóváhagyás & mentés"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function OnboardingView() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
   const [inputText, setInputText] = useState("");
   const [preview, setPreview] = useState<{ clientProfile: string; brandGuidelines: string } | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [approved, setApproved] = useState({ clientProfile: false, brandGuidelines: false });
+  const [savingFile, setSavingFile] = useState<string | null>(null);
   const [complete, setComplete] = useState(false);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -95,17 +136,24 @@ export function OnboardingView() {
     }
   }
 
-  const allApproved = complete;
+  const allApproved = complete || (approved.clientProfile && approved.brandGuidelines);
 
-  async function handleSavePreview() {
+  async function handleApproveFile(file: "clientProfile" | "brandGuidelines") {
     if (!preview) return;
-    setSaving(true);
+    const filename = file === "clientProfile" ? "client_profile.md" : "brand_guidelines.md";
+    const content = preview[file];
+    setSavingFile(filename);
     try {
-      await api.onboarding.save(preview.clientProfile, preview.brandGuidelines, threadId);
-      setPreview(null);
-      setComplete(true);
+      await api.memory.put(filename, content);
+      const next = { ...approved, [file]: true };
+      setApproved(next);
+      if (next.clientProfile && next.brandGuidelines) {
+        // Both approved — trigger complete on server for event emission
+        api.onboarding.save(preview.clientProfile, preview.brandGuidelines, threadId).catch(() => {});
+        setComplete(true);
+      }
     } finally {
-      setSaving(false);
+      setSavingFile(null);
     }
   }
 
@@ -180,53 +228,34 @@ export function OnboardingView() {
                 </div>
               )}
 
-              {/* Onboarding preview — show before saving */}
-              {preview && !complete && (
+              {/* client_profile.md előnézet */}
+              {preview && !approved.clientProfile && (
+                <PreviewCard
+                  label="ÜGYFÉLPROFIL · ELŐNÉZET"
+                  filename="client_profile.md"
+                  content={preview.clientProfile}
+                  onChange={(v) => setPreview({ ...preview, clientProfile: v })}
+                  onApprove={() => handleApproveFile("clientProfile")}
+                  saving={savingFile === "client_profile.md"}
+                />
+              )}
+              {preview && approved.clientProfile && !approved.brandGuidelines && (
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <Avatar who="director" size="sm" />
-                  <div style={{ flex: 1, border: "2px solid var(--secondary)", borderRadius: 6, background: "var(--white)", overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
-                        ÜGYFÉLPROFIL · ELŐNÉZET
-                      </span>
-                    </div>
-                    <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>client_profile.md</div>
-                        <textarea
-                          value={preview.clientProfile}
-                          onChange={(e) => setPreview({ ...preview, clientProfile: e.target.value })}
-                          rows={6}
-                          style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 12, fontFamily: "var(--font-mono)", resize: "vertical", boxSizing: "border-box" }}
-                        />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>brand_guidelines.md</div>
-                        <textarea
-                          value={preview.brandGuidelines}
-                          onChange={(e) => setPreview({ ...preview, brandGuidelines: e.target.value })}
-                          rows={5}
-                          style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 12, fontFamily: "var(--font-mono)", resize: "vertical", boxSizing: "border-box" }}
-                        />
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button
-                          onClick={handleSavePreview}
-                          disabled={saving}
-                          style={{ padding: "8px 20px", borderRadius: 4, border: "none", cursor: saving ? "default" : "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
-                        >
-                          {saving ? "Mentés…" : "Jóváhagyás & mentés"}
-                        </button>
-                        <button
-                          onClick={() => setPreview(null)}
-                          style={{ padding: "8px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
-                        >
-                          Elvetés
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <div style={{ fontSize: 13, color: "var(--success, #2d7a4f)", paddingTop: 4 }}>✓ client_profile.md elmentve</div>
                 </div>
+              )}
+
+              {/* brand_guidelines.md előnézet */}
+              {preview && !approved.brandGuidelines && (
+                <PreviewCard
+                  label="BRAND IRÁNYELVEK · ELŐNÉZET"
+                  filename="brand_guidelines.md"
+                  content={preview.brandGuidelines}
+                  onChange={(v) => setPreview({ ...preview, brandGuidelines: v })}
+                  onApprove={() => handleApproveFile("brandGuidelines")}
+                  saving={savingFile === "brand_guidelines.md"}
+                />
               )}
 
 
