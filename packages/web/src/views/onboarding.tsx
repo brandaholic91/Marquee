@@ -10,19 +10,11 @@ interface Msg {
   text: string;
 }
 
-interface Proposal {
-  id: string;
-  file: string;
-  patch: string;
-  status: "pending" | "approved" | "rejected";
-}
-
 export function OnboardingView() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [preview, setPreview] = useState<{ clientProfile: string; brandGuidelines: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [complete, setComplete] = useState(false);
@@ -32,6 +24,8 @@ export function OnboardingView() {
 
   // Start SSE + onboarding thread on mount
   useEffect(() => {
+    // Clear SSE replay position so old events don't show up in this session
+    localStorage.removeItem("agency:lastEventId");
     agencyEvents.start();
     api.onboarding.start().then(({ threadId: tid }) => {
       setThreadId(tid);
@@ -64,15 +58,6 @@ export function OnboardingView() {
       if (e.threadId === threadId) setTyping(true);
     }));
 
-    unsubs.push(agencyEvents.on("memory_proposed", (ev) => {
-      const e = ev as { proposalId?: string; file?: string };
-      if (!e.proposalId) return;
-      fetch("/api/memory-proposals").then((r) => r.json()).then((all: Proposal[]) => {
-        const p = all.find((x) => x.id === e.proposalId);
-        if (p) setProposals((prev) => [...prev.filter((x) => x.id !== p.id), p]);
-      }).catch(() => {});
-    }));
-
     unsubs.push(agencyEvents.on("onboarding_preview", (ev) => {
       const e = ev as { clientProfile?: string; brandGuidelines?: string };
       if (e.clientProfile && e.brandGuidelines) {
@@ -90,7 +75,7 @@ export function OnboardingView() {
   // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, proposals, typing]);
+  }, [msgs, preview, typing, complete]);
 
   async function handleSend() {
     const text = inputText.trim();
@@ -109,17 +94,7 @@ export function OnboardingView() {
     }
   }
 
-  async function handleApprove(proposalId: string) {
-    await api.memory.approve(proposalId).catch(() => {});
-    setProposals((prev) => prev.map((p) => p.id === proposalId ? { ...p, status: "approved" } : p));
-  }
-
-  async function handleReject(proposalId: string) {
-    await api.memory.reject(proposalId).catch(() => {});
-    setProposals((prev) => prev.map((p) => p.id === proposalId ? { ...p, status: "rejected" } : p));
-  }
-
-  const allApproved = complete || (proposals.length > 0 && proposals.every((p) => p.status === "approved"));
+  const allApproved = complete;
 
   async function handleSavePreview() {
     if (!preview) return;
@@ -253,36 +228,6 @@ export function OnboardingView() {
                 </div>
               )}
 
-              {proposals.map((p) => (
-                <div key={p.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <Avatar who="director" size="sm" />
-                  <div style={{ flex: 1, border: "2px solid var(--secondary)", borderRadius: 6, background: "var(--white)", overflow: "hidden" }}>
-                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)" }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
-                        MEMÓRIA · JAVASLAT
-                      </span>
-                      <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: "auto" }}>{p.file}</span>
-                    </div>
-                    <div style={{ padding: 14 }}>
-                      <pre style={{ padding: "10px 14px", background: "var(--parchment)", borderRadius: 4, fontSize: 12, lineHeight: 1.7, color: "var(--ink-1)", whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
-                        {p.patch}
-                      </pre>
-                      {p.status === "pending" && (
-                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                          <button onClick={() => handleApprove(p.id)} style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}>
-                            Jóváhagyás &amp; mentés
-                          </button>
-                          <button onClick={() => handleReject(p.id)} style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}>
-                            Elutasítás
-                          </button>
-                        </div>
-                      )}
-                      {p.status === "approved" && <div style={{ marginTop: 10, fontSize: 13, color: "var(--success, #2d7a4f)", fontWeight: 500 }}>✓ Mentve</div>}
-                      {p.status === "rejected" && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ink-3)" }}>Elutasítva</div>}
-                    </div>
-                  </div>
-                </div>
-              ))}
 
               {allApproved && (
                 <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 8px" }}>
