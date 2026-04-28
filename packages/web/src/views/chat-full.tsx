@@ -100,7 +100,7 @@ function ChatHeader({
         style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--ink-3)" }}
         onClick={onBack}
       >
-        ← Home
+        ← Főoldal
       </button>
       <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         {editing ? (
@@ -135,7 +135,7 @@ function ChatHeader({
         <AgentBadge slug="content-lead" active />
         <AgentBadge slug="copywriter" active />
         <span className="body-sm" style={{ color: "var(--ink-3)", marginLeft: 6 }}>
-          · {messageCount} messages
+          · {messageCount} üzenet
         </span>
       </div>
     </div>
@@ -452,17 +452,17 @@ function OtherThreadsStrip({
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <span className="caption" style={{ color: "var(--ink-3)" }}>Threads</span>
+        <span className="caption" style={{ color: "var(--ink-3)" }}>Szálak</span>
         <button
           onClick={onNewThread}
-          title="New conversation"
+          title="Új beszélgetés"
           style={{
             background: "none", border: "1px solid var(--rule)", borderRadius: 4,
             cursor: "pointer", fontSize: 11, color: "var(--ink-2)",
             padding: "2px 8px", lineHeight: "18px",
           }}
         >
-          + New
+          + Új
         </button>
       </div>
 
@@ -470,7 +470,7 @@ function OtherThreadsStrip({
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {others.length === 0 && (
           <div style={{ padding: "12px 14px", fontSize: 12, color: "var(--ink-3)" }}>
-            No other threads
+            Nincs más szál
           </div>
         )}
         {others.map((t) => (
@@ -543,7 +543,7 @@ function StickyInput({
       setText("");
       onSent();
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : "Failed to send message");
+      setSendError(err instanceof Error ? err.message : "Nem sikerült elküldeni");
     } finally {
       setSending(false);
     }
@@ -566,7 +566,7 @@ function StickyInput({
           ref={textareaRef}
           className="textarea-chat"
           style={{ border: 0, padding: 4, minHeight: 56, width: "100%" }}
-          placeholder="Reply, or @ to invite a teammate"
+          placeholder="Válaszolj, vagy @ a csapatnak"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -584,7 +584,7 @@ function StickyInput({
           }}
         >
           <span className="body-sm" style={{ color: "var(--ink-3)" }}>
-            ⏎ to send
+            ⏎ küldés
           </span>
           <button
             className="btn btn-secondary btn-sm"
@@ -728,7 +728,7 @@ export function ChatFullView() {
               )}
               {!loading && messages.length === 0 && (
                 <div style={{ color: "var(--ink-3)", fontSize: 13, paddingLeft: 42 }}>
-                  No messages yet. Start the conversation below.
+                  Még nincs üzenet. Kezdj el írni lent.
                 </div>
               )}
               {messages.map((msg) => (
