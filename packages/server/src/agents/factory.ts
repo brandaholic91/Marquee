@@ -22,8 +22,17 @@ export interface MakeAgentOpts {
 	emit: (eventType: string, payload: Record<string, unknown>) => void;
 }
 
+const DEFAULT_IDENTITY = (role: string) => [
+	`You are the ${role} agent of the AI marketing agency.`,
+	`Use only the tools provided. Do not attempt actions outside your toolset.`,
+	`Read memory before making client-specific decisions.`,
+].join("\n");
+
 const buildSystemPrompt = (role: string, dataDir: string): string => {
 	const skills = listSkillsForRole(dataDir, role);
+	const config = loadAgentConfig(dataDir, role);
+
+	const identity = config?.identity?.trim() || DEFAULT_IDENTITY(role);
 
 	const skillList = skills.length === 0 ? "" : [
 		"## Available Skills",
@@ -33,16 +42,9 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 		...skills.map((s) => `- **${s.name}**: ${s.description}`),
 	].join("\n");
 
-	const config = loadAgentConfig(dataDir, role);
 	const behaviorBlock = config ? buildBehaviorBlock(config) : "";
 
-	return [
-		`You are the ${role} agent of the AI marketing agency.`,
-		`Use only the tools provided. Do not attempt actions outside your toolset.`,
-		`Read memory before making client-specific decisions.`,
-		skillList,
-		behaviorBlock,
-	]
+	return [identity, skillList, behaviorBlock]
 		.filter(Boolean)
 		.join("\n\n");
 };

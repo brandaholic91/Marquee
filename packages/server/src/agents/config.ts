@@ -9,7 +9,7 @@ export interface AgentConfig {
   language?: string;
   model?: string;
   thinking_level?: "off" | "minimal" | "low" | "medium" | "high";
-  system_prompt_override?: string;
+  identity?: string;
 }
 
 export function loadAgentConfig(dataDir: string, role: string): AgentConfig | null {
@@ -27,9 +27,5 @@ export function buildBehaviorBlock(config: AgentConfig): string {
     config.language && `Language: ${config.language}`,
   ].filter(Boolean) as string[];
 
-  const structured = lines.length > 0 ? `## Behavior\n${lines.join(" | ")}\n` : "";
-  const override = config.system_prompt_override
-    ? `\n${config.system_prompt_override.trim()}\n`
-    : "";
-  return structured + override;
+  return lines.length > 0 ? `## Behavior\n${lines.join(" | ")}\n` : "";
 }

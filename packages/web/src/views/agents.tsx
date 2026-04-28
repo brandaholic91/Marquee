@@ -24,7 +24,7 @@ interface AgentConfig {
   language?: string;
   model?: string;
   thinking_level?: string;
-  system_prompt_override?: string;
+  identity?: string;
 }
 
 function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: boolean }) {
@@ -139,13 +139,14 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
           )}
         </div>
 
-        {/* Freeform override */}
+        {/* Identity */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <label className="caption">System prompt override (appended)</label>
+          <label className="caption">Identity</label>
           <textarea
-            value={config.system_prompt_override ?? ""}
-            onChange={(e) => setConfig({ ...config, system_prompt_override: e.target.value || undefined })}
-            rows={10}
+            value={config.identity ?? ""}
+            onChange={(e) => setConfig({ ...config, identity: e.target.value || undefined })}
+            placeholder={`You are the [role] agent of the AI marketing agency.\nDescribe the agent's role, responsibilities, decision-making style, and relationship to other agents.`}
+            rows={12}
             style={{ padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13, resize: "vertical", fontFamily: "var(--font-mono)" }}
           />
         </div>

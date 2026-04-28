@@ -44,16 +44,15 @@ describe("buildBehaviorBlock", () => {
     expect(block).toContain("Language: hu");
   });
 
-  it("appends system_prompt_override after structured fields", () => {
-    const block = buildBehaviorBlock({ language: "hu", system_prompt_override: "Always be concise." });
+  it("does not include identity in behavior block", () => {
+    const block = buildBehaviorBlock({ language: "hu", identity: "You are a specialist." });
     expect(block).toContain("Language: hu");
-    expect(block).toContain("Always be concise.");
+    expect(block).not.toContain("You are a specialist.");
   });
 
-  it("returns just override text when no structured fields", () => {
-    const block = buildBehaviorBlock({ system_prompt_override: "Custom instruction." });
-    expect(block).toContain("Custom instruction.");
-    expect(block).not.toContain("## Behavior");
+  it("returns empty string when only identity is set", () => {
+    const block = buildBehaviorBlock({ identity: "You are a specialist." });
+    expect(block).toBe("");
   });
 
   it("does NOT include model in behavior block", () => {
