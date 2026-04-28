@@ -138,4 +138,48 @@ describe("agent factory", () => {
 			}),
 		).toThrow();
 	});
+
+	it("paid-specialist gets submit_deliverable but not delegate_to_lead", () => {
+		const agent = makeAgent({
+			role: "paid-specialist",
+			dataDir: dir,
+			db,
+			sessionId: "s3",
+			emit: () => {},
+		});
+		const names = agent.state.tools.map((t) => t.name);
+		expect(names).toContain("submit_deliverable");
+		expect(names).toContain("request_input");
+		expect(names).not.toContain("delegate_to_lead");
+		expect(names).not.toContain("delegate_to_specialist");
+	});
+
+	it("repurposer gets submit_deliverable but not request_input", () => {
+		const agent = makeAgent({
+			role: "repurposer",
+			dataDir: dir,
+			db,
+			sessionId: "s4",
+			emit: () => {},
+		});
+		const names = agent.state.tools.map((t) => t.name);
+		expect(names).toContain("submit_deliverable");
+		expect(names).not.toContain("request_input");
+		expect(names).not.toContain("delegate_to_specialist");
+	});
+
+	it("analytics-analyst gets query_matomo and serpapi_search", () => {
+		const agent = makeAgent({
+			role: "analytics-analyst",
+			dataDir: dir,
+			db,
+			sessionId: "s5",
+			emit: () => {},
+		});
+		const names = agent.state.tools.map((t) => t.name);
+		expect(names).toContain("query_matomo");
+		expect(names).toContain("serpapi_search");
+		expect(names).toContain("submit_deliverable");
+		expect(names).not.toContain("delegate_to_specialist");
+	});
 });

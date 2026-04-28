@@ -4,6 +4,8 @@ import { proposeBrief, proposeMemoryUpdate } from "./proposals.js";
 import { requestInput, submitEvalReport } from "./misc.js";
 import { makeReadMemory, webFetch } from "./integration.js";
 import { updateTask } from "./tasks.js";
+import { queryMatomo } from "./matomo.js";
+import { serpApiSearch } from "./serpapi.js";
 import type { AgentToolDef } from "./types.js";
 
 export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknown, unknown>[] {
@@ -26,6 +28,12 @@ export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknow
 			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch] as never;
 		case "seo-analyst":
 			return [submitDeliverable, respondToLead, readMemory, webFetch] as never;
+		case "paid-specialist":
+			return [submitDeliverable, respondToLead, readMemory, requestInput] as never;
+		case "repurposer":
+			return [submitDeliverable, readMemory] as never;
+		case "analytics-analyst":
+			return [submitDeliverable, readMemory, queryMatomo, serpApiSearch] as never;
 		default:
 			throw new Error(`unknown role: ${role}`);
 	}
