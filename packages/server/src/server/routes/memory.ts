@@ -79,9 +79,21 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 	// read a memory file
 	app.get<{ Params: { filename: string } }>("/api/memory/:filename", async (req, reply) => {
 		const name = req.params.filename.replace(/\.md$/, "");
-		const path = join(memDir(), `${name}.md`);
-		if (!existsSync(path)) return reply.code(404).send({ error: "not found" });
-		return readMemoryFile(opts.dataDir, name);
+		const filePath = join(memDir(), `${name}.md`);
+		if (!existsSync(filePath)) return reply.code(404).send({ error: "not found" });
+		const file = readMemoryFile(opts.dataDir, name);
+		const git = simpleGit(opts.dataDir);
+		const isRepo = await git.checkIsRepo().catch(() => false);
+		let history: { hash: string; message: string; date: string }[] = [];
+		if (isRepo) {
+			const log = await git.log({ file: filePath }).catch(() => null);
+			history = (log?.all ?? []).map((c) => ({
+				hash: c.hash.slice(0, 7),
+				message: c.message,
+				date: c.date,
+			}));
+		}
+		return { ...file, history };
 	});
 
 	// write a memory file (inline editor)
