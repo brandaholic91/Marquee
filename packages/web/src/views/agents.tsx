@@ -49,7 +49,6 @@ function ConfigPanel({ role }: { role: string }) {
     config.style && `Style: ${config.style}`,
     config.tone && `Tone: ${config.tone}`,
     config.response_length && `Response length: ${config.response_length}`,
-    config.language && `Language: ${config.language}`,
   ].filter(Boolean).join(" | ");
 
   return (
@@ -96,34 +95,26 @@ function ConfigPanel({ role }: { role: string }) {
             </select>
           </div>
           <div>
-            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Language</label>
-            <input
-              type="text"
-              value={config.language ?? ""}
-              onChange={(e) => setConfig({ ...config, language: e.target.value || undefined })}
-              placeholder="e.g. hu, en"
-              style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13, boxSizing: "border-box" }}
-            />
-          </div>
-          <div>
             <label className="caption" style={{ display: "block", marginBottom: 4 }}>
               Model{" "}
               <span style={{ color: "var(--ink-3)", fontWeight: 400, fontSize: 11 }}>
                 (openai-subscription only)
               </span>
             </label>
-            <input
-              type="text"
+            <select
               value={config.model ?? ""}
               onChange={(e) => setConfig({ ...config, model: e.target.value || undefined })}
-              placeholder="e.g. gpt-5.1, claude-sonnet-4-6"
-              style={{
-                width: "100%", padding: "6px 8px",
-                border: "1px solid var(--rule)", borderRadius: 4,
-                background: "var(--parchment)", fontSize: 13,
-                boxSizing: "border-box",
-              }}
-            />
+              style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
+            >
+              <option value="">— not set —</option>
+              <option value="gpt-5.1-codex-mini">gpt-5.1-codex-mini</option>
+              <option value="gpt-5.1">gpt-5.1</option>
+              <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+              <option value="gpt-5.4">gpt-5.4</option>
+              <option value="gpt-5.5">gpt-5.5</option>
+              <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+              <option value="claude-opus-4-6">claude-opus-4-6</option>
+            </select>
           </div>
           {preview && (
             <div style={{ padding: "8px 10px", background: "var(--surface)", borderRadius: 4, fontSize: 12, color: "var(--ink-2)", fontFamily: "var(--font-mono)" }}>
