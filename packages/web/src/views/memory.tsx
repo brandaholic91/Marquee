@@ -575,7 +575,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
           <>
             {/* Tab content */}
             {tab === "read" && <ReadTab frontmatter={frontmatter} body={body} />}
-            {tab === "history" && <HistoryTab history={history} filename={fileContent.name} />}
+            {tab === "history" && <HistoryTab history={history} filename={selectedFile ?? ""} />}
           </>
         )}
       </article>

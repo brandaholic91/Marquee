@@ -93,7 +93,7 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 				date: c.date,
 			}));
 		}
-		return { ...file, history };
+		return { name: `${name}.md`, ...file, history };
 	});
 
 	// write a memory file (inline editor)
