@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { openDb } from "../../db/index.js";
 import { Broker } from "../../broker/event-bus.js";
@@ -91,6 +92,64 @@ describe("POST /api/briefs", () => {
 			.all()
 			.find((c) => c.id === brief.campaignId);
 		expect(campaign?.title).toMatch(/^Brief \d{4}-\d{2}-\d{2}$/);
+		cleanup();
+	});
+
+	it("uses existing campaign when campaignId provided in body", async () => {
+		const { db, broker, dir, router, cleanup } = makeApp();
+		const campaignId = randomUUID();
+		db.insert(campaigns)
+			.values({ id: campaignId, title: "Existing", status: "active" })
+			.run();
+
+		const app = await buildServer({
+			db,
+			broker,
+			router,
+			dataDir: dir,
+			webRoot: "/nonexistent",
+		});
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/briefs",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				contentMd: "Write a post.",
+				campaignId,
+			}),
+		});
+		expect(res.statusCode).toBe(200);
+		const body = res.json<{ id: string }>();
+		const brief = db
+			.select()
+			.from(briefs)
+			.all()
+			.find((b) => b.id === body.id)!;
+		expect(brief.campaignId).toBe(campaignId);
+		// no new campaign created
+		expect(db.select().from(campaigns).all()).toHaveLength(1);
+		cleanup();
+	});
+
+	it("returns 400 when provided campaignId does not exist", async () => {
+		const { db, broker, dir, router, cleanup } = makeApp();
+		const app = await buildServer({
+			db,
+			broker,
+			router,
+			dataDir: dir,
+			webRoot: "/nonexistent",
+		});
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/briefs",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				contentMd: "Write a post.",
+				campaignId: "nonexistent",
+			}),
+		});
+		expect(res.statusCode).toBe(400);
 		cleanup();
 	});
 });
