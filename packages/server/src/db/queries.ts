@@ -1,6 +1,6 @@
 import { count, desc, eq, gte, isNull, sum } from "drizzle-orm";
 import type { AgencyDb } from "./index.js";
-import { agentSessions, deliverables, events, turns } from "./schema.js";
+import { agentSessions, deliverables, events, turns, evals } from "./schema.js";
 
 export const approvalsQueue = (db: AgencyDb) =>
 	db.select().from(deliverables).where(eq(deliverables.status, "awaiting_approval")).all();
@@ -37,4 +37,34 @@ export const topSpenderToday = (db: AgencyDb) => {
 		.limit(1)
 		.all();
 	return rows[0] ?? null;
+};
+
+export const usageToday = (db: AgencyDb) => {
+	const dayStart = new Date();
+	dayStart.setUTCHours(0, 0, 0, 0);
+	return db
+		.select({
+			agentSlug: agentSessions.agentSlug,
+			promptTokens: sum(turns.promptTokens).mapWith(Number),
+			completionTokens: sum(turns.completionTokens).mapWith(Number),
+			costUsdCents: sum(turns.costUsd).mapWith(Number),
+		})
+		.from(turns)
+		.innerJoin(agentSessions, eq(agentSessions.id, turns.sessionId))
+		.where(gte(turns.startedAt, dayStart))
+		.groupBy(agentSessions.agentSlug)
+		.orderBy(desc(sum(turns.promptTokens)))
+		.all();
+};
+
+export const qualityLast30Days = (db: AgencyDb) => {
+	const cutoff = new Date();
+	cutoff.setDate(cutoff.getDate() - 30);
+	cutoff.setUTCHours(0, 0, 0, 0);
+	return db
+		.select({ scoresJson: evals.scoresJson, createdAt: evals.createdAt })
+		.from(evals)
+		.where(gte(evals.createdAt, cutoff))
+		.orderBy(evals.createdAt)
+		.all();
 };

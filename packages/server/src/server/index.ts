@@ -13,6 +13,7 @@ import { registerHealthRoute } from "./routes/dashboard.js";
 import { registerTaskRoutes } from "./routes/tasks.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerSkillRoutes } from "./routes/skills.js";
+import { registerStatsRoutes } from "./routes/stats.js";
 import { registerSseRoute } from "./sse.js";
 
 export interface ServerOpts {
@@ -58,6 +59,7 @@ export async function buildServer(opts: ServerOpts) {
 	registerTaskRoutes(app, opts);
 	registerAgentRoutes(app, opts);
 	registerSkillRoutes(app, opts);
+	registerStatsRoutes(app, opts);
 	// Cron jobs list
 	app.get("/api/crons", async () => opts.cronManager?.list() ?? []);
 	registerSseRoute(app, opts);
