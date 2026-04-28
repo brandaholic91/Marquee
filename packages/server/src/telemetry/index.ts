@@ -23,7 +23,7 @@ export interface TurnRecord {
 }
 
 export class Telemetry {
-	constructor(private db: AgencyDb, private opts: TelemetryOptions) {}
+	constructor(private db: AgencyDb, readonly opts: TelemetryOptions) {}
 
 	recordTurn(turn: TurnRecord): void {
 		this.db.insert(turns).values({

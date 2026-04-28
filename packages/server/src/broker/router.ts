@@ -6,6 +6,7 @@ import { briefs, agentSessions, delegations, messages, tasks, taskPendingUpdates
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
 import type { AuthManager } from "../providers/auth.js";
+import type { Telemetry } from "../telemetry/index.js";
 
 const WARM_ROLES = ["director", "content-lead", "eval-judge", "distribution-lead", "insights-lead"] as const;
 
@@ -15,12 +16,14 @@ export class AgentRouter {
 	private chatAgents = new Map<string, Agent>(); // one director per chat thread
 	private unsub?: () => void;
 	private booted = false;
+	private turnStartTimes = new Map<string, number>(); // sessionId → start ms
 
 	constructor(
 		private db: AgencyDb,
 		private broker: Broker,
 		private dataDir: string,
 		private authManager?: AuthManager,
+		private telemetry?: Telemetry,
 	) {}
 
 	boot(): void {
@@ -36,6 +39,16 @@ export class AgentRouter {
 			this.db.insert(agentSessions).values({
 				id: sessionId, agentSlug: role, lifecycle: "warm",
 			}).run();
+			const sid = sessionId;
+			agent.subscribe((evt) => {
+				type AnyEvt = { type: string; message?: unknown };
+				const e = evt as AnyEvt;
+				if (e.type === "turn_start") {
+					this.turnStartTimes.set(sid, Date.now());
+				} else if (e.type === "turn_end") {
+					this.recordTurn(sid, e);
+				}
+			});
 		}
 		// Subscribe to delegation events
 		this.unsub = this.broker.subscribe((evt: PersistedEvent) => this.onEvent(evt));
@@ -122,6 +135,7 @@ export class AgentRouter {
 				const e = evt as AnyEvt;
 				if (e.type === "turn_start") {
 					this.broker.emit("agent_typing", { threadId, agentSlug: "director" });
+					this.turnStartTimes.set(sessionId, Date.now());
 					return;
 				}
 				if (e.type !== "turn_end") return;
@@ -140,6 +154,7 @@ export class AgentRouter {
 					contentJson: { text: responseText } as never,
 				}).run();
 				this.broker.emit("agent_message", { threadId, agentSlug: "director", text: responseText });
+				this.recordTurn(sessionId, e);
 			});
 			this.chatAgents.set(threadId, a);
 		}
@@ -179,6 +194,16 @@ export class AgentRouter {
 			id: sessionId, agentSlug: role, lifecycle: "transient", parentDelegationId: delegationId,
 		}).run();
 		agent.subscribe((evt) => {
+			type AnyEvt = { type: string; message?: unknown };
+			const e = evt as AnyEvt;
+			if (e.type === "turn_start") {
+				this.turnStartTimes.set(sessionId, Date.now());
+				return;
+			}
+			if (e.type === "turn_end") {
+				this.recordTurn(sessionId, e);
+				return;
+			}
 			if (evt.type === "agent_end") {
 				const last = agent.state.messages.at(-1);
 				if (last?.role === "assistant" && last.errorMessage) {
@@ -187,6 +212,35 @@ export class AgentRouter {
 			}
 		});
 		agent.prompt(fullMessage).catch(console.error);
+	}
+
+	private recordTurn(sessionId: string, evt: { message?: unknown }): void {
+		if (!this.telemetry) return;
+		const msg = evt.message as {
+			role?: string;
+			model?: string;
+			usage?: { input: number; output: number; cost: { total: number } };
+		} | undefined;
+		if (!msg || msg.role !== "assistant" || !msg.usage) return;
+		const startedAt = this.turnStartTimes.get(sessionId) ?? Date.now();
+		this.turnStartTimes.delete(sessionId);
+		this.telemetry.recordTurn({
+			sessionId,
+			model: msg.model ?? "unknown",
+			promptTokens: msg.usage.input,
+			completionTokens: msg.usage.output,
+			costUsdCents: Math.round(msg.usage.cost.total * 100),
+			latencyMs: Date.now() - startedAt,
+		});
+		// Soft limit warning (80%) — used by Task 4, guard is no-op here
+		const limit = this.telemetry.opts.dailyBudgetCents;
+		if (limit > 0) {
+			const { totalCents } = this.telemetry.getTodayUsage();
+			const pct = totalCents / limit;
+			if (pct >= 0.8 && pct < 1.0) {
+				this.broker.emit("budget_warning", { usedCents: totalCents, limitCents: limit, pct: Math.round(pct * 100) });
+			}
+		}
 	}
 
 	shutdown(): void {

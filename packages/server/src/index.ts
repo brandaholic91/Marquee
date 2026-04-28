@@ -13,6 +13,7 @@ import { runDailySummary } from "./cron/daily-summary.js";
 import { CronManager } from "./cron/manager.js";
 import { providerMode } from "./providers/index.js";
 import { AuthManager } from "./providers/auth.js";
+import { Telemetry } from "./telemetry/index.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -24,6 +25,8 @@ async function main() {
 	const { db, close } = openDb(join(dataDir, "state.db"));
 	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
 	const broker = new Broker(db, webhookUrl);
+	const dailyBudgetCents = Number(process.env.MARQUEE_DAILY_BUDGET_CENTS ?? 0);
+	const telemetry = new Telemetry(db, { dailyBudgetCents });
 
 	let authManager: AuthManager | undefined;
 	if (providerMode() === "openai-subscription") {
@@ -34,7 +37,7 @@ async function main() {
 		console.log("[marquee] openai-subscription mode: auth loaded");
 	}
 
-	const router = new AgentRouter(db, broker, dataDir, authManager);
+	const router = new AgentRouter(db, broker, dataDir, authManager, telemetry);
 	const taskManager = new TaskManager(db, broker, router);
 	taskManager.boot();
 	router.boot();
