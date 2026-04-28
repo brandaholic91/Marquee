@@ -7,6 +7,7 @@ import { recoverState } from "./broker/recovery.js";
 import { EvalTrigger } from "./broker/eval-trigger.js";
 import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
+import { seedDefaultMemory } from "./memory/seed.js";
 import { TaskManager } from "./tasks/manager.js";
 import { runDailySummary } from "./cron/daily-summary.js";
 import { CronManager } from "./cron/manager.js";
@@ -17,9 +18,9 @@ const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
 const port = Number(process.env.PORT ?? 7892);
 
-seedDefaultSkills(dataDir);
-
 async function main() {
+	seedDefaultSkills(dataDir);
+	await seedDefaultMemory(dataDir);
 	const { db, close } = openDb(join(dataDir, "state.db"));
 	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
 	const broker = new Broker(db, webhookUrl);
