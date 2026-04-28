@@ -4,7 +4,7 @@ import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
 import { api } from "../../lib/api.js";
 
-type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents";
+type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents" | "skills";
 
 const NAV: { id: NavId; label: string }[] = [
   { id: "home",     label: "Home" },
@@ -12,6 +12,7 @@ const NAV: { id: NavId; label: string }[] = [
   { id: "tasks",    label: "Tasks" },
   { id: "memory",   label: "Memory" },
   { id: "agents",   label: "Agents" },
+  { id: "skills",   label: "Skills" },
 ];
 
 const TEAM: { slug: string; name: string }[] = [
@@ -43,7 +44,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
   }, [setActiveAgents]);
 
   function handleNav(id: NavId) {
-    if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents") {
+    if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents" || id === "skills") {
       setView(id);
     }
   }

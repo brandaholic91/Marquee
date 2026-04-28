@@ -117,4 +117,16 @@ export const api = {
         body: JSON.stringify(config),
       }).then(json),
   },
+  skills: {
+    list: () => fetch("/api/skills").then(json),
+    create: (slug: string, content: string, agents: string[]) =>
+      post("/api/skills", { slug, content, agents }),
+    update: (slug: string, body: { content?: string; agents?: string[] }) =>
+      fetch(`/api/skills/${slug}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(json),
+    delete: (slug: string) => fetch(`/api/skills/${slug}`, { method: "DELETE" }).then(json),
+  },
 };
