@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect, afterEach, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { openDb } from "../../db/index.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";

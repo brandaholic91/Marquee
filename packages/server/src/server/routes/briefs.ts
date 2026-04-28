@@ -15,7 +15,7 @@ export function registerBriefRoutes(app: FastifyInstance, opts: ServerOpts) {
 		const firstLine = contentMd.trim().split("\n")[0];
 		const headerMatch = firstLine.match(/^#+\s+(.+)$/);
 		const campaignTitle = headerMatch
-			? headerMatch[1].slice(0, 80)
+			? headerMatch[1].trim().slice(0, 80)
 			: `Brief ${new Date().toISOString().slice(0, 10)}`;
 
 		const campaignId = randomUUID();
