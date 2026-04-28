@@ -3,12 +3,14 @@ import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
 
-type NavId = "home" | "pipeline" | "memory";
+type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents";
 
 const NAV: { id: NavId; label: string }[] = [
   { id: "home",     label: "Home" },
   { id: "pipeline", label: "Pipeline" },
+  { id: "tasks",    label: "Tasks" },
   { id: "memory",   label: "Memory" },
+  { id: "agents",   label: "Agents" },
 ];
 
 const TEAM: { slug: string; name: string }[] = [
@@ -32,7 +34,7 @@ export function Sidebar({ activeNav, collapsed: initialCollapsed = false, active
   const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   function handleNav(id: NavId) {
-    if (id === "home" || id === "memory" || id === "pipeline") {
+    if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents") {
       setView(id);
     }
   }
