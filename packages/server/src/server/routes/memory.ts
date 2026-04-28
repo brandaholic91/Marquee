@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { simpleGit } from "simple-git";
 import matter from "gray-matter";
 import type { FastifyInstance } from "fastify";
@@ -18,14 +19,47 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 
 	app.post<{ Params: { id: string }; Body: { decision: "approved" | "rejected" } }>(
 		"/api/memory-proposals/:id/approve",
-		async (req) => {
+		async (req, reply) => {
 			const { id } = req.params;
 			const decision = req.body?.decision ?? "approved";
-			opts.db.update(memoryProposals)
-				.set({ status: decision === "approved" ? "approved" : "rejected" })
-				.where(eq(memoryProposals.id, id))
-				.run();
-			opts.broker.emit("memory_proposal_decided", { proposalId: id, decision });
+
+			const proposal = opts.db.select().from(memoryProposals).where(eq(memoryProposals.id, id)).get();
+			if (!proposal) return reply.code(404).send({ error: "not found" });
+
+			if (decision === "rejected") {
+				opts.db.update(memoryProposals).set({ status: "rejected" }).where(eq(memoryProposals.id, id)).run();
+				opts.broker.emit("memory_proposal_decided", { proposalId: id, decision: "rejected" });
+				return { ok: true };
+			}
+
+			const git = simpleGit(opts.dataDir);
+			const patchPath = join(tmpdir(), `marquee-patch-${id}.diff`);
+			try {
+				writeFileSync(patchPath, proposal.patch, "utf8");
+				await git.raw(["apply", "--check", patchPath]);
+			} catch (err) {
+				try { unlinkSync(patchPath); } catch { /* ignore */ }
+				return reply.code(409).send({
+					error: "patch_conflict",
+					detail: err instanceof Error ? err.message : String(err),
+				});
+			}
+
+			try {
+				await git.raw(["apply", patchPath]);
+				await git.add(join(opts.dataDir, "memory", proposal.file));
+				await git.commit(`memory: apply agent proposal for ${proposal.file}`);
+			} catch (err) {
+				try { unlinkSync(patchPath); } catch { /* ignore */ }
+				try { await git.checkout([join(opts.dataDir, "memory", proposal.file)]); } catch { /* ignore */ }
+				return reply.code(500).send({ error: "git_apply_failed" });
+			}
+
+			try { unlinkSync(patchPath); } catch { /* ignore */ }
+
+			opts.db.update(memoryProposals).set({ status: "approved" }).where(eq(memoryProposals.id, id)).run();
+			opts.broker.emit("memory_proposal_decided", { proposalId: id, decision: "approved" });
+			opts.broker.emit("memory_updated", { file: proposal.file, by: "agent" });
 			return { ok: true };
 		},
 	);

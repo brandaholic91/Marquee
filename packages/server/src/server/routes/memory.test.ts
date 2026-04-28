@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { simpleGit } from "simple-git";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDb, type AgencyDb } from "../../db/index.js";
+import { memoryProposals } from "../../db/schema.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";
 import type { AgentRouter } from "../../broker/router.js";
@@ -180,5 +181,80 @@ describe("POST /api/memory (create new file)", () => {
 			body: JSON.stringify({ filename: "sub/path.md" }),
 		});
 		expect(res.statusCode).toBe(400);
+	});
+});
+
+describe("POST /api/memory-proposals/:id/approve", () => {
+	it("applies a valid unified diff and marks proposal approved", async () => {
+		const { dir, memDir, app, cleanup } = await makeTestApp();
+		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Old\n---\nbody");
+		const git = simpleGit(dir);
+		await git.add(join(memDir, "client_profile.md"));
+		await git.commit("initial", [join(memDir, "client_profile.md")]);
+		const patch = [
+			`--- a/memory/client_profile.md`,
+			`+++ b/memory/client_profile.md`,
+			`@@ -1,3 +1,3 @@`,
+			` ---`,
+			`-client_name: Old`,
+			`+client_name: New`,
+			` ---`,
+		].join("\n") + "\n";
+		const { db } = openDb(join(dir, "test.db"));
+		db.insert(memoryProposals).values({
+			id: "prop-1", file: "client_profile.md", patch, status: "pending",
+		}).run();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/memory-proposals/prop-1/approve",
+			headers: { "content-type": "application/json" },
+			payload: { decision: "approved" },
+		});
+		expect(res.statusCode).toBe(200);
+		expect(res.json()).toMatchObject({ ok: true });
+		const updated = db.select().from(memoryProposals).all();
+		expect(updated[0]?.status).toBe("approved");
+		cleanup();
+	});
+
+	it("returns 409 when patch does not apply cleanly", async () => {
+		const { dir, memDir, app, cleanup } = await makeTestApp();
+		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Something\n---\n");
+		const git = simpleGit(dir);
+		await git.add(join(memDir, "client_profile.md"));
+		await git.commit("initial", [join(memDir, "client_profile.md")]);
+		const { db } = openDb(join(dir, "test.db"));
+		db.insert(memoryProposals).values({
+			id: "prop-bad", file: "client_profile.md",
+			patch: "not a valid diff at all\n", status: "pending",
+		}).run();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/memory-proposals/prop-bad/approve",
+			headers: { "content-type": "application/json" },
+			payload: { decision: "approved" },
+		});
+		expect(res.statusCode).toBe(409);
+		const row = db.select().from(memoryProposals).all();
+		expect(row[0]?.status).toBe("pending");
+		cleanup();
+	});
+
+	it("marks proposal rejected without touching git", async () => {
+		const { dir, app, cleanup } = await makeTestApp();
+		const { db } = openDb(join(dir, "test.db"));
+		db.insert(memoryProposals).values({
+			id: "prop-rej", file: "client_profile.md", patch: "any", status: "pending",
+		}).run();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/memory-proposals/prop-rej/approve",
+			headers: { "content-type": "application/json" },
+			payload: { decision: "rejected" },
+		});
+		expect(res.statusCode).toBe(200);
+		const row = db.select().from(memoryProposals).all();
+		expect(row[0]?.status).toBe("rejected");
+		cleanup();
 	});
 });
