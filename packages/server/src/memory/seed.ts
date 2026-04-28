@@ -46,9 +46,8 @@ export async function seedDefaultMemory(dataDir: string): Promise<void> {
 
   try {
     const git = simpleGit(dataDir);
-    const isRepo = await git.checkIsRepo().catch(() => false);
-    if (!isRepo) return;
-    for (const p of toCreate) await git.add(p);
+    if (!(await git.checkIsRepo())) return;
+    await git.add(toCreate);
     await git.commit("memory: seed initial templates");
   } catch {
     // best effort — files written, git optional
