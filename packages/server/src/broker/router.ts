@@ -120,7 +120,7 @@ export class AgentRouter {
 			a.subscribe(async (evt) => {
 				type AnyEvt = { type: string; message?: { role: string; content: Array<{ type: string; text?: string }> } };
 				const e = evt as AnyEvt;
-				if (e.type !== "message_end") return;
+				if (e.type !== "turn_end") return;
 				const msg = e.message;
 				if (!msg || msg.role !== "assistant") return;
 				const responseText = msg.content
