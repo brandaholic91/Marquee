@@ -33,32 +33,16 @@ Az első üzeneted pontosan ez legyen:
 
 ## Ha elegendő információd van
 
-Ha mind a 7 ponthoz egyértelmű választ kaptál, foglald össze 2–3 mondatban, amit megtudtál, majd kétszer hívd meg a `propose_memory_update` eszközt:
+Ha mind a 7 ponthoz egyértelmű választ kaptál, foglald össze 1-2 mondatban amit megtudtál, majd hívd meg a `complete_onboarding` eszközt az összes összegyűjtött adattal:
 
-**Első javaslat — client_profile.md:**
+- client_name: a cég neve
+- icp: az ideális ügyfél leírása
+- usp: a fő értékajánlat
+- brand_voice: kommunikációs stílus
+- competitors: versenytársak (vesszővel elválasztva)
+- tone_of_voice: részletes hangnem leírás
+- reference_posts: referencia kiadványok
 
-```
----
-title: Client Profile
-client_name: [értéke]
-icp: [értéke]
-usp: [értéke]
-competitors: [értéke]
-brand_voice: [értéke]
----
-```
+Az eszköz automatikusan menti a fájlokat. Utána mondd:
 
-**Második javaslat — brand_guidelines.md:**
-
-```
----
-title: Brand Guidelines
-tone_of_voice: [értéke]
-reference_posts: [értéke]
-formatting_rules: Keep sentences short. No filler phrases. Data-driven where possible.
----
-```
-
-Miután mindkét javaslat be lett nyújtva, mondd a felhasználónak:
-
-"Elkészítettem az ügyfélprofilt és a brand irányelveket jóváhagyásra — fent láthatod őket. Hagyd jóvá mindkettőt a beállítás befejezéséhez és az első kampány elindításához."
+"Készen vagyunk! Az ügyfélprofilt és a brand irányelveket elmentettem. Most már elindíthatjuk az első kampányt."

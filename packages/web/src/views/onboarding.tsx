@@ -23,6 +23,7 @@ export function OnboardingView() {
   const [typing, setTyping] = useState(false);
   const [inputText, setInputText] = useState("");
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [complete, setComplete] = useState(false);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const setView = useAgencyStore((s) => s.setView);
@@ -64,11 +65,14 @@ export function OnboardingView() {
     unsubs.push(agencyEvents.on("memory_proposed", (ev) => {
       const e = ev as { proposalId?: string; file?: string };
       if (!e.proposalId) return;
-      // Fetch full proposal details
       fetch("/api/memory-proposals").then((r) => r.json()).then((all: Proposal[]) => {
         const p = all.find((x) => x.id === e.proposalId);
         if (p) setProposals((prev) => [...prev.filter((x) => x.id !== p.id), p]);
       }).catch(() => {});
+    }));
+
+    unsubs.push(agencyEvents.on("onboarding_complete", () => {
+      setComplete(true);
     }));
 
     return () => unsubs.forEach((u) => u());
@@ -106,7 +110,7 @@ export function OnboardingView() {
     setProposals((prev) => prev.map((p) => p.id === proposalId ? { ...p, status: "rejected" } : p));
   }
 
-  const allApproved = proposals.length > 0 && proposals.every((p) => p.status === "approved");
+  const allApproved = complete || (proposals.length > 0 && proposals.every((p) => p.status === "approved"));
 
   return (
     <div style={{

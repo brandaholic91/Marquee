@@ -127,8 +127,8 @@ export class AgentRouter {
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "director", sessionId }),
 			} satisfies MakeAgentOpts);
 			if (thread?.type === "onboarding") {
-				// Onboarding: keep only propose_memory_update so the director can save profiles
-				agent.state.tools = agent.state.tools.filter((t) => t.name === "propose_memory_update");
+				// Onboarding: keep only complete_onboarding so the director saves profiles directly
+				agent.state.tools = agent.state.tools.filter((t) => t.name === "complete_onboarding");
 			} else {
 				// Regular chat: strip tools for pure conversational response
 				agent.state.tools = [];
