@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import type { Agent } from "@mariozechner/pi-agent-core";
 import type { AgencyDb } from "../db/index.js";
-import { briefs, agentSessions, delegations, messages, tasks, taskPendingUpdates } from "../db/schema.js";
+import { briefs, agentSessions, chatThreads, delegations, messages, tasks, taskPendingUpdates } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
 import type { AuthManager } from "../providers/auth.js";
@@ -119,14 +119,20 @@ export class AgentRouter {
 		let agent = this.chatAgents.get(threadId);
 		if (!agent) {
 			const sessionId = randomUUID();
+			const thread = this.db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).get();
 			// Chat agents use no tools — pure conversational director
 			agent = makeAgent({
 				role: "director", dataDir: this.dataDir, db: this.db, sessionId, threadId,
 				authManager: this.authManager,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "director", sessionId }),
 			} satisfies MakeAgentOpts);
-			// Strip tools so the model responds with text, not tool calls
-			agent.state.tools = [];
+			if (thread?.type === "onboarding") {
+				// Onboarding: keep only propose_memory_update so the director can save profiles
+				agent.state.tools = agent.state.tools.filter((t) => t.name === "propose_memory_update");
+			} else {
+				// Regular chat: strip tools for pure conversational response
+				agent.state.tools = [];
+			}
 			this.db.insert(agentSessions).values({
 				id: sessionId, agentSlug: "director", lifecycle: "transient",
 			}).run();
