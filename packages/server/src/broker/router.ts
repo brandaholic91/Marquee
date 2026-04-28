@@ -300,6 +300,16 @@ export class AgentRouter {
 		this.db.insert(agentSessions).values({
 			id: sessionId, agentSlug: role, lifecycle: "warm",
 		}).run();
+		const sid = sessionId;
+		agent.subscribe((evt) => {
+			type AnyEvt = { type: string; message?: unknown };
+			const e = evt as AnyEvt;
+			if (e.type === "turn_start") {
+				this.turnStartTimes.set(sid, Date.now());
+			} else if (e.type === "turn_end") {
+				this.recordTurn(sid, e);
+			}
+		});
 	}
 
 	queueBrief(briefId: string): void {
