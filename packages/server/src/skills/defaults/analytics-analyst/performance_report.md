@@ -5,7 +5,7 @@ when_to_use: When your delegation is to write a performance report
 
 Write a structured performance report using data from query_matomo and serpapi_search.
 
-**Important:** If any tool returns `_stub: true`, note at the top of that section: "⚠ Live data unavailable — connect MATOMO_URL/MATOMO_TOKEN or SERPAPI_KEY to populate this section." Include the section structure with clearly labelled empty placeholders so the report is ready to fill when data is connected.
+**Important:** If any tool returns `_stub: true`, note at the top of that section: "[STUB DATA — connect MATOMO_URL/MATOMO_TOKEN or SERPAPI_KEY to populate this section]" Include the section structure with clearly labelled empty placeholders so the report is ready to fill when data is connected.
 
 ## Report Structure
 

@@ -164,6 +164,7 @@ describe("agent factory", () => {
 		});
 		const names = agent.state.tools.map((t) => t.name);
 		expect(names).toContain("submit_deliverable");
+		expect(names).toContain("respond_to_lead");
 		expect(names).not.toContain("request_input");
 		expect(names).not.toContain("delegate_to_specialist");
 	});
@@ -180,6 +181,7 @@ describe("agent factory", () => {
 		expect(names).toContain("query_matomo");
 		expect(names).toContain("serpapi_search");
 		expect(names).toContain("submit_deliverable");
+		expect(names).toContain("respond_to_lead");
 		expect(names).not.toContain("delegate_to_specialist");
 	});
 });

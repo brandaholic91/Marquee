@@ -31,9 +31,9 @@ export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknow
 		case "paid-specialist":
 			return [submitDeliverable, respondToLead, readMemory, requestInput] as never;
 		case "repurposer":
-			return [submitDeliverable, readMemory] as never;
+			return [submitDeliverable, respondToLead, readMemory] as never;
 		case "analytics-analyst":
-			return [submitDeliverable, readMemory, queryMatomo, serpApiSearch] as never;
+			return [submitDeliverable, respondToLead, readMemory, queryMatomo, serpApiSearch] as never;
 		default:
 			throw new Error(`unknown role: ${role}`);
 	}
