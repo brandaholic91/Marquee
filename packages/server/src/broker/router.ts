@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Agent } from "@mariozechner/pi-agent-core";
 import type { AgencyDb } from "../db/index.js";
-import { briefs, agentSessions, delegations, messages } from "../db/schema.js";
+import { briefs, agentSessions, delegations, messages, tasks, taskPendingUpdates } from "../db/schema.js";
 import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import { Broker, type PersistedEvent } from "./event-bus.js";
 
@@ -143,6 +143,25 @@ export class AgentRouter {
 	}
 
 	private spawnAndPrompt(role: string, delegationId: string, userMessage: string): void {
+		// Fetch any undelivered task updates for this delegation
+		const task = this.db.select().from(tasks).where(eq(tasks.delegationId, delegationId)).get();
+		let fullMessage = userMessage;
+		if (task) {
+			const pending = this.db.select().from(taskPendingUpdates)
+				.where(and(eq(taskPendingUpdates.taskId, task.id), isNull(taskPendingUpdates.deliveredAt)))
+				.all();
+			if (pending.length > 0) {
+				const updates = pending.map((p) => p.message).join("\n");
+				fullMessage = `${userMessage}\n\n---\nTask updates while you were working:\n${updates}\nPlease revise your output to reflect these changes before submitting.`;
+				for (const p of pending) {
+					this.db.update(taskPendingUpdates)
+						.set({ deliveredAt: new Date() })
+						.where(eq(taskPendingUpdates.id, p.id))
+						.run();
+				}
+			}
+		}
+
 		const sessionId = randomUUID();
 		const agent = makeAgent({
 			role, dataDir: this.dataDir, db: this.db, sessionId, delegationId,
@@ -159,7 +178,7 @@ export class AgentRouter {
 				}
 			}
 		});
-		agent.prompt(userMessage).catch(console.error);
+		agent.prompt(fullMessage).catch(console.error);
 	}
 
 	shutdown(): void {
@@ -179,11 +198,33 @@ export class AgentRouter {
 		return [...this.warmAgents.keys()];
 	}
 
-	/** Deliver a plain-text nudge to a warm agent. Implemented fully in Task 3. */
 	promptWarmAgent(role: string, message: string): void {
 		const agent = this.warmAgents.get(role);
 		if (!agent) return;
-		agent.prompt(message).catch(console.error);
+		void (async () => {
+			await agent.waitForIdle();
+			agent.prompt(message).catch(console.error);
+		})();
+	}
+
+	restartWarmAgent(role: string): void {
+		const oldSessionId = this.warmSessionIds.get(role);
+		if (oldSessionId) {
+			this.db.update(agentSessions)
+				.set({ endedAt: new Date() })
+				.where(eq(agentSessions.id, oldSessionId))
+				.run();
+		}
+		const sessionId = randomUUID();
+		const agent = makeAgent({
+			role, dataDir: this.dataDir, db: this.db, sessionId,
+			emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: role, sessionId }),
+		} satisfies MakeAgentOpts);
+		this.warmAgents.set(role, agent);
+		this.warmSessionIds.set(role, sessionId);
+		this.db.insert(agentSessions).values({
+			id: sessionId, agentSlug: role, lifecycle: "warm",
+		}).run();
 	}
 
 	queueBrief(briefId: string): void {
