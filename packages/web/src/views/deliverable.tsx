@@ -525,7 +525,8 @@ function EvalTab({ evalReport, revision }: EvalTabProps) {
   }
 
   const dims = evalReport.dimensions ?? [];
-  const revLabel = evalReport.revisionId ?? revision?.revisionNumber ?? "—";
+  const rawRevId = evalReport.revisionId ?? revision?.revisionNumber ?? "—";
+  const revLabel = rawRevId.length > 12 ? rawRevId.slice(0, 8) : rawRevId;
   const timeLabel = evalReport.createdAt
     ? new Date(evalReport.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
     : "—";
@@ -539,7 +540,9 @@ function EvalTab({ evalReport, revision }: EvalTabProps) {
         {dims.map((s) => (
           <div key={s.dim}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span className="mono" style={{ fontSize: 12 }}>{s.dim}</span>
+              <span className="mono" style={{ fontSize: 12 }}>
+                {s.dim === "brand_voice" ? "Brand voice" : s.dim === "factual_accuracy" ? "Faktualitás" : s.dim === "usp_usage" ? "USP használat" : s.dim}
+              </span>
               <span className="serif" style={{ fontSize: 14 }}>
                 {s.score}<span className="muted" style={{ fontSize: 12 }}>/5</span>
               </span>
@@ -732,18 +735,18 @@ function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProp
       api.deliverables.eval(deliverableId)
         .then((data: Record<string, unknown> | null) => {
           if (!data) { setEvalReport(null); setEvalLoaded(true); return; }
-          // Normalise flat scores shape { brand_voice, factual_accuracy, usp_usage, ... }
-          // into the EvalReport format that EvalTab expects.
+          // Normalise: scores are in scoresJson (nested), summary is summaryMd
           const SCORE_KEYS = ["brand_voice", "factual_accuracy", "usp_usage"];
+          const scoresJson = (data.scoresJson ?? data) as Record<string, unknown>;
           let dimensions: EvalDimension[] | undefined;
           if (!data.dimensions) {
             dimensions = SCORE_KEYS
-              .filter((k) => typeof data[k] === "number")
-              .map((k) => ({ dim: k, score: data[k] as number }));
+              .filter((k) => typeof scoresJson[k] === "number")
+              .map((k) => ({ dim: k, score: scoresJson[k] as number }));
           }
           const report: EvalReport = {
             dimensions: dimensions ?? (data.dimensions as EvalDimension[] | undefined),
-            summary: data.summary as string | undefined,
+            summary: (data.summaryMd ?? data.summary) as string | undefined,
             revisionId: data.revisionId as string | undefined,
             judgeSlug: data.judgeSlug as string | undefined,
             createdAt: data.createdAt as string | undefined,
