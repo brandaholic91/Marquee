@@ -63,9 +63,22 @@ interface FileListPanelProps {
   selectedFile: string | null;
   onSelect: (name: string) => void;
   proposals: MemoryProposal[];
+  onCreateFile: () => void;
 }
 
-function FileListPanel({ files, selectedFile, onSelect, proposals }: FileListPanelProps) {
+function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile }: FileListPanelProps) {
+  const [newFileName, setNewFileName] = useState("");
+  const [showNew, setShowNew] = useState(false);
+
+  async function handleCreate() {
+    if (!newFileName.trim()) return;
+    const name = newFileName.endsWith(".md") ? newFileName : `${newFileName}.md`;
+    await api.memory.create(name);
+    setShowNew(false);
+    setNewFileName("");
+    onCreateFile();
+  }
+
   return (
     <aside style={{
       width: 260,
@@ -77,8 +90,30 @@ function FileListPanel({ files, selectedFile, onSelect, proposals }: FileListPan
     }}>
       {/* Header */}
       <div style={{ padding: "20px 18px 12px" }}>
-        <div className="caption">Memory files</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="caption">Memory files</div>
+          <button
+            onClick={() => setShowNew(true)}
+            style={{ fontSize: 12, padding: "3px 10px", borderRadius: 4, border: "1px solid var(--rule)", background: "transparent", cursor: "pointer", color: "var(--ink-2)" }}
+          >
+            + New file
+          </button>
+        </div>
         <div className="body-sm" style={{ marginTop: 2 }}>git-tracked, human-curated</div>
+        {showNew && (
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input
+              autoFocus
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              placeholder="filename.md"
+              style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--rule)", borderRadius: 4, fontSize: 13 }}
+            />
+            <button onClick={handleCreate} style={{ padding: "5px 12px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>Create</button>
+            <button onClick={() => setShowNew(false)} style={{ padding: "5px 12px", borderRadius: 4, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--rule)", cursor: "pointer", fontSize: 13 }}>Cancel</button>
+          </div>
+        )}
       </div>
 
       {/* File list */}
@@ -464,8 +499,8 @@ export function MemoryView() {
   const [fileContent, setFileContent] = useState<MemoryFileContent | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
 
-  // Load file list on mount
-  useEffect(() => {
+  // Load file list function (called on mount and after file creation)
+  function loadFiles() {
     fetch("/api/memory/files")
       .then((r) => r.json())
       .then((data: MemoryFile[] | { files?: MemoryFile[] }) => {
@@ -479,6 +514,11 @@ export function MemoryView() {
         // No API yet — use empty state
         setFiles([]);
       });
+  }
+
+  // Load file list on mount
+  useEffect(() => {
+    loadFiles();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -540,6 +580,7 @@ export function MemoryView() {
         selectedFile={selectedFile}
         onSelect={setSelectedFile}
         proposals={proposals}
+        onCreateFile={loadFiles}
       />
       <MainContent
         fileContent={fileContent}

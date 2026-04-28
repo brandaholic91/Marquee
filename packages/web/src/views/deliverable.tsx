@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { diffLines, type Change } from "diff";
 import { api } from "../lib/api.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { AgentBadge } from "../components/ui/index.js";
@@ -437,6 +438,16 @@ interface RevisionsTabProps {
 }
 
 function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selectedRevId }: RevisionsTabProps) {
+  const [checkedRevs, setCheckedRevs] = useState<string[]>([]);
+  const [diffContent, setDiffContent] = useState<Change[] | null>(null);
+
+  function toggleRev(revId: string) {
+    setCheckedRevs((prev) =>
+      prev.includes(revId) ? prev.filter((id) => id !== revId) : prev.length < 2 ? [...prev, revId] : prev,
+    );
+    setDiffContent(null);
+  }
+
   if (allRevisions.length === 0) {
     return (
       <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
@@ -469,8 +480,18 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>
-                {r.revisionNumber ?? r.id}
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={checkedRevs.includes(r.id)}
+                  onChange={(e) => { e.stopPropagation(); toggleRev(r.id); }}
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={checkedRevs.length === 2 && !checkedRevs.includes(r.id)}
+                  style={{ marginRight: 8, cursor: "pointer" }}
+                />
+                <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>
+                  {r.revisionNumber ?? r.id}
+                </div>
               </div>
               <div style={{ display: "flex", gap: 4 }}>
                 {isCurrent && <span className="badge badge-cream">current</span>}
@@ -486,6 +507,39 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
           </button>
         );
       })}
+
+      {checkedRevs.length === 2 && (
+        <button
+          onClick={async () => {
+            const [a, b] = await Promise.all([
+              api.deliverables.revisionContent(checkedRevs[0]),
+              api.deliverables.revisionContent(checkedRevs[1]),
+            ]);
+            setDiffContent(diffLines(a.content, b.content));
+          }}
+          style={{ padding: "5px 14px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}
+        >
+          Compare
+        </button>
+      )}
+
+      {diffContent && (
+        <div style={{ marginTop: 16, fontFamily: "var(--font-mono)", fontSize: 12 }}>
+          {diffContent.map((part, i) => (
+            <div
+              key={i}
+              style={{
+                background: part.added ? "#dcfce7" : part.removed ? "#fee2e2" : "transparent",
+                color: part.added ? "#166534" : part.removed ? "#991b1b" : "var(--ink-1)",
+                whiteSpace: "pre-wrap",
+                padding: "1px 4px",
+              }}
+            >
+              {(part.added ? "+ " : part.removed ? "- " : "  ") + part.value}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
