@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { campaigns, deliverables, tasks } from "../../db/schema.js";
+import { briefs, campaigns, deliverables, tasks } from "../../db/schema.js";
 
 export function registerCampaignRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get("/api/campaigns", async () => {
@@ -19,11 +19,13 @@ export function registerCampaignRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get<{ Params: { id: string } }>("/api/campaigns/:id", async (req, reply) => {
 		const c = opts.db.select().from(campaigns).where(eq(campaigns.id, req.params.id)).get();
 		if (!c) return reply.code(404).send({ error: "not found" });
+		const campaignBriefs = opts.db.select().from(briefs)
+			.where(eq(briefs.campaignId, req.params.id)).all();
 		const campaignDeliverables = opts.db.select().from(deliverables)
 			.where(eq(deliverables.campaignId, req.params.id)).all();
 		const campaignTasks = opts.db.select().from(tasks)
 			.where(eq(tasks.campaignId, req.params.id)).all();
-		return { ...c, deliverables: campaignDeliverables, tasks: campaignTasks };
+		return { ...c, briefs: campaignBriefs, deliverables: campaignDeliverables, tasks: campaignTasks };
 	});
 
 	app.patch<{ Params: { id: string }; Body: { title?: string; description?: string; status?: string } }>(

@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { openDb, type AgencyDb } from "../../db/index.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";
-import { campaigns, delegations, deliverables, tasks } from "../../db/schema.js";
+import { campaigns, delegations, deliverables, tasks, briefs } from "../../db/schema.js";
 import type { AgentRouter } from "../../broker/router.js";
 
 let dir: string;
@@ -81,6 +81,19 @@ describe("GET /api/campaigns/:id", () => {
 		expect(body.id).toBe(campaignId);
 		expect(body.deliverables).toHaveLength(1);
 		expect(body.tasks).toHaveLength(1);
+	});
+
+	it("returns campaign with briefs array", async () => {
+		const campaignId = seedCampaign();
+		db.insert(briefs).values({ id: randomUUID(), status: "draft", contentMd: "# Brief One\n\nContent here.", campaignId }).run();
+		db.insert(briefs).values({ id: randomUUID(), status: "dispatched", contentMd: "# Brief Two\n\nMore content.", campaignId }).run();
+
+		const app = await makeApp();
+		const res = await app.inject({ method: "GET", url: `/api/campaigns/${campaignId}` });
+		expect(res.statusCode).toBe(200);
+		const body = res.json<{ briefs: { id: string; status: string }[] }>();
+		expect(body.briefs).toHaveLength(2);
+		expect(body.briefs.map((b) => b.status).sort()).toEqual(["dispatched", "draft"]);
 	});
 });
 
