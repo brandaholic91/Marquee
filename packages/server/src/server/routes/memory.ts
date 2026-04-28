@@ -21,7 +21,10 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 		"/api/memory-proposals/:id/approve",
 		async (req, reply) => {
 			const { id } = req.params;
-			const decision = req.body?.decision ?? "approved";
+			const decision = req.body?.decision;
+			if (decision !== "approved" && decision !== "rejected") {
+				return reply.code(400).send({ error: "decision must be 'approved' or 'rejected'" });
+			}
 
 			const proposal = opts.db.select().from(memoryProposals).where(eq(memoryProposals.id, id)).get();
 			if (!proposal) return reply.code(404).send({ error: "not found" });

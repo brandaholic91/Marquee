@@ -185,6 +185,18 @@ describe("POST /api/memory (create new file)", () => {
 });
 
 describe("POST /api/memory-proposals/:id/approve", () => {
+	it("returns 404 when proposal not found", async () => {
+		const { app, cleanup } = await makeTestApp();
+		const res = await app.inject({
+			method: "POST",
+			url: "/api/memory-proposals/nonexistent/approve",
+			headers: { "content-type": "application/json" },
+			payload: { decision: "approved" },
+		});
+		expect(res.statusCode).toBe(404);
+		cleanup();
+	});
+
 	it("applies a valid unified diff and marks proposal approved", async () => {
 		const { dir, memDir, app, cleanup } = await makeTestApp();
 		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Old\n---\nbody");
@@ -200,7 +212,7 @@ describe("POST /api/memory-proposals/:id/approve", () => {
 			`+client_name: New`,
 			` ---`,
 		].join("\n") + "\n";
-		const { db } = openDb(join(dir, "test.db"));
+		const { db, close: closeDb } = openDb(join(dir, "test.db"));
 		db.insert(memoryProposals).values({
 			id: "prop-1", file: "client_profile.md", patch, status: "pending",
 		}).run();
@@ -214,6 +226,7 @@ describe("POST /api/memory-proposals/:id/approve", () => {
 		expect(res.json()).toMatchObject({ ok: true });
 		const updated = db.select().from(memoryProposals).all();
 		expect(updated[0]?.status).toBe("approved");
+		closeDb();
 		cleanup();
 	});
 
@@ -223,7 +236,7 @@ describe("POST /api/memory-proposals/:id/approve", () => {
 		const git = simpleGit(dir);
 		await git.add(join(memDir, "client_profile.md"));
 		await git.commit("initial", [join(memDir, "client_profile.md")]);
-		const { db } = openDb(join(dir, "test.db"));
+		const { db, close: closeDb } = openDb(join(dir, "test.db"));
 		db.insert(memoryProposals).values({
 			id: "prop-bad", file: "client_profile.md",
 			patch: "not a valid diff at all\n", status: "pending",
@@ -237,6 +250,7 @@ describe("POST /api/memory-proposals/:id/approve", () => {
 		expect(res.statusCode).toBe(409);
 		const row = db.select().from(memoryProposals).all();
 		expect(row[0]?.status).toBe("pending");
+		closeDb();
 		cleanup();
 	});
 
