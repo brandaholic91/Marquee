@@ -102,6 +102,7 @@ export function makeAgent(opts: MakeAgentOpts): Agent {
 			systemPrompt: buildSystemPrompt(opts.role, opts.dataDir),
 			model,
 			tools: agentTools,
+			thinkingLevel: config?.thinking_level ?? "off",
 		},
 		convertToLlm: convertToLlm as never,
 		transformContext: transformContextFn as never,

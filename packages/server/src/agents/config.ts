@@ -8,6 +8,7 @@ export interface AgentConfig {
   response_length?: "concise" | "detailed";
   language?: string;
   model?: string;
+  thinking_level?: "off" | "minimal" | "low" | "medium" | "high";
   system_prompt_override?: string;
 }
 

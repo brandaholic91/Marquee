@@ -19,6 +19,7 @@ interface AgentConfig {
   response_length?: string;
   language?: string;
   model?: string;
+  thinking_level?: string;
   system_prompt_override?: string;
 }
 
@@ -111,6 +112,20 @@ function ConfigPanel({ role }: { role: string }) {
               <option value="gpt-5.4">gpt-5.4 (balanced)</option>
               <option value="gpt-5.5">gpt-5.5 (powerful)</option>
               <option value="gpt-5.2">gpt-5.2</option>
+            </select>
+          </div>
+          <div>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Thinking level</label>
+            <select
+              value={config.thinking_level ?? "off"}
+              onChange={(e) => setConfig({ ...config, thinking_level: e.target.value === "off" ? undefined : e.target.value })}
+              style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
+            >
+              <option value="off">Off</option>
+              <option value="minimal">Minimal</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
           {preview && (
