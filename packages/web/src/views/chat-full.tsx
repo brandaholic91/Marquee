@@ -422,64 +422,97 @@ function OtherThreadsStrip({
   threads,
   activeThreadId,
   onDelete,
+  onNewThread,
 }: {
   threads: Thread[];
   activeThreadId: string | null;
   onDelete: (id: string) => void;
+  onNewThread: () => void;
 }) {
   const { setActiveThread } = useAgencyStore();
-
   const others = threads.filter((t) => t.id !== activeThreadId);
-  if (others.length === 0) return null;
 
   return (
-    <aside
-      style={{
-        width: 52,
-        background: "var(--parchment)",
-        borderLeft: "1px solid var(--rule)",
+    <aside style={{
+      width: 200,
+      background: "var(--parchment)",
+      borderLeft: "1px solid var(--rule)",
+      display: "flex",
+      flexDirection: "column",
+      flexShrink: 0,
+      overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "16px 14px 10px",
+        borderBottom: "1px solid var(--rule)",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        padding: "20px 0",
-        gap: 16,
-        flexShrink: 0,
-      }}
-    >
-      <div className="caption" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "var(--ink-3)" }}>
-        OTHER THREADS
+        justifyContent: "space-between",
+      }}>
+        <span className="caption" style={{ color: "var(--ink-3)" }}>Threads</span>
+        <button
+          onClick={onNewThread}
+          title="New conversation"
+          style={{
+            background: "none", border: "1px solid var(--rule)", borderRadius: 4,
+            cursor: "pointer", fontSize: 11, color: "var(--ink-2)",
+            padding: "2px 8px", lineHeight: "18px",
+          }}
+        >
+          + New
+        </button>
       </div>
-      {others.map((t) => (
-        <div key={t.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          <button
-            title={t.title}
-            onClick={() => setActiveThread(t.id)}
+
+      {/* Thread list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+        {others.length === 0 && (
+          <div style={{ padding: "12px 14px", fontSize: 12, color: "var(--ink-3)" }}>
+            No other threads
+          </div>
+        )}
+        {others.map((t) => (
+          <div
+            key={t.id}
             style={{
-              writingMode: "vertical-rl",
-              transform: "rotate(180deg)",
-              padding: "6px 4px",
-              fontSize: 11,
-              color: "var(--ink-3)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              maxHeight: 140,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              padding: "0 6px 0 14px",
+              gap: 4,
             }}
           >
-            {t.title}
-          </button>
-          <button
-            title="Delete"
-            onClick={() => onDelete(t.id)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 14, lineHeight: 1, padding: "1px 4px" }}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+            <button
+              onClick={() => setActiveThread(t.id)}
+              style={{
+                flex: 1,
+                textAlign: "left",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                color: "var(--ink-2)",
+                padding: "7px 0",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t.title}
+            </button>
+            <button
+              title="Delete"
+              onClick={() => onDelete(t.id)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--ink-3)", fontSize: 14, lineHeight: 1,
+                padding: "4px", flexShrink: 0,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
     </aside>
   );
 }
@@ -762,6 +795,7 @@ export function ChatFullView() {
         threads={snapshot?.threads ?? []}
         activeThreadId={activeThreadId}
         onDelete={handleDeleteThread}
+        onNewThread={() => setView("home")}
       />
     </div>
   );
