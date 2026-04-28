@@ -3,6 +3,7 @@ import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
 import { api } from "../../lib/api.js";
+import { useBreakpoint } from "../../hooks/useBreakpoint.js";
 
 type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents" | "skills" | "calendar";
 
@@ -37,6 +38,13 @@ export function Sidebar({ activeNav }: SidebarProps) {
   const setCollapsed = useAgencyStore((s) => s.setSidebarCollapsed);
   const activeAgents = useAgencyStore((s) => s.activeAgents);
   const setActiveAgents = useAgencyStore((s) => s.setActiveAgents);
+  const { isMobile, isSmall } = useBreakpoint();
+
+  // Auto-collapse on small screens on first render
+  useEffect(() => {
+    if (isSmall) setCollapsed(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     api.snapshot().then((data: { activeAgents?: { agentSlug: string }[] }) => {
@@ -45,11 +53,130 @@ export function Sidebar({ activeNav }: SidebarProps) {
   }, [setActiveAgents]);
 
   function handleNav(id: NavId) {
-    if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents" || id === "skills" || id === "calendar") {
-      setView(id);
-    }
+    setView(id);
+    if (isMobile) setCollapsed(true);
   }
 
+  // ---- Mobile: collapsed → circular FAB (bottom-left) ----
+  if (isMobile && collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        title="Open navigation"
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 20,
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          background: "var(--parchment)",
+          border: "1px solid var(--rule-strong)",
+          boxShadow: "0 2px 12px rgba(58,49,40,0.18)",
+          zIndex: 200,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 18,
+          cursor: "pointer",
+          color: "var(--ink-1)",
+          lineHeight: 1,
+        }}
+      >
+        ☰
+      </button>
+    );
+  }
+
+  // ---- Mobile: expanded → full-screen overlay ----
+  if (isMobile && !collapsed) {
+    return (
+      <>
+        <div
+          onClick={() => setCollapsed(true)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(58,49,40,0.45)",
+            zIndex: 198,
+          }}
+        />
+        <aside
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: 280,
+            height: "100dvh",
+            zIndex: 199,
+            background: "var(--parchment)",
+            borderRight: "1px solid var(--rule)",
+            display: "flex",
+            flexDirection: "column",
+            padding: "20px 0",
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ padding: "0 20px 20px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--bulb)", display: "grid", placeItems: "center", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-serif)" }}>m</div>
+              <div className="mono" style={{ fontSize: 13, color: "var(--ink-1)", letterSpacing: "0.12em", fontWeight: 500 }}>MARQUEE</div>
+            </div>
+            <button
+              onClick={() => setCollapsed(true)}
+              title="Close"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "2px 6px", lineHeight: 1 }}
+            >✕</button>
+          </div>
+          <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>your little marketing team</div>
+
+          <nav style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => handleNav(n.id)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 4,
+                  background: n.id === activeNav ? "var(--primary-soft)" : "transparent",
+                  color: n.id === activeNav ? "var(--primary-deep)" : "var(--ink-1)",
+                  fontSize: 14,
+                  fontWeight: n.id === activeNav ? 500 : 400,
+                  textAlign: "left",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {n.label}
+              </button>
+            ))}
+          </nav>
+
+          <div style={{ padding: "8px 20px 8px", marginTop: 8 }}>
+            <div className="caption">Team</div>
+          </div>
+          <div style={{ padding: "4px 12px", display: "flex", flexDirection: "column", gap: 1 }}>
+            {TEAM.map((t) => {
+              const isActive = activeAgents ? activeAgents.includes(t.slug) : false;
+              return (
+                <div key={t.slug} style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <Bulb active={isActive} />
+                  <span style={{ fontSize: 13, color: isActive ? "var(--ink-1)" : "var(--ink-3)" }}>{t.name}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ flex: 1 }} />
+          <div style={{ padding: "12px 20px", borderTop: "1px solid var(--rule)", fontSize: 12, color: "var(--ink-3)" }}>
+            marquee · v0.1
+          </div>
+        </aside>
+      </>
+    );
+  }
+
+  // ---- Desktop/tablet: collapsed (icon mode, 56px) ----
   if (collapsed) {
     const visibleTeam = activeAgents
       ? TEAM.filter((t) => activeAgents.includes(t.slug))
@@ -120,6 +247,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
     );
   }
 
+  // ---- Desktop: expanded (240px) ----
   return (
     <aside style={{
       width: 240,
@@ -177,6 +305,8 @@ export function Sidebar({ activeNav }: SidebarProps) {
               fontSize: 14,
               fontWeight: n.id === activeNav ? 500 : 400,
               textAlign: "left",
+              border: "none",
+              cursor: "pointer",
             }}
           >
             {n.label}

@@ -12,6 +12,7 @@ import {
 import { api } from "../lib/api.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
+import { useBreakpoint } from "../hooks/useBreakpoint.js";
 
 interface Deliverable {
   id: string;
@@ -121,6 +122,7 @@ export function PipelineView() {
   const setSelectedDeliverable = useAgencyStore((s) => s.setSelectedDeliverable);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [dragging, setDragging] = useState<Deliverable | null>(null);
+  const { isMobile } = useBreakpoint();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -159,14 +161,14 @@ export function PipelineView() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="pipeline" />
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ padding: "20px 28px 12px", borderBottom: "1px solid var(--rule)", flexShrink: 0 }}>
+        <div style={{ padding: isMobile ? "16px 16px 10px" : "20px 28px 12px", borderBottom: "1px solid var(--rule)", flexShrink: 0 }}>
           <div className="headline-md">Pipeline</div>
           <div className="body-sm" style={{ marginTop: 2 }}>
             {deliverables.length} deliverable{deliverables.length !== 1 ? "s" : ""}
           </div>
         </div>
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div style={{ flex: 1, overflow: "auto", padding: "20px 24px", display: "flex", gap: 16 }}>
+          <div style={{ flex: 1, overflow: "auto", padding: isMobile ? "16px 12px 88px" : "20px 24px", display: "flex", gap: 16 }}>
             {COLUMNS.map(({ status, label }) => (
               <Column
                 key={status}

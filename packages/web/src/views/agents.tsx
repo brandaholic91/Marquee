@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Sidebar } from "../components/layout/Sidebar";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const TEAM = [
   { slug: "director",          name: "Director" },
@@ -23,7 +24,7 @@ interface AgentConfig {
   system_prompt_override?: string;
 }
 
-function ConfigPanel({ role }: { role: string }) {
+function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: boolean }) {
   const [config, setConfig] = useState<AgentConfig>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -53,8 +54,8 @@ function ConfigPanel({ role }: { role: string }) {
   ].filter(Boolean).join(" | ");
 
   return (
-    <div style={{ padding: "0 32px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+    <div style={{ padding: `0 ${isMobile ? 16 : 32}px` }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 24 }}>
         {/* Structured fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
@@ -168,39 +169,88 @@ function ConfigPanel({ role }: { role: string }) {
 
 export function AgentsView() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"list" | "config">("list");
+  const { isMobile } = useBreakpoint();
+
+  function selectRole(slug: string) {
+    setSelectedRole(slug);
+    if (isMobile) setMobilePanel("config");
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="agents" />
-      <main style={{ flex: 1, padding: "28px 0", overflow: "auto" }}>
-        <h1 className="heading" style={{ padding: "0 32px", marginBottom: 24 }}>Agents</h1>
-        <div style={{ display: "flex", gap: 0 }}>
-          {/* Team list */}
-          <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--rule)" }}>
-            {TEAM.map((t) => (
+      <main style={{ flex: 1, padding: isMobile ? "20px 0 88px" : "28px 0", overflow: "auto" }}>
+        <h1 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 24 }}>Agents</h1>
+
+        {isMobile ? (
+          mobilePanel === "list" ? (
+            <div>
+              {TEAM.map((t) => (
+                <button
+                  key={t.slug}
+                  onClick={() => selectRole(t.slug)}
+                  style={{
+                    display: "flex", width: "100%", textAlign: "left",
+                    padding: "12px 16px", border: "none", borderBottom: "1px solid var(--rule)",
+                    background: "transparent",
+                    color: "var(--ink-1)", fontSize: 14, cursor: "pointer",
+                    justifyContent: "space-between", alignItems: "center",
+                  }}
+                >
+                  <span>{t.name}</span>
+                  <span style={{ color: "var(--ink-3)" }}>›</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div>
               <button
-                key={t.slug}
-                onClick={() => setSelectedRole(t.slug)}
+                onClick={() => setMobilePanel("list")}
                 style={{
-                  display: "block", width: "100%", textAlign: "left",
-                  padding: "9px 20px", border: "none", background: selectedRole === t.slug ? "var(--primary-soft)" : "transparent",
-                  color: selectedRole === t.slug ? "var(--primary-deep)" : "var(--ink-1)",
-                  fontSize: 13, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 4,
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--ink-3)", fontSize: 13, padding: "0 16px",
+                  marginBottom: 12,
                 }}
               >
-                {t.name}
+                ← Agents
               </button>
-            ))}
-          </div>
+              <div style={{ padding: "0 0 12px 16px", fontWeight: 600, fontSize: 15, color: "var(--ink-1)" }}>
+                {TEAM.find((t) => t.slug === selectedRole)?.name}
+              </div>
+              {selectedRole && <ConfigPanel key={selectedRole} role={selectedRole} isMobile />}
+            </div>
+          )
+        ) : (
+          <div style={{ display: "flex", gap: 0 }}>
+            {/* Team list */}
+            <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--rule)" }}>
+              {TEAM.map((t) => (
+                <button
+                  key={t.slug}
+                  onClick={() => setSelectedRole(t.slug)}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "9px 20px", border: "none", background: selectedRole === t.slug ? "var(--primary-soft)" : "transparent",
+                    color: selectedRole === t.slug ? "var(--primary-deep)" : "var(--ink-1)",
+                    fontSize: 13, cursor: "pointer",
+                  }}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
 
-          {/* Config panel */}
-          <div style={{ flex: 1 }}>
-            {selectedRole
-              ? <ConfigPanel key={selectedRole} role={selectedRole} />
-              : <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>Select an agent to configure</div>
-            }
+            {/* Config panel */}
+            <div style={{ flex: 1 }}>
+              {selectedRole
+                ? <ConfigPanel key={selectedRole} role={selectedRole} />
+                : <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>Select an agent to configure</div>
+              }
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

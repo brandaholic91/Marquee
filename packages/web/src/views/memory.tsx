@@ -3,6 +3,7 @@ import { api } from "../lib/api.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
 import { AgentBadge } from "../components/ui/index.js";
 import { Bulb } from "../components/ui/Bulb.js";
+import { useBreakpoint } from "../hooks/useBreakpoint.js";
 
 // ---- Types ----
 
@@ -64,9 +65,10 @@ interface FileListPanelProps {
   onSelect: (name: string) => void;
   proposals: MemoryProposal[];
   onCreateFile: () => void;
+  fullWidth?: boolean;
 }
 
-function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile }: FileListPanelProps) {
+function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile, fullWidth }: FileListPanelProps) {
   const [newFileName, setNewFileName] = useState("");
   const [showNew, setShowNew] = useState(false);
 
@@ -81,12 +83,14 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile 
 
   return (
     <aside style={{
-      width: 260,
+      width: fullWidth ? "100%" : 260,
+      flex: fullWidth ? 1 : undefined,
       background: "var(--parchment)",
-      borderRight: "1px solid var(--rule)",
+      borderRight: fullWidth ? "none" : "1px solid var(--rule)",
       display: "flex",
       flexDirection: "column",
       flexShrink: 0,
+      minWidth: 0,
     }}>
       {/* Header */}
       <div style={{ padding: "20px 18px 12px" }}>
@@ -305,9 +309,10 @@ interface MainContentProps {
   loading: boolean;
   selectedFile: string | null;
   onSaved: () => void;
+  onBack?: () => void;
 }
 
-function MainContent({ fileContent, loading, selectedFile, onSaved }: MainContentProps) {
+function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: MainContentProps) {
   const [tab, setTab] = useState<TabId>("read");
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
@@ -359,9 +364,24 @@ function MainContent({ fileContent, loading, selectedFile, onSaved }: MainConten
       });
   }
 
+  const backBtn = onBack ? (
+    <button
+      onClick={onBack}
+      style={{
+        display: "flex", alignItems: "center", gap: 4,
+        background: "none", border: "none", cursor: "pointer",
+        color: "var(--ink-3)", fontSize: 13, padding: 0,
+        marginBottom: 16,
+      }}
+    >
+      ← Files
+    </button>
+  ) : null;
+
   if (loading) {
     return (
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
+        {backBtn}
         <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
       </main>
     );
@@ -370,6 +390,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved }: MainConten
   if (!fileContent) {
     return (
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
+        {backBtn}
         <div className="body-sm muted" style={{ fontSize: 13 }}>Select a file to view.</div>
       </main>
     );
@@ -386,6 +407,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved }: MainConten
 
   return (
     <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
+      {backBtn}
       <article className="card" style={{ background: "var(--white)", padding: 0, maxWidth: 920 }}>
         {/* File title + status + edit button */}
         <div style={{ padding: "24px 32px 0" }}>
@@ -498,6 +520,8 @@ export function MemoryView() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<MemoryFileContent | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<"files" | "content">("files");
+  const { isMobile } = useBreakpoint();
 
   // Load file list function (called on mount and after file creation)
   function loadFiles() {
@@ -568,6 +592,11 @@ export function MemoryView() {
     setContentVersion((v) => v + 1);
   }
 
+  function handleFileSelect(name: string) {
+    setSelectedFile(name);
+    if (isMobile) setMobilePanel("content");
+  }
+
   return (
     <div style={{
       display: "flex",
@@ -575,19 +604,42 @@ export function MemoryView() {
       background: "var(--cream)",
     }}>
       <Sidebar activeNav="memory" />
-      <FileListPanel
-        files={files}
-        selectedFile={selectedFile}
-        onSelect={setSelectedFile}
-        proposals={proposals}
-        onCreateFile={loadFiles}
-      />
-      <MainContent
-        fileContent={fileContent}
-        loading={contentLoading}
-        selectedFile={selectedFile}
-        onSaved={handleSaved}
-      />
+      {isMobile ? (
+        mobilePanel === "files" ? (
+          <FileListPanel
+            files={files}
+            selectedFile={selectedFile}
+            onSelect={handleFileSelect}
+            proposals={proposals}
+            onCreateFile={loadFiles}
+            fullWidth
+          />
+        ) : (
+          <MainContent
+            fileContent={fileContent}
+            loading={contentLoading}
+            selectedFile={selectedFile}
+            onSaved={handleSaved}
+            onBack={() => setMobilePanel("files")}
+          />
+        )
+      ) : (
+        <>
+          <FileListPanel
+            files={files}
+            selectedFile={selectedFile}
+            onSelect={setSelectedFile}
+            proposals={proposals}
+            onCreateFile={loadFiles}
+          />
+          <MainContent
+            fileContent={fileContent}
+            loading={contentLoading}
+            selectedFile={selectedFile}
+            onSaved={handleSaved}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { api } from "../lib/api.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { Avatar, AgentBadge, Bulb } from "../components/ui/index.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
+import { useBreakpoint } from "../hooks/useBreakpoint.js";
 import type { AvatarWho } from "../components/ui/index.js";
 
 // ---- Types ----
@@ -607,6 +608,7 @@ export function ChatFullView() {
   const [loading, setLoading] = useState(false);
   const [typingAgent, setTypingAgent] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { isMobile } = useBreakpoint();
 
   const activeThread =
     snapshot?.threads.find((t) => t.id === activeThreadId) ?? null;
@@ -711,7 +713,7 @@ export function ChatFullView() {
       <main style={{ flex: 1, minWidth: 0, display: "flex", overflowY: "auto" }}>
         {/* Chat content */}
         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 896, padding: "32px", display: "flex", flexDirection: "column" }}>
+          <div style={{ width: "100%", maxWidth: 896, padding: isMobile ? "20px 16px 88px" : "32px", display: "flex", flexDirection: "column" }}>
             <ChatHeader
               thread={activeThread}
               messageCount={messages.length}
@@ -740,15 +742,17 @@ export function ChatFullView() {
           </div>
         </div>
 
-        {/* Threads panel — sticky so it doesn't scroll with content */}
-        <div style={{ position: "sticky", top: 0, height: "100vh", alignSelf: "flex-start", flexShrink: 0 }}>
-          <OtherThreadsStrip
-            threads={snapshot?.threads ?? []}
-            activeThreadId={activeThreadId}
-            onDelete={handleDeleteThread}
-            onNewThread={() => setView("home")}
-          />
-        </div>
+        {/* Threads panel — hidden on mobile, sticky on desktop */}
+        {!isMobile && (
+          <div style={{ position: "sticky", top: 0, height: "100vh", alignSelf: "flex-start", flexShrink: 0 }}>
+            <OtherThreadsStrip
+              threads={snapshot?.threads ?? []}
+              activeThreadId={activeThreadId}
+              onDelete={handleDeleteThread}
+              onNewThread={() => setView("home")}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

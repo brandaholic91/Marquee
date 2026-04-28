@@ -7,6 +7,7 @@ import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { useAgencyStore, type Task } from "../store/useAgencyStore";
 import { api } from "../lib/api";
 import { Sidebar } from "../components/layout/Sidebar";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const COLUMNS: { id: Task["status"]; label: string }[] = [
   { id: "open",        label: "To Do" },
@@ -74,6 +75,7 @@ export function TasksView() {
   const { tasks, setTasks, upsertTask } = useAgencyStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     api.tasks.list().then(setTasks).catch(console.error);
@@ -107,7 +109,7 @@ export function TasksView() {
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="tasks" />
-      <main style={{ flex: 1, padding: "28px 32px", overflow: "auto" }}>
+      <main style={{ flex: 1, padding: isMobile ? "20px 12px 88px" : "28px 32px", overflow: "auto" }}>
         <h1 className="heading" style={{ marginBottom: 24 }}>Tasks</h1>
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div style={{ display: "flex", gap: 16 }}>

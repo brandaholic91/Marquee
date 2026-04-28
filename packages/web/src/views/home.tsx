@@ -4,6 +4,7 @@ import { agencyEvents } from "../lib/sse.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 import { Badge, AgentBadge } from "../components/ui/index.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
+import { useBreakpoint } from "../hooks/useBreakpoint.js";
 
 
 // ---- Types ----
@@ -399,6 +400,7 @@ export function HomeView() {
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [showBriefForm, setShowBriefForm] = useState(false);
   const refreshPendingRef = useRef(false);
+  const { isMobile } = useBreakpoint();
 
   const refresh = () => {
     if (refreshPendingRef.current) return;
@@ -451,14 +453,14 @@ export function HomeView() {
     <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
       <Sidebar activeNav="home" />
 
-      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
+      <main style={{ flex: 1, minWidth: 0, padding: isMobile ? "20px 16px 88px" : "28px 32px 32px", overflow: "auto" }}>
         <HomeHeader onNewBrief={() => setShowBriefForm((v) => !v)} />
 
         {showBriefForm && (
           <NewBriefForm onClose={() => setShowBriefForm(false)} />
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginTop: 24 }}>
           <ApprovalsWidget approvals={snapshot.approvals} onRefresh={refresh} />
           <LiveFeedWidget events={liveEvents} />
           <PipelineWidget pipeline={snapshot.pipeline} />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Sidebar } from "../components/layout/Sidebar";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const ALL_ROLES = [
   { slug: "director",          label: "Director" },
@@ -168,6 +169,8 @@ function SkillEditor({
 export function SkillsView() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selected, setSelected] = useState<Skill | "new" | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"list" | "editor">("list");
+  const { isMobile } = useBreakpoint();
 
   function loadSkills() {
     (api.skills.list() as Promise<Skill[]>).then(setSkills).catch(console.error);
@@ -178,21 +181,99 @@ export function SkillsView() {
   function handleSaved() {
     loadSkills();
     setSelected(null);
+    if (isMobile) setMobilePanel("list");
   }
 
   function handleDeleted() {
     loadSkills();
     setSelected(null);
+    if (isMobile) setMobilePanel("list");
   }
+
+  function selectSkill(s: Skill | "new") {
+    setSelected(s);
+    if (isMobile) setMobilePanel("editor");
+  }
+
+  const skillList = (
+    <div style={{ width: isMobile ? "100%" : 240, flexShrink: 0, borderRight: isMobile ? "none" : "1px solid var(--rule)", overflowY: "auto" }}>
+      {skills.length === 0 && (
+        <div style={{ padding: "16px 20px", fontSize: 13, color: "var(--ink-3)" }}>No skills yet.</div>
+      )}
+      {skills.map((s) => (
+        <button
+          key={s.slug}
+          onClick={() => selectSkill(s)}
+          style={{
+            display: "block", width: "100%", textAlign: "left",
+            padding: "10px 20px", border: "none", borderBottom: "1px solid var(--rule)",
+            background: selected !== "new" && (selected as Skill | null)?.slug === s.slug
+              ? "var(--primary-soft)" : "transparent",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 3 }}>
+            {s.name}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
+            {s.slug}
+          </div>
+          <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {s.agents.map((a) => (
+              <span key={a} style={{
+                fontSize: 10, padding: "1px 6px", borderRadius: 3,
+                background: "var(--primary-soft)", color: "var(--primary-deep)",
+              }}>
+                {a}
+              </span>
+            ))}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+
+  const editor = (
+    <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
+      {isMobile && (
+        <button
+          onClick={() => setMobilePanel("list")}
+          style={{
+            display: "flex", alignItems: "center", gap: 4,
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--ink-3)", fontSize: 13, padding: "8px 16px",
+            marginBottom: 4,
+          }}
+        >
+          ← Skills
+        </button>
+      )}
+      {selected === null && (
+        <div style={{ padding: "40px 32px", fontSize: 13, color: "var(--ink-3)" }}>
+          Select a skill to edit, or click "+ New skill" to create one.
+        </div>
+      )}
+      {selected !== null && (
+        <div style={{ paddingTop: 8 }}>
+          <SkillEditor
+            key={selected === "new" ? "new" : (selected as Skill).slug}
+            skill={selected}
+            onSaved={handleSaved}
+            onDeleted={selected !== "new" ? handleDeleted : undefined}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="skills" />
-      <main style={{ flex: 1, padding: "28px 0", overflow: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "0 32px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <main style={{ flex: 1, padding: isMobile ? "20px 0 88px" : "28px 0", overflow: "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 className="heading">Skills</h1>
           <button
-            onClick={() => setSelected("new")}
+            onClick={() => selectSkill("new")}
             style={{
               padding: "7px 16px", borderRadius: 4, border: "none",
               cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13,
@@ -202,67 +283,16 @@ export function SkillsView() {
           </button>
         </div>
 
-        <div style={{ display: "flex", flex: 1, gap: 0, overflow: "hidden" }}>
-          {/* Skill list */}
-          <div style={{
-            width: 240, flexShrink: 0,
-            borderRight: "1px solid var(--rule)",
-            overflowY: "auto",
-          }}>
-            {skills.length === 0 && (
-              <div style={{ padding: "16px 20px", fontSize: 13, color: "var(--ink-3)" }}>No skills yet.</div>
-            )}
-            {skills.map((s) => (
-              <button
-                key={s.slug}
-                onClick={() => setSelected(s)}
-                style={{
-                  display: "block", width: "100%", textAlign: "left",
-                  padding: "10px 20px", border: "none", borderBottom: "1px solid var(--rule)",
-                  background: selected !== "new" && (selected as Skill | null)?.slug === s.slug
-                    ? "var(--primary-soft)" : "transparent",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 3 }}>
-                  {s.name}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
-                  {s.slug}
-                </div>
-                <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 3 }}>
-                  {s.agents.map((a) => (
-                    <span key={a} style={{
-                      fontSize: 10, padding: "1px 6px", borderRadius: 3,
-                      background: "var(--primary-soft)", color: "var(--primary-deep)",
-                    }}>
-                      {a}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            ))}
+        {isMobile ? (
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            {mobilePanel === "list" ? skillList : editor}
           </div>
-
-          {/* Editor */}
-          <div style={{ flex: 1, overflowY: "auto", paddingBottom: 32 }}>
-            {selected === null && (
-              <div style={{ padding: "40px 32px", fontSize: 13, color: "var(--ink-3)" }}>
-                Select a skill to edit, or click "+ New skill" to create one.
-              </div>
-            )}
-            {selected !== null && (
-              <div style={{ paddingTop: 8 }}>
-                <SkillEditor
-                  key={selected === "new" ? "new" : (selected as Skill).slug}
-                  skill={selected}
-                  onSaved={handleSaved}
-                  onDeleted={selected !== "new" ? handleDeleted : undefined}
-                />
-              </div>
-            )}
+        ) : (
+          <div style={{ display: "flex", flex: 1, gap: 0, overflow: "hidden" }}>
+            {skillList}
+            {editor}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

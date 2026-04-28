@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Sidebar } from "../components/layout/Sidebar";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 
 interface CronJob {
   id: string;
@@ -130,6 +131,7 @@ export function CalendarView() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     fetch("/api/crons").then((r) => r.json()).then(setJobs).catch(console.error);
@@ -147,7 +149,7 @@ export function CalendarView() {
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="calendar" />
-      <main style={{ flex: 1, padding: "28px 32px", overflow: "auto" }}>
+      <main style={{ flex: 1, padding: isMobile ? "20px 16px 88px" : "28px 32px", overflow: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <h1 className="heading">Calendar</h1>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -156,7 +158,7 @@ export function CalendarView() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 32 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 280px", gap: isMobile ? 24 : 32 }}>
           {/* Calendar grid */}
           <MonthCalendar jobs={jobs} year={year} month={month} />
 
