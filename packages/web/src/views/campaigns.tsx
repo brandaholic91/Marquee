@@ -11,6 +11,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 interface CampaignDetail extends Campaign {
+  briefs: { id: string; status: string; contentMd: string; createdAt: string }[];
   deliverables: { id: string; title: string; type: string; status: string }[];
   tasks: { id: string; title: string; status: string; assignedTo: string }[];
 }
@@ -39,6 +40,23 @@ function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: Campaig
           {campaign.description}
         </p>
       )}
+
+      <div style={{ marginBottom: 20 }}>
+        <div className="caption" style={{ marginBottom: 8 }}>Briefs ({campaign.briefs.length})</div>
+        {campaign.briefs.length === 0
+          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>None yet</div>
+          : campaign.briefs.map((b) => {
+              const statusLabel = b.status === "draft" ? "Draft" : b.status === "dispatched" ? "In progress" : "Done";
+              const title = b.contentMd.split("\n")[0].replace(/^#+\s*/, "").trim().slice(0, 60) || "Untitled brief";
+              return (
+                <div key={b.id} style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 4, display: "flex", gap: 8 }}>
+                  <span style={{ color: "var(--ink-3)", flexShrink: 0 }}>{statusLabel}</span>
+                  <span>{title}</span>
+                </div>
+              );
+            })
+        }
+      </div>
 
       <div style={{ marginBottom: 20 }}>
         <div className="caption" style={{ marginBottom: 8 }}>Deliverables ({campaign.deliverables.length})</div>
