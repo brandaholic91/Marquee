@@ -3,8 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { briefs, memoryProposals } from "../db/schema.js";
+import { briefs, campaigns, memoryProposals } from "../db/schema.js";
 import { proposeBrief, proposeMemoryUpdate } from "./proposals.js";
 
 describe("proposal tools", () => {
@@ -36,6 +37,19 @@ describe("proposal tools", () => {
 		expect(rows).toHaveLength(1);
 		expect(rows[0].status).toBe("draft");
 		expect(emit).toHaveBeenCalledWith("brief_proposed", expect.objectContaining({ briefId: result.briefId }));
+	});
+
+	it("propose_brief creates a campaign with the brief title", async () => {
+		const emit = vi.fn();
+		const result = await proposeBrief.execute(
+			{ threadId: randomUUID(), title: "Q2 Launch", scope: "blog", deliverables: ["blog_post"] },
+			{ db, agentSlug: "director", agentSessionId: randomUUID(), emit },
+		);
+		const brief = db.select().from(briefs).where(eq(briefs.id, result.briefId)).get()!;
+		expect(brief.campaignId).toBeDefined();
+		const campaign = db.select().from(campaigns).where(eq(campaigns.id, brief.campaignId!)).get();
+		expect(campaign?.title).toBe("Q2 Launch");
+		expect(campaign?.status).toBe("active");
 	});
 
 	it("propose_memory_update creates pending proposal and emits memory_proposed", async () => {

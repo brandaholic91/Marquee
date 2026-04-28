@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { briefs, memoryProposals } from "../db/schema.js";
+import { briefs, campaigns, memoryProposals } from "../db/schema.js";
 import type { AgentToolDef } from "./types.js";
 
 const proposeBriefInput = z.object({
@@ -27,6 +27,9 @@ export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { bri
 	},
 	input: proposeBriefInput,
 	async execute(input, ctx) {
+		const campaignId = randomUUID();
+		ctx.db.insert(campaigns).values({ id: campaignId, title: input.title, status: "active" }).run();
+
 		const id = randomUUID();
 		const md = [
 			`# ${input.title}`, "",
@@ -34,10 +37,8 @@ export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { bri
 			`**Deliverables:** ${input.deliverables.join(", ")}`,
 			input.deadline ? `**Deadline:** ${input.deadline}` : "",
 		].filter(Boolean).join("\n");
-		// sourceThreadId is a soft reference — store null to avoid FK constraint when thread
-		// hasn't been created yet (e.g. during early-stage proposal flows).
 		ctx.db.insert(briefs).values({
-			id, sourceThreadId: null, status: "draft", contentMd: md,
+			id, sourceThreadId: null, status: "draft", contentMd: md, campaignId,
 		}).run();
 		ctx.emit("brief_proposed", { briefId: id, threadId: input.threadId, title: input.title });
 		return { briefId: id };
