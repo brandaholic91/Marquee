@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { delegations } from "../db/schema.js";
+import { briefs, campaigns, delegations } from "../db/schema.js";
 import { delegateToLead, delegateToSpecialist } from "./delegation.js";
 
 describe("delegate_to_lead", () => {
@@ -174,6 +174,87 @@ describe("delegate_to_specialist — new specialist targets", () => {
 				{ db, agentSlug: "content-lead", agentSessionId: randomUUID(), emit: vi.fn() },
 			),
 		).rejects.toThrow(/cannot delegate/i);
+	});
+});
+
+describe("delegateToLead — campaignId propagation", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "agency-tools-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+	});
+
+	afterEach(() => {
+		close();
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("copies campaignId from brief when briefId provided", async () => {
+		const emit = vi.fn();
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "Test Campaign", status: "active" }).run();
+		const briefId = randomUUID();
+		db.insert(briefs).values({ id: briefId, status: "draft", contentMd: "test", campaignId }).run();
+
+		const result = await delegateToLead.execute(
+			{ lead: "content-lead", task: "Write a blog post", briefId },
+			{ db, agentSlug: "director", agentSessionId: randomUUID(), emit },
+		);
+
+		const delegation = db.select().from(delegations).all().find(d => d.id === result.delegationId)!;
+		expect(delegation.campaignId).toBe(campaignId);
+	});
+
+	it("sets campaignId to null when no briefId provided", async () => {
+		const emit = vi.fn();
+		const result = await delegateToLead.execute(
+			{ lead: "content-lead", task: "Write a blog post" },
+			{ db, agentSlug: "director", agentSessionId: randomUUID(), emit },
+		);
+		const delegation = db.select().from(delegations).all().find(d => d.id === result.delegationId)!;
+		expect(delegation.campaignId).toBeNull();
+	});
+});
+
+describe("delegateToSpecialist — campaignId propagation", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "agency-tools-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+	});
+
+	afterEach(() => {
+		close();
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("inherits campaignId from parent delegation", async () => {
+		const emit = vi.fn();
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "Test Campaign", status: "active" }).run();
+		const parentId = randomUUID();
+		db.insert(delegations).values({
+			id: parentId, fromAgent: "director", toAgent: "content-lead",
+			status: "in_progress", payloadJson: {}, campaignId,
+		}).run();
+
+		const result = await delegateToSpecialist.execute(
+			{ specialist: "copywriter", task: "Write blog post" },
+			{ db, agentSlug: "content-lead", agentSessionId: randomUUID(), delegationId: parentId, emit },
+		);
+
+		const delegation = db.select().from(delegations).all().find(d => d.id === result.delegationId)!;
+		expect(delegation.campaignId).toBe(campaignId);
 	});
 });
 

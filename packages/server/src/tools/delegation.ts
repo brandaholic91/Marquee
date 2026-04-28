@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { delegations } from "../db/schema.js";
+import { briefs, delegations } from "../db/schema.js";
 import type { AgentToolDef, ToolContext } from "./types.js";
 
 const KNOWN_LEADS = new Set(["content-lead", "distribution-lead", "insights-lead"]);
@@ -36,9 +36,14 @@ export const delegateToLead: AgentToolDef<z.infer<typeof delegateToLeadInput>, {
 		if (!KNOWN_LEADS.has(input.lead)) {
 			throw new Error(`Unknown lead "${input.lead}". Valid: ${[...KNOWN_LEADS].join(", ")}`);
 		}
+		let campaignId: string | null = null;
+		if (input.briefId) {
+			const brief = ctx.db.select().from(briefs).where(eq(briefs.id, input.briefId)).get();
+			campaignId = brief?.campaignId ?? null;
+		}
 		const id = randomUUID();
 		ctx.db.insert(delegations).values({
-			id, briefId: input.briefId, fromAgent: ctx.agentSlug, toAgent: input.lead,
+			id, briefId: input.briefId, campaignId, fromAgent: ctx.agentSlug, toAgent: input.lead,
 			status: "requested", payloadJson: { task: input.task, context: input.context } as never,
 		}).run();
 		ctx.emit("delegation_created", { delegationId: id, from: ctx.agentSlug, to: input.lead });
@@ -70,9 +75,14 @@ export const delegateToSpecialist: AgentToolDef<z.infer<typeof delegateToSpecial
 		if (!allowed) throw new Error(`${ctx.agentSlug} is not a Lead and cannot delegate to specialists`);
 		if (!allowed.has(input.specialist))
 			throw new Error(`${ctx.agentSlug} cannot delegate to "${input.specialist}". Allowed: ${[...allowed].join(", ")}`);
+		let campaignId: string | null = null;
+		if (ctx.delegationId) {
+			const parent = ctx.db.select().from(delegations).where(eq(delegations.id, ctx.delegationId)).get();
+			campaignId = parent?.campaignId ?? null;
+		}
 		const id = randomUUID();
 		ctx.db.insert(delegations).values({
-			id, parentDelegationId: ctx.delegationId, fromAgent: ctx.agentSlug, toAgent: input.specialist,
+			id, parentDelegationId: ctx.delegationId, campaignId, fromAgent: ctx.agentSlug, toAgent: input.specialist,
 			status: "requested", payloadJson: { task: input.task, context: input.context } as never,
 		}).run();
 		ctx.emit("delegation_created", { delegationId: id, from: ctx.agentSlug, to: input.specialist });
