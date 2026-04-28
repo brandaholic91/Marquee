@@ -108,17 +108,19 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
         </div>
         <div className="body-sm" style={{ marginTop: 2 }}>git-követett, ember által szerkesztett</div>
         {showNew && (
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
             <input
               autoFocus
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               placeholder="filename.md"
-              style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--rule)", borderRadius: 4, fontSize: 13 }}
+              style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
             />
-            <button onClick={handleCreate} style={{ padding: "5px 12px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>Létrehozás</button>
-            <button onClick={() => setShowNew(false)} style={{ padding: "5px 12px", borderRadius: 4, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--rule)", cursor: "pointer", fontSize: 13 }}>Mégse</button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={handleCreate} style={{ flex: 1, padding: "6px 0", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>Létrehozás</button>
+              <button onClick={() => setShowNew(false)} style={{ padding: "6px 10px", borderRadius: 4, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--rule)", cursor: "pointer", fontSize: 13 }}>Mégse</button>
+            </div>
           </div>
         )}
       </div>
