@@ -21,8 +21,9 @@ interface MemoryFrontmatter {
 interface MemoryCommit {
   hash: string;
   message: string;
-  author: string;
-  timestamp: string;
+  date?: string;
+  author?: string;
+  timestamp?: string;
   diff?: string;
 }
 
@@ -264,42 +265,108 @@ function ReadTab({ frontmatter, body }: ReadTabProps) {
 
 interface HistoryTabProps {
   history: MemoryCommit[];
+  filename: string;
 }
 
-function HistoryTab({ history }: HistoryTabProps) {
+function DiffView({ diff }: { diff: string }) {
+  const lines = diff.split("\n");
+  return (
+    <pre style={{ margin: 0, fontSize: 12, lineHeight: 1.6, fontFamily: "var(--font-mono)", overflowX: "auto" }}>
+      {lines.map((line, i) => {
+        const color = line.startsWith("+") && !line.startsWith("+++")
+          ? "var(--success, #2d7a4f)"
+          : line.startsWith("-") && !line.startsWith("---")
+          ? "#c0392b"
+          : line.startsWith("@@")
+          ? "var(--primary-deep)"
+          : "var(--ink-3)";
+        return <div key={i} style={{ color, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{line || " "}</div>;
+      })}
+    </pre>
+  );
+}
+
+function HistoryTab({ history, filename }: HistoryTabProps) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<"content" | "diff">("content");
+  const [content, setContent] = useState<string | null>(null);
+  const [diff, setDiff] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function selectCommit(hash: string) {
+    if (selected === hash) { setSelected(null); return; }
+    setSelected(hash);
+    setContent(null);
+    setDiff(null);
+    setLoading(true);
+    try {
+      const [c, d] = await Promise.all([
+        api.memory.at(filename, hash),
+        api.memory.diff(filename, hash),
+      ]);
+      setContent(c.content);
+      setDiff(d.diff);
+    } catch {
+      setContent("Nem sikerült betölteni.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (history.length === 0) {
     return (
       <div style={{ padding: "24px 32px" }}>
-        <div className="body-md muted" style={{ fontSize: 13 }}>Nincs elérhető előzmény.</div>
+        <div style={{ fontSize: 13, color: "var(--ink-3)" }}>Nincs elérhető előzmény.</div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "24px 32px" }}>
-      <div style={{ marginTop: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-        {history.map((c) => (
-          <div key={c.hash} className="card" style={{ padding: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span
-                className="mono"
-                style={{ fontSize: 12, color: "var(--ink-3)", flexShrink: 0 }}
-              >
-                {c.hash}
-              </span>
-              <span className="body-md" style={{ flex: 1, fontSize: 14 }}>{c.message}</span>
-              {c.diff && (
-                <span className="mono" style={{ fontSize: 11, color: "var(--success-deep)", flexShrink: 0 }}>
-                  {c.diff}
-                </span>
-              )}
+    <div style={{ padding: "16px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+      {history.map((c) => (
+        <div key={c.hash}>
+          <button
+            onClick={() => selectCommit(c.hash)}
+            style={{
+              width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 6,
+              border: "1px solid var(--rule)", background: selected === c.hash ? "var(--primary-soft)" : "var(--white)",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
+            }}
+          >
+            <span style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>{c.hash}</span>
+            <span style={{ flex: 1, fontSize: 13, color: "var(--ink-1)" }}>{c.message}</span>
+            <span style={{ fontSize: 11, color: "var(--ink-3)", flexShrink: 0 }}>{(c.date ?? c.timestamp ?? "").slice(0, 10)}</span>
+          </button>
+
+          {selected === c.hash && (
+            <div style={{ margin: "4px 0 8px", border: "1px solid var(--rule)", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--rule)" }}>
+                {(["content", "diff"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    style={{
+                      padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 12,
+                      background: view === v ? "var(--parchment)" : "transparent",
+                      fontWeight: view === v ? 600 : 400, color: "var(--ink-2)",
+                      borderRight: "1px solid var(--rule)",
+                    }}
+                  >
+                    {v === "content" ? "Tartalom" : "Diff"}
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding: "12px 16px", background: "var(--parchment)", maxHeight: 400, overflowY: "auto" }}>
+                {loading && <div style={{ fontSize: 13, color: "var(--ink-3)" }}>Betöltés…</div>}
+                {!loading && view === "content" && content && (
+                  <pre style={{ margin: 0, fontSize: 12, lineHeight: 1.7, fontFamily: "var(--font-mono)", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "var(--ink-1)" }}>{content}</pre>
+                )}
+                {!loading && view === "diff" && diff && <DiffView diff={diff} />}
+              </div>
             </div>
-            <div className="body-sm muted" style={{ marginTop: 4, fontSize: 12 }}>
-              {c.author} · {c.timestamp}
-            </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -508,7 +575,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
           <>
             {/* Tab content */}
             {tab === "read" && <ReadTab frontmatter={frontmatter} body={body} />}
-            {tab === "history" && <HistoryTab history={history} />}
+            {tab === "history" && <HistoryTab history={history} filename={fileContent.name} />}
           </>
         )}
       </article>

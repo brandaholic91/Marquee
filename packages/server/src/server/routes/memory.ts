@@ -130,6 +130,36 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 	);
 
 	// create new memory file
+	app.get<{ Params: { filename: string; hash: string } }>("/api/memory/:filename/at/:hash", async (req, reply) => {
+		const name = req.params.filename.replace(/\.md$/, "");
+		const filePath = join(memDir(), `${name}.md`);
+		const git = simpleGit(opts.dataDir);
+		const isRepo = await git.checkIsRepo().catch(() => false);
+		if (!isRepo) return reply.code(400).send({ error: "not a git repo" });
+		try {
+			const relPath = `memory/${name}.md`;
+			const content = await git.show([`${req.params.hash}:${relPath}`]);
+			return { content };
+		} catch {
+			return reply.code(404).send({ error: "not found at this commit" });
+		}
+	});
+
+	app.get<{ Params: { filename: string; hash: string } }>("/api/memory/:filename/diff/:hash", async (req, reply) => {
+		const name = req.params.filename.replace(/\.md$/, "");
+		const filePath = join(memDir(), `${name}.md`);
+		const git = simpleGit(opts.dataDir);
+		const isRepo = await git.checkIsRepo().catch(() => false);
+		if (!isRepo) return reply.code(400).send({ error: "not a git repo" });
+		try {
+			const relPath = `memory/${name}.md`;
+			const diff = await git.show([`${req.params.hash}`, "--", relPath]);
+			return { diff };
+		} catch {
+			return reply.code(404).send({ error: "diff not available" });
+		}
+	});
+
 	app.post<{ Body: { filename: string } }>("/api/memory", async (req, reply) => {
 		const { filename } = req.body;
 		if (!filename || filename.includes("..") || filename.includes("/")) {

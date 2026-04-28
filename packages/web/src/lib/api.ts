@@ -53,6 +53,10 @@ export const api = {
   memory: {
     files: () => fetch("/api/memory/files").then(json),
     get: (filename: string) => fetch(`/api/memory/${filename}`).then(json),
+    at: (filename: string, hash: string) =>
+      fetch(`/api/memory/${filename}/at/${hash}`).then(json) as Promise<{ content: string }>,
+    diff: (filename: string, hash: string) =>
+      fetch(`/api/memory/${filename}/diff/${hash}`).then(json) as Promise<{ diff: string }>,
     put: (filename: string, content: string) =>
       fetch(`/api/memory/${filename}`, {
         method: "PUT",
