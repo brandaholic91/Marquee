@@ -7,6 +7,7 @@ import { recoverState } from "./broker/recovery.js";
 import { EvalTrigger } from "./broker/eval-trigger.js";
 import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
+import { TaskManager } from "./tasks/manager.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -19,6 +20,8 @@ async function main() {
 	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
 	const broker = new Broker(db, webhookUrl);
 	const router = new AgentRouter(db, broker, dataDir);
+	const taskManager = new TaskManager(db, broker, router);
+	taskManager.boot();
 	router.boot();
 	recoverState(db, router);
 
