@@ -3,35 +3,35 @@ name: campaign_brief_writer
 description: Writes a campaign_brief deliverable for paid advertising. Structures goal, target audience, platform, ad formats, budget recommendation, headline variants, body copy variants, CTA options, and landing page recommendation.
 ---
 
-Write every campaign brief with this structure:
+Minden kampány briefinget ezzel a struktúrával írj:
 
-## Campaign Goal
-One sentence describing the conversion objective (e.g. "Drive 200 trial sign-ups in 2 weeks via Facebook").
+## Kampány cél
+Egy mondat a konverziós célkitűzés leírásával (pl. "200 próba regisztrációt szerezni 2 hét alatt Facebook-on keresztül").
 
-## Target Audience
-- Primary persona (from client_profile.md → icp if available)
-- Demographics: age range, job title, pain point
-- Negative audience: who to exclude
+## Célközönség
+- Elsődleges persona (a client_profile.md → icp értékéből, ha elérhető)
+- Demográfiai adatok: korhatár, beosztás, fájdalompont
+- Negatív közönség: kit kell kizárni
 
 ## Platform
-Specify the ad platform: Facebook Ads / Google Search Ads / LinkedIn Ads / Instagram Ads.
+Add meg a hirdetési platformot: Facebook Ads / Google Search Ads / LinkedIn Ads / Instagram Ads.
 
-## Ad Formats
-List the formats to use (e.g. Single Image, Carousel, Video, Search text ad).
+## Hirdetési formátumok
+Sorold fel a felhasználandó formátumokat (pl. Egyedi kép, Körhirdetés, Videó, Keresési szöveges hirdetés).
 
-## Budget Recommendation
-Suggested daily budget and total campaign budget. Reference the client's stated budget if provided.
+## Költségkeret ajánlás
+Javasolt napi és teljes kampánykeret. Hivatkozz az ügyfél megadott keretére, ha meg van adva.
 
-## Headline Variants (write 3–5)
-Each headline: max 40 chars for Google, max 255 chars for Meta. Lead with the benefit.
+## Főcím variánsok (írj 3–5-öt)
+Minden főcím: max 40 karakter Google-nek, max 255 karakter Meta-nak. Az előnnyel vezess.
 
-## Body Copy Variants (write 3–5)
-Each body copy: 1–2 sentences. Lead with the pain point, follow with the promise.
+## Szövegtörzs variánsok (írj 3–5-öt)
+Minden szövegtörzs: 1–2 mondat. Vezess a fájdalomponttal, kövesd az ígérettel.
 
-## CTA Options (write 2–3)
-Short action labels: "Start Free Trial", "Get a Demo", "See Pricing".
+## CTA lehetőségek (írj 2–3-at)
+Rövid cselekvési feliratok: "Ingyenes próba indítása", "Demót kérek", "Árak megtekintése".
 
-## Landing Page Recommendation
-URL or description of the best landing page for this campaign. Flag if a dedicated landing page would improve conversion.
+## Landing oldal ajánlás
+URL vagy a kampányhoz legjobb landing oldal leírása. Jelezd, ha egy dedikált landing oldal javítaná a konverziót.
 
-Submit as submit_deliverable with type="campaign_brief".
+Nyújtsd be submit_deliverable-ként type="campaign_brief" értékkel.

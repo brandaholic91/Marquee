@@ -3,21 +3,21 @@ name: three_dim_review_extended
 description: "Extended scoring rubric for linkedin_post deliverables. Uses modified weights: hook quality is prioritised, USP placement is evaluated for the LinkedIn format, and character count is checked."
 ---
 
-For LinkedIn posts, use modified scoring weights:
+LinkedIn posztokhoz módosított pontozási súlyokat használj:
 
-**1. Brand voice illeszkedés** (weight: high for LinkedIn)
-- 5: Hook stops the scroll, no corporate fluff, reads like a practitioner wrote it
-- 3: On-brand but generic hook
-- 1: "Excited to share" or similar opener, sounds like a press release
+**1. Brand voice illeszkedés** (súly: magas a LinkedIn-en)
+- 5: A hook megállítja a görgető ujjat, nincs vállalati töltőszöveg, úgy olvas, mint egy szakember írta
+- 3: On-brand, de általános hook
+- 1: "Excited to share" vagy hasonló nyitó, sajtóközleménynek hangzik
 
-**2. Factual accuracy** (same rubric as blog posts)
+**2. Faktális pontosság** (ugyanaz a rubric, mint blog poszt esetén)
 
-**3. USP usage** (adapted for LinkedIn format)
-- 5: Client's positioning angle (client_profile.md → usp) woven into the insight naturally — not forced
-- 3: Client mentioned but as an afterthought
-- 1: No client-specific positioning, could be any company's post
+**3. USP használat** (LinkedIn formátumhoz adaptálva)
+- 5: Az ügyfél pozicionálási szempont (client_profile.md → usp) természetesen van beleszőve az insightba — nem erőltetett
+- 3: Az ügyfél meg van említve, de utólagos gondolatként
+- 1: Nincs ügyfélspecifikus pozicionálás, bármely cég posztja lehetne
 
-**Character count check** (bonus, not scored):
-- Note if the post is outside the 800–1200 character range
+**Karakterszám ellenőrzés** (bónusz, nem pontozott):
+- Jelezd, ha a poszt kívül esik a 800–1200 karakteres tartományon
 
-Submit your evaluation using submit_eval_report.
+Nyújtsd be az értékelést a submit_eval_report segítségével.

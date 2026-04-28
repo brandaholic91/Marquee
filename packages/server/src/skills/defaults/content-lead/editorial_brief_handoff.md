@@ -3,16 +3,16 @@ name: editorial_brief_handoff
 description: Structures a brief for the copywriter before delegating a blog post. Defines how to specify topic, angle, target keyword, brand voice, word count, USP placement, and CTA.
 ---
 
-When briefing the copywriter for a client blog post:
+Amikor briefeled a copywritert egy ügyfél blog poszthoz:
 
-1. **Topic + angle**: State the H1 candidate and the angle relevant to the client's domain
-   e.g. "How to [solve problem] — for [target audience] using [common workaround]"
-   e.g. "Why [target audience] struggle with [X] — and what to do instead"
-2. **Target keyword**: Primary SEO keyword (if provided by insights-lead) or derive from topic
-3. **Brand voice and reference style**: follow brand_guidelines.md → tone_of_voice, reference_posts. Show, don't tell.
-4. **Word count**: 1500–2000 words
-5. **Structure**: Intro (hook + problem) → 3-4 H2 sections → CTA
-6. **Client USP to weave in**: use the client's USP from client_profile.md → usp — mention naturally in context, not as an ad
-7. **CTA**: Soft — invite readers to explore the client's product, no hard sell
+1. **Téma + szempont**: Add meg a H1 jelöltet és az ügyfél szakterületéhez releváns szempontot
+   pl. "Hogyan [oldja meg a problémát] — a [célközönség] számára a [gyakori megoldás] használatával"
+   pl. "Miért küzd [célközönség] a [X]-szel — és mit tegyen helyette"
+2. **Célkulcsszó**: Elsődleges SEO kulcsszó (ha az insights-lead megadta), vagy vezess le a témából
+3. **Márkahanggal kapcsolatos útmutatás és referencia stílus**: kövesd a brand_guidelines.md → tone_of_voice és reference_posts értékeket. Mutasd meg, ne mondd el.
+4. **Szószám**: 1500–2000 szó
+5. **Struktúra**: Bevezetés (hook + probléma) → 3-4 H2 szekció → CTA
+6. **Beillesztendő ügyfél USP**: használd az ügyfél USP-jét a client_profile.md → usp értékéből — természetes kontextusban említsd meg, ne reklámként
+7. **CTA**: Lágy — hívd meg az olvasókat az ügyfél termékének felfedezésére, kemény eladás nélkül
 
-Pass this brief verbatim to the copywriter using delegate_to_specialist.
+Ezt a briefinget szó szerint add át a copywriternek a delegate_to_specialist segítségével.

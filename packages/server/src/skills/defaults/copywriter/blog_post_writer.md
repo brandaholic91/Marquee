@@ -3,30 +3,30 @@ name: blog_post_writer
 description: Writes a blog_post deliverable. Covers H1 pattern, introduction structure, body section format, conclusion and soft CTA. Includes voice and style rules.
 ---
 
-Write every blog post with this structure:
+Minden blog posztot ezzel a struktúrával írj:
 
-**H1**: Keyword-optimized, specific, no clickbait.
-Pattern: "How [Target Audience] Solve [Problem] Without [Common Workaround]"
-e.g. "How PLG Teams Track Activation Rate Without a Data Warehouse"
-e.g. "How [Industry] Teams Handle [Problem] Without [Legacy Tool]"
+**H1**: Kulcsszóra optimalizált, konkrét, clickbait mentes.
+Minta: "Hogyan oldja meg [Célközönség] a [Problémát] [Általános megoldás] nélkül"
+pl. "Hogyan követik a PLG csapatok az aktiválási arányt adatraktár nélkül"
+pl. "Hogyan kezeli a [Szektor] csapata a [Problémát] a [Régi eszköz] nélkül"
 
-**Introduction (150–200 words)**:
-- Open with a concrete problem statement
-  e.g. "Most [target audience] are working with [N] tools and none of them talk to each other."
-- State what the reader will learn
-- No filler phrases ("In this article, we will...")
+**Bevezetés (150–200 szó)**:
+- Kezdj egy konkrét problémafelvetéssel
+  pl. "A legtöbb [célközönség] [N] eszközzel dolgozik, és egyik sem kommunikál a másikkal."
+- Mondd el, mit fog megtanulni az olvasó
+- Nincs töltőmondat ("Ebben a cikkben...")
 
-**Body (3–4 H2 sections, 300–400 words each)**:
-- Each section answers one specific question
-- Use metrics and examples relevant to the client's domain (client_profile.md → icp)
-- Data-driven: cite specific numbers, even if illustrative
-- Short paragraphs, no walls of text
+**Törzs (3–4 H2 szekció, szekciónként 300–400 szó)**:
+- Minden szekció egy konkrét kérdésre válaszol
+- Az ügyfél szakterületére releváns metrikákat és példákat használj (client_profile.md → icp)
+- Adatalapú: hivatkozz konkrét számokra, még ha illusztratívak is
+- Rövid bekezdések, szövegfalak nélkül
 
-**Conclusion + CTA (100–150 words)**:
-- Summarise the key insight in 2 sentences
-- Soft CTA to the client's product (use URL and positioning from client_profile.md)
-  e.g. "If you're solving [problem], [Client Product] was designed for exactly this."
+**Befejezés + CTA (100–150 szó)**:
+- Foglald össze a kulcsinightot 2 mondatban
+- Lágy CTA az ügyfél termékéhez (használd az URL-t és a pozicionálást a client_profile.md-ből)
+  pl. "Ha a [problémát] oldod meg, a [Kliens Terméke] pontosan erre lett tervezve."
 
-**Voice**: follow brand_guidelines.md → tone_of_voice and reference_posts. Authoritative but not corporate. Use "you" not "one". No jargon without explanation.
+**Hang**: kövesd a brand_guidelines.md → tone_of_voice és reference_posts értékeket. Tekintélyes, de nem vállalati. Használj "te"-t, ne "az ember"-t. Zsargont magyarázattal együtt használj.
 
-Submit as submit_deliverable with type="blog_post".
+Nyújtsd be submit_deliverable-ként type="blog_post" értékkel.

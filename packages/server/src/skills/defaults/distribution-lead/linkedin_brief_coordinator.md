@@ -3,15 +3,15 @@ name: linkedin_brief_coordinator
 description: Structures a brief for the social-manager before delegating a LinkedIn post. Specifies hook type, core insight format, character count, CTA style, and hashtag rules.
 ---
 
-Brief the social-manager with these specifics for every client LinkedIn post:
+Briefeld a social-managert ezekkel a specifikus részletekkel minden ügyfél LinkedIn poszthoz:
 
-1. **Hook**: The opening line must stop the scroll. Options: a surprising statistic, a contrarian take on a common belief in the client's domain, or a concrete "before/after" scenario.
-2. **Core insight**: One specific insight relevant to the client's domain (client_profile.md → icp) — not a general "data is important" statement.
-   e.g. "Most [target audience] track [common metric]. The teams that win track [better metric] instead."
-   e.g. "[X]% of [personas] we've spoken to do [A]. The other [Y]% do [B]. Here's what separates them."
-3. **Format**: Short paragraphs (1–2 sentences), generous white space. LinkedIn rewards skimmable content.
-4. **Length**: 800–1200 characters (not words). Optimal for LinkedIn algorithm.
-5. **CTA**: Soft — one question to the audience OR a link to the client's relevant content this is repurposing.
-6. **Hashtags**: 3 max — at the very end, not in the body. Derive from the client's domain (client_profile.md → icp).
+1. **Hook**: A nyitósornak meg kell állítania a görgető ujjat. Lehetőségek: meglepő statisztika, az ügyfél szakterületének egy általánosan elfogadott hitével szemben álló nézet, vagy egy konkrét "előtte/utána" forgatókönyv.
+2. **Kulcsinsight**: Egy konkrét insight az ügyfél szakterületéhez releváns (client_profile.md → icp) — nem egy általános "az adatok fontosak" állítás.
+   pl. "A legtöbb [célközönség] a [általános metrikát] követi. A nyertes csapatok a [jobb metrikát] követik helyette."
+   pl. "A megkérdezett [personák] [X]%-a [A]-t csinál. A többi [Y]% [B]-t csinál. Íme, mi különíti el őket."
+3. **Formátum**: Rövid bekezdések (1–2 mondat), bőséges fehér tér. A LinkedIn az áttekinthető tartalmat preferálja.
+4. **Hossz**: 800–1200 karakter (nem szó). Optimális a LinkedIn algoritmus számára.
+5. **CTA**: Lágy — egy kérdés a közönségnek VAGY egy link az ügyfél releváns tartalmához, amelyet ez repurpose-ol.
+6. **Hashtagek**: Maximum 3 — a végén, ne a szövegben. Vezess le az ügyfél szakterületéből (client_profile.md → icp).
 
-Delegate to social-manager with these instructions included verbatim.
+Delegálj a social-managernek ezekkel az utasításokkal szó szerint beleillesztve.

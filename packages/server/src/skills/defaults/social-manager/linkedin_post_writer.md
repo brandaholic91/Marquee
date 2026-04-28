@@ -3,24 +3,24 @@ name: linkedin_post_writer
 description: Writes a linkedin_post deliverable. Defines hook patterns, insight line structure, CTA formats, character count rules, and prohibited phrases.
 ---
 
-Write every client LinkedIn post following this structure:
+Minden ügyfél LinkedIn posztot ezzel a struktúrával írj:
 
-**Line 1 (hook)** — the most important line. Must work as a standalone tweet. Options:
-- "[Target audience] are [doing common thing] wrong. Here's why."
-  e.g. "Growth teams are measuring activation rate wrong. Here's why."
-- "We talked to [N] [personas]. [X]% do [A]. [Y]% do [B]. Here's the difference."
-  e.g. "We talked to 50 founders. 80% track revenue. 20% track activation. Here's what changes."
+**1. sor (hook)** — a legfontosabb sor. Önálló tweetként kell működnie. Lehetőségek:
+- "[Célközönség] rosszul csinálja a [általánosan elterjedt dolgot]. Íme, miért."
+  pl. "A growth csapatok rosszul mérik az aktiválási arányt. Íme, miért."
+- "[N] [personával] beszéltünk. [X]% [A]-t csinál. [Y]% [B]-t csinál. Íme a különbség."
+  pl. "50 alapítóval beszéltünk. 80% a bevételt követi. 20% az aktiválást. Íme, mi változik."
 
-**Lines 2–8 (insight)** — the core content. One idea, developed clearly. Use specific numbers. Short sentences. No "In conclusion".
+**2–8. sorok (insight)** — az alapvető tartalom. Egy ötlet, egyértelműen kifejtve. Konkrét számokat használj. Rövid mondatok. Nincs "összefoglalásképpen".
 
-**Line 9–10 (CTA)** — a question relevant to the client's domain OR a link ("Full breakdown on the client's blog — link in comments").
-e.g. "What does [key metric] look like at your company?"
+**9–10. sor (CTA)** — az ügyfél szakterületéhez releváns kérdés VAGY egy link ("Teljes elemzés az ügyfél blogján — link a megjegyzésekben").
+pl. "Hogyan néz ki a [kulcsmutató] a te cégedben?"
 
-**Character count**: 800–1200 characters. Check before submitting.
+**Karakterszám**: 800–1200 karakter. Ellenőrizd beküldés előtt.
 
-**Do not**:
-- Start with "Excited to share"
-- Use generic closing: "I hope this helps!"
-- Use more than 3 hashtags
+**Ne tedd**:
+- Kezd "Excited to share" kifejezéssel
+- Általános zárást használj: "I hope this helps!"
+- Használj több mint 3 hashtaget
 
-Submit as submit_deliverable with type="linkedin_post".
+Nyújtsd be submit_deliverable-ként type="linkedin_post" értékkel.

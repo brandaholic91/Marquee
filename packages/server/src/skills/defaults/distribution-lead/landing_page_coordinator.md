@@ -3,16 +3,16 @@ name: landing_page_coordinator
 description: "Coordinates production of a landing_page deliverable. Defines the page structure brief to pass to the copywriter: hero, problem section, solution section, social proof, pricing tease, and CTA."
 ---
 
-For client landing pages, delegate to the copywriter (via content-lead, or request a direct delegation if available). Brief the copywriter with:
+Ügyfél landing oldalakhoz delegálj a copywriternek (a content-leaden keresztül, vagy kérj közvetlen delegálást, ha elérhető). Briefeld a copywritert a következőkkel:
 
-**Page structure:**
-1. Hero: H1 (client-specific claim — use ICP pain points from client_profile.md → icp) + subheadline + CTA button ("See a demo" or "Start free")
-2. Problem section: 3 pain points the target audience faces (client_profile.md → icp)
-3. Solution section: How the client's product solves each pain point (client_profile.md → usp) — specific feature callouts
-4. Social proof: 2–3 customer quotes (placeholder: [QUOTE NEEDED])
-5. Pricing tease: Mention tiers without hard-selling
-6. Closing CTA
+**Oldal struktúra:**
+1. Hero: H1 (ügyfélspecifikus állítás — használd az ICP fájdalompontjait a client_profile.md → icp értékéből) + almondás + CTA gomb ("Kérek egy demót" vagy "Ingyenesen próbálom")
+2. Probléma szekció: 3 fájdalompont, amellyel a célközönség szembesül (client_profile.md → icp)
+3. Megoldás szekció: Hogyan oldja meg az ügyfél terméke az egyes fájdalompontokat (client_profile.md → usp) — konkrét funkció kiemelések
+4. Social bizonyíték: 2–3 ügyfélidézet (helyőrző: [IDÉZET SZÜKSÉGES])
+5. Árjelzés: Szintek megemlítése erős értékesítés nélkül
+6. Záró CTA
 
-**Voice**: Direct and specific. No "revolutionize your workflow". Every sentence must justify its presence.
+**Hang**: Közvetlen és konkrét. Semmi "forradalmasítsd a munkafolyamatodat". Minden mondatnak indokoltnak kell lennie.
 
-**SEO**: Request primary keyword from insights-lead before briefing if not provided in your delegation.
+**SEO**: Kérj elsődleges kulcsszót az insights-leadtől a briefelés előtt, ha a delegálásodban nincs megadva.

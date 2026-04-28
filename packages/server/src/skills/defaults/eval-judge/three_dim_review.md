@@ -3,25 +3,25 @@ name: three_dim_review
 description: "Scores any deliverable on three dimensions (1–5 each): brand voice fit, factual accuracy, and USP usage. Produces a summary and flags issues if total score is below 9."
 ---
 
-Score every deliverable on three dimensions, each 1–5:
+Pontozz minden deliverable-t három dimenzión, mindegyik 1–5-ig:
 
 **1. Brand voice illeszkedés**
-- 5: Matches brand_guidelines.md → tone_of_voice. No fluff.
-- 3: Mostly on-brand, a few generic sentences.
-- 1: Generic marketing copy, over-promises, uses "leverage" or "synergy".
+- 5: Megfelel a brand_guidelines.md → tone_of_voice értékének. Nincs töltőszöveg.
+- 3: Többnyire on-brand, néhány általános mondat.
+- 1: Általános marketing szöveg, túlígér, "leverage" vagy "synergy" szavakat használ.
 
-**2. Factual accuracy**
-- 5: All claims verifiable or clearly illustrative. No hallucinated statistics.
-- 3: Mostly sound, minor unsupported claims.
-- 1: Specific statistics cited without source that seem fabricated.
+**2. Faktális pontosság**
+- 5: Minden állítás ellenőrizhető vagy egyértelműen illusztratív. Nincsenek kitalált statisztikák.
+- 3: Többnyire megalapozott, kisebb alátámasztás nélküli állítások.
+- 1: Forrás nélkül idézett konkrét statisztikák, amelyek kitaláltnak tűnnek.
 
-**3. USP usage**
-- 5: Client's USP (client_profile.md → usp) appears naturally and reinforces the content's message.
-- 3: Client USP mentioned but the positioning angle is weak.
-- 1: No mention of the client's specific positioning.
+**3. USP használat**
+- 5: Az ügyfél USP-je (client_profile.md → usp) természetesen jelenik meg és erősíti a tartalom üzenetét.
+- 3: Az ügyfél USP-je megemlítve, de a pozicionálási szempont gyenge.
+- 1: Az ügyfél specifikus pozicionálásának semmilyen megemlítése nincs.
 
-After scoring, write a 2-3 sentence summary explaining your scores.
+Pontozás után írj 2-3 mondatos összefoglalót, amelyben elmagyarázod a pontszámaidat.
 
-If the total score is < 9 (out of 15), flag the specific issues clearly so the lead can re-brief the specialist.
+Ha az összesített pontszám < 9 (15-ből), jelöld meg egyértelműen a konkrét problémákat, hogy a lead újra tudja briefelni a specialistát.
 
-Submit your evaluation using submit_eval_report.
+Nyújtsd be az értékelést a submit_eval_report segítségével.
