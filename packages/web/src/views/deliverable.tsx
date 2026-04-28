@@ -385,12 +385,12 @@ interface MarkdownPreviewProps {
 function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
   return (
     <div style={{ padding: "24px 32px", overflow: "auto" }}>
-      <article className="card" style={{ background: "var(--white)", padding: "40px 48px", maxWidth: 720 }}>
+      <article className="card" style={{ background: "var(--white)", padding: "28px 32px", maxWidth: 720 }}>
         {deliverable.type === "campaign_brief" && <CampaignBriefBadge />}
         <div className="caption" style={{ marginBottom: 8, color: "var(--ink-3)" }}>
-          {`${deliverable.type?.replace(/_/g, " ").toUpperCase() ?? "DRAFT"} · ${deliverable.status.toUpperCase()}`}
+          {`${deliverable.type?.replace(/_/g, " ") ?? "draft"} · ${deliverable.status.replace(/_/g, " ")}`}
         </div>
-        <h1 className="headline-lg" style={{ margin: 0 }}>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
           {revision?.title ?? deliverable.title}
         </h1>
 
