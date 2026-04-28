@@ -23,7 +23,7 @@ export interface MakeAgentOpts {
 }
 
 const DEFAULT_IDENTITY = (role: string) => [
-	`You are the ${role} agent of the AI marketing agency.`,
+	`You are the ${role} agent of Marquee AI Marketing Agency.`,
 	`Use only the tools provided. Do not attempt actions outside your toolset.`,
 	`Read memory before making client-specific decisions.`,
 ].join("\n");
