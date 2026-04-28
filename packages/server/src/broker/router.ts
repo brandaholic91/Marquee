@@ -120,7 +120,6 @@ export class AgentRouter {
 		if (!agent) {
 			const sessionId = randomUUID();
 			const thread = this.db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).get();
-			// Chat agents use no tools — pure conversational director
 			agent = makeAgent({
 				role: "director", dataDir: this.dataDir, db: this.db, sessionId, threadId,
 				authManager: this.authManager,
@@ -129,10 +128,8 @@ export class AgentRouter {
 			if (thread?.type === "onboarding") {
 				// Onboarding: keep only complete_onboarding so the director saves profiles directly
 				agent.state.tools = agent.state.tools.filter((t) => t.name === "complete_onboarding");
-			} else {
-				// Regular chat: strip tools for pure conversational response
-				agent.state.tools = [];
 			}
+			// Regular chat: director keeps full toolset — can process briefs, read memory, delegate
 			this.db.insert(agentSessions).values({
 				id: sessionId, agentSlug: "director", lifecycle: "transient",
 			}).run();
