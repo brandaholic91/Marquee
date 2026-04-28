@@ -9,6 +9,7 @@ import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
 import { seedDefaultMemory } from "./memory/seed.js";
 import { seedDefaultAgentIdentities } from "./agents/seed.js";
+import { ensureGitRepo } from "./memory/git.js";
 import { TaskManager } from "./tasks/manager.js";
 import { runDailySummary } from "./cron/daily-summary.js";
 import { runMorningBrief } from "./cron/morning-brief.js";
@@ -24,6 +25,7 @@ const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
 const port = Number(process.env.PORT ?? 7892);
 
 async function main() {
+	await ensureGitRepo(dataDir);
 	seedDefaultSkills(dataDir);
 	await seedDefaultMemory(dataDir);
 	seedDefaultAgentIdentities(dataDir);

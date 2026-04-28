@@ -1,5 +1,3 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { z } from "zod";
 import type { AgentToolDef } from "./types.js";
 
@@ -12,6 +10,35 @@ const completeOnboardingInput = z.object({
 	tone_of_voice: z.string().optional(),
 	reference_posts: z.string().optional(),
 });
+
+export function buildOnboardingFiles(input: z.infer<typeof completeOnboardingInput>): {
+	clientProfile: string;
+	brandGuidelines: string;
+} {
+	const clientProfile = [
+		"---",
+		`title: Client Profile`,
+		`client_name: "${input.client_name}"`,
+		`icp: "${input.icp}"`,
+		`usp: "${input.usp}"`,
+		`competitors: "${input.competitors ?? ""}"`,
+		`brand_voice: "${input.brand_voice}"`,
+		"---",
+		"",
+	].join("\n");
+
+	const brandGuidelines = [
+		"---",
+		`title: Brand Guidelines`,
+		`tone_of_voice: "${input.tone_of_voice ?? input.brand_voice}"`,
+		`reference_posts: "${input.reference_posts ?? ""}"`,
+		`formatting_rules: "Rövid mondatok. Nincs felesleges szöveg. Adatalapú, ahol lehet."`,
+		"---",
+		"",
+	].join("\n");
+
+	return { clientProfile, brandGuidelines };
+}
 
 export function makeCompleteOnboarding(dataDir: string): AgentToolDef<z.infer<typeof completeOnboardingInput>, { ok: boolean }> {
 	return {
@@ -32,35 +59,13 @@ export function makeCompleteOnboarding(dataDir: string): AgentToolDef<z.infer<ty
 		},
 		input: completeOnboardingInput,
 		async execute(input, ctx) {
-			const memDir = join(dataDir, "memory");
-			mkdirSync(memDir, { recursive: true });
-
-			const clientProfile = [
-				"---",
-				`title: Client Profile`,
-				`client_name: "${input.client_name}"`,
-				`icp: "${input.icp}"`,
-				`usp: "${input.usp}"`,
-				`competitors: "${input.competitors ?? ""}"`,
-				`brand_voice: "${input.brand_voice}"`,
-				"---",
-				"",
-			].join("\n");
-
-			const brandGuidelines = [
-				"---",
-				`title: Brand Guidelines`,
-				`tone_of_voice: "${input.tone_of_voice ?? input.brand_voice}"`,
-				`reference_posts: "${input.reference_posts ?? ""}"`,
-				`formatting_rules: "Rövid mondatok. Nincs felesleges szöveg. Adatalapú, ahol lehet."`,
-				"---",
-				"",
-			].join("\n");
-
-			writeFileSync(join(memDir, "client_profile.md"), clientProfile, "utf8");
-			writeFileSync(join(memDir, "brand_guidelines.md"), brandGuidelines, "utf8");
-
-			ctx.emit("onboarding_complete", { client_name: input.client_name });
+			const files = buildOnboardingFiles(input);
+			// Emit preview — the frontend shows the content for review before saving
+			ctx.emit("onboarding_preview", {
+				clientProfile: files.clientProfile,
+				brandGuidelines: files.brandGuidelines,
+				input,
+			});
 			return { ok: true };
 		},
 	};

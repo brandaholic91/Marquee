@@ -107,6 +107,8 @@ export const api = {
   },
   onboarding: {
     start: () => post<{ threadId: string }>("/api/onboarding/start", {}),
+    save: (clientProfile: string, brandGuidelines: string) =>
+      post<{ ok: boolean }>("/api/onboarding/save", { clientProfile, brandGuidelines }),
   },
   snapshot: () => fetch("/api/state/snapshot").then(json),
   tasks: {

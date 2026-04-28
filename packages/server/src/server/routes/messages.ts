@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
 import { chatThreads, messages } from "../../db/schema.js";
+import { writeMemoryFile } from "../../memory/write.js";
 
 const ONBOARDING_INSTRUCTIONS = [
 	"Onboarding interjút vezetsz egy új ügyfél számára. SZIGORÚ SZABÁLYOK:",
@@ -59,5 +60,14 @@ export function registerMessageRoutes(app: FastifyInstance, opts: ServerOpts) {
 		opts.broker.emit("agent_message", { threadId, agentSlug: "director", text: GREETING });
 
 		return { threadId };
+	});
+
+	app.post<{ Body: { clientProfile: string; brandGuidelines: string } }>("/api/onboarding/save", async (req, reply) => {
+		const { clientProfile, brandGuidelines } = req.body;
+		if (!clientProfile || !brandGuidelines) return reply.code(400).send({ error: "missing content" });
+		await writeMemoryFile(opts.dataDir, "client_profile", clientProfile);
+		await writeMemoryFile(opts.dataDir, "brand_guidelines", brandGuidelines);
+		opts.broker.emit("onboarding_complete", {});
+		return { ok: true };
 	});
 }
