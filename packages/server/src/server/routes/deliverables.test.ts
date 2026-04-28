@@ -282,11 +282,12 @@ describe("POST /api/deliverables/:id/repurpose — campaignId propagation", () =
 		db.update(deliverables).set({ campaignId }).where(eq(deliverables.id, delId)).run();
 
 		const app = await makeApp(db, broker, router, dir);
-		await app.inject({
+		const res = await app.inject({
 			method: "POST", url: `/api/deliverables/${delId}/repurpose`,
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ channels: ["linkedin"] }),
 		});
+		expect(res.statusCode).toBe(200);
 
 		const newDelegation = db.select().from(delegations).all()
 			.find(d => d.toAgent === "content-lead" && d.fromAgent === "human")!;
