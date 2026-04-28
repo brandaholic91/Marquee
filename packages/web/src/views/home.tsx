@@ -321,6 +321,61 @@ function PipelineWidget({ pipeline }: { pipeline: PipelineCount[] }) {
   );
 }
 
+// ---- UsageWidget ----
+
+interface UsageStats {
+  today: { tokens: number; costUsdCents: number; byAgent: { agentSlug: string; tokens: number; costUsdCents: number }[] };
+  budgetCents: number;
+  budgetUsedPct: number;
+}
+
+function UsageWidget({ stats }: { stats: UsageStats | null }) {
+  if (!stats) return (
+    <Widget title="Usage">
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+    </Widget>
+  );
+
+  const { today, budgetCents, budgetUsedPct } = stats;
+  const fmtTokens = (n: number) => new Intl.NumberFormat().format(n);
+  const barColor = budgetUsedPct >= 100 ? "var(--primary)" : budgetUsedPct >= 80 ? "var(--secondary)" : "var(--bulb)";
+
+  return (
+    <Widget title="Usage" right={<span className="caption" style={{ color: "var(--ink-3)" }}>today</span>}>
+      {today.tokens === 0 ? (
+        <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>No activity yet.</div>
+      ) : (
+        <div style={{ padding: "14px 18px" }}>
+          <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-serif)", color: "var(--ink-1)", marginBottom: 4 }}>
+            {fmtTokens(today.tokens)} <span style={{ fontSize: 13, fontWeight: 400, color: "var(--ink-3)" }}>tok</span>
+          </div>
+          {today.costUsdCents > 0 && (
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8 }}>
+              ≈ ${(today.costUsdCents / 100).toFixed(2)}
+            </div>
+          )}
+          {budgetCents > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ height: 6, background: "var(--rule)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, budgetUsedPct)}%`, background: barColor, borderRadius: 3, transition: "width 0.3s" }} />
+              </div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 3 }}>{budgetUsedPct}% of daily limit</div>
+            </div>
+          )}
+          <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 10 }}>
+            {today.byAgent.slice(0, 3).map((a) => (
+              <div key={a.agentSlug} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 12 }}>
+                <span style={{ fontFamily: "var(--font-mono)", color: "var(--ink-2)" }}>{a.agentSlug}</span>
+                <span style={{ color: "var(--ink-3)" }}>{fmtTokens(a.tokens)} tok</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Widget>
+  );
+}
+
 // ---- ConversationsWidget ----
 
 function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefresh: () => void }) {
@@ -399,6 +454,7 @@ export function HomeView() {
   const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [showBriefForm, setShowBriefForm] = useState(false);
+  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const refreshPendingRef = useRef(false);
   const { isMobile } = useBreakpoint();
 
@@ -413,6 +469,7 @@ export function HomeView() {
 
   useEffect(() => {
     refresh();
+    api.stats.usage().then(setUsageStats).catch(() => {});
     agencyEvents.start();
     const unsub = agencyEvents.on("*", (ev) => {
       const typed = ev as { type?: string; agentSlug?: string };
@@ -465,6 +522,7 @@ export function HomeView() {
           <LiveFeedWidget events={liveEvents} />
           <PipelineWidget pipeline={snapshot.pipeline} />
           <ConversationsWidget threads={snapshot.threads} onRefresh={refresh} />
+          <UsageWidget stats={usageStats} />
         </div>
       </main>
 

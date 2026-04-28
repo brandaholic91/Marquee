@@ -129,4 +129,15 @@ export const api = {
       }).then(json),
     delete: (slug: string) => fetch(`/api/skills/${slug}`, { method: "DELETE" }).then(json),
   },
+  stats: {
+    usage: () => fetch("/api/stats/usage").then(json) as Promise<{
+      today: { tokens: number; costUsdCents: number; byAgent: { agentSlug: string; tokens: number; costUsdCents: number }[] };
+      budgetCents: number;
+      budgetUsedPct: number;
+    }>,
+    quality: () => fetch("/api/stats/quality").then(json) as Promise<{
+      days: { date: string; brand_voice: number; factual_accuracy: number; usp_usage: number; count: number }[];
+      avg: { brand_voice: number; factual_accuracy: number; usp_usage: number };
+    }>,
+  },
 };
