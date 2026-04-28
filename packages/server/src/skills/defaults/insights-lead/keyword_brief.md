@@ -1,6 +1,6 @@
 ---
 name: keyword_brief
-description: When compiling the final keyword brief for the content team
+description: Output format for a keyword brief: primary keyword with search volume and competition, supporting keywords, recommended H1 pattern, and internal link suggestions.
 ---
 
 Output format for every keyword brief sent to director or content-lead:

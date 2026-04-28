@@ -1,6 +1,6 @@
 ---
 name: blog_post_writer
-description: When your delegation is to write a blog_post deliverable
+description: Writes a blog_post deliverable. Covers H1 pattern, introduction structure, body section format, conclusion and soft CTA. Includes voice and style rules.
 ---
 
 Write every blog post with this structure:

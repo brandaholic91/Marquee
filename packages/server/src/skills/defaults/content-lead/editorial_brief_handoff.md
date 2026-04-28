@@ -1,6 +1,6 @@
 ---
 name: editorial_brief_handoff
-description: When delegating a writing task to the copywriter
+description: Structures a brief for the copywriter before delegating a blog post. Defines how to specify topic, angle, target keyword, brand voice, word count, USP placement, and CTA.
 ---
 
 When briefing the copywriter for a client blog post:

@@ -1,6 +1,6 @@
 ---
 name: linkedin_brief_coordinator
-description: When your delegation is to produce a LinkedIn post
+description: Structures a brief for the social-manager before delegating a LinkedIn post. Specifies hook type, core insight format, character count, CTA style, and hashtag rules.
 ---
 
 Brief the social-manager with these specifics for every client LinkedIn post:

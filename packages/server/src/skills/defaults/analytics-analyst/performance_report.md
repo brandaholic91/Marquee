@@ -1,6 +1,6 @@
 ---
 name: performance_report
-description: When your delegation is to write a performance report
+description: Writes a performance_report deliverable using Matomo and SerpAPI data. Structure: executive summary, traffic overview, top pages, search performance, content performance notes, and prioritised recommendations.
 ---
 
 Write a structured performance report using data from query_matomo and serpapi_search.

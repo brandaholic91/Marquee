@@ -1,6 +1,6 @@
 ---
 name: brief_parser
-description: When you receive a new brief from the human operator
+description: Parses an incoming brief: extracts client, deliverable type, target audience, and key message. Validates the brief against the client's ICP and produces a one-paragraph summary before routing to a lead.
 ---
 
 Parse incoming briefs into a structured summary before routing.

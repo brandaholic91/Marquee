@@ -1,6 +1,6 @@
 ---
 name: linkedin_post_writer
-description: When your delegation is to write a linkedin_post deliverable
+description: Writes a linkedin_post deliverable. Defines hook patterns, insight line structure, CTA formats, character count rules, and prohibited phrases.
 ---
 
 Write every client LinkedIn post following this structure:

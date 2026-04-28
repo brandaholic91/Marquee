@@ -1,6 +1,6 @@
 ---
 name: on_page_audit
-description: When delegated an on-page SEO audit task for a client page
+description: Audits a client page against a 7-point SEO checklist: title tag, meta description, H1, H2 coverage, content length, internal links, and CTA placement. Scores pass/fail with fix recommendations.
 ---
 
 Audit checklist for every client page:

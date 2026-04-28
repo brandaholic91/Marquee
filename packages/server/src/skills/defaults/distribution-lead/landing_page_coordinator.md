@@ -1,6 +1,6 @@
 ---
 name: landing_page_coordinator
-description: When your delegation is to produce a landing_page deliverable
+description: Coordinates production of a landing_page deliverable. Defines the page structure brief to pass to the copywriter: hero, problem section, solution section, social proof, pricing tease, and CTA.
 ---
 
 For client landing pages, delegate to the copywriter (via content-lead, or request a direct delegation if available). Brief the copywriter with:

@@ -1,6 +1,6 @@
 ---
 name: lead_router
-description: After parsing a brief, to decide which lead(s) to delegate to
+description: Routes a parsed brief to the correct lead based on deliverable type: content-lead for blog posts and articles, distribution-lead for LinkedIn posts and landing pages, insights-lead for SEO tasks. Defines delegation rules and what context to pass.
 ---
 
 Routing rules:

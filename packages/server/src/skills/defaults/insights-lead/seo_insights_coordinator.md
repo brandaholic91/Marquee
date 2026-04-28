@@ -1,6 +1,6 @@
 ---
 name: seo_insights_coordinator
-description: When your delegation is to provide SEO insights for a content brief
+description: Coordinates SEO keyword research by delegating to the seo-analyst, then synthesises the results into a concise 3-sentence keyword brief for the content team.
 ---
 
 Coordinate keyword research and on-page guidance for client content.

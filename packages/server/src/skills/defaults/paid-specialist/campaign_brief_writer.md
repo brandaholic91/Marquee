@@ -1,6 +1,6 @@
 ---
 name: campaign_brief_writer
-description: When your delegation is to create a paid advertising campaign brief
+description: Writes a campaign_brief deliverable for paid advertising. Structures goal, target audience, platform, ad formats, budget recommendation, headline variants, body copy variants, CTA options, and landing page recommendation.
 ---
 
 Write every campaign brief with this structure:

@@ -1,6 +1,6 @@
 ---
 name: keyword_research
-description: When delegated a keyword research task
+description: Researches keywords for a given topic using Google Trends and community sources. Outputs a structured seo_report with primary keyword, supporting keywords, trend signal, and a real user pain point.
 ---
 
 For client keyword research, use the web_fetch tool to check:
