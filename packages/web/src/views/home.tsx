@@ -504,7 +504,7 @@ function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefr
           </button>
         </div>
       ) : (
-        <div>
+        <div style={{ maxHeight: 280, overflowY: "auto" }}>
           {threads.map((t, i) => (
             <button
               key={t.id}
