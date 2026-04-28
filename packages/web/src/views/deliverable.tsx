@@ -587,6 +587,8 @@ interface RevisionEntry {
   id: string;
   revisionNumber?: string;
   agentSlug?: string;
+  createdByAgent?: string;
+  artifactPath?: string;
   createdAt?: string;
   note?: string;
 }
@@ -620,12 +622,17 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {allRevisions.map((r) => {
+      {allRevisions.map((r, idx) => {
         const isCurrent = r.id === currentRevisionId;
         const isSelected = r.id === selectedRevId;
         const timeLabel = r.createdAt
-          ? new Date(r.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+          ? new Date(r.createdAt).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })
           : "—";
+        // Extract "rev_001" from artifactPath, or fall back to index
+        const revName = r.revisionNumber
+          ?? r.artifactPath?.match(/rev_\d+/)?.[0]?.replace("_", " ")
+          ?? `${idx + 1}. revízió`;
+        const agent = r.createdByAgent ?? r.agentSlug;
 
         return (
           <button
@@ -642,29 +649,28 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="checkbox"
                   checked={checkedRevs.includes(r.id)}
                   onChange={(e) => { e.stopPropagation(); toggleRev(r.id); }}
                   onClick={(e) => e.stopPropagation()}
                   disabled={checkedRevs.length === 2 && !checkedRevs.includes(r.id)}
-                  style={{ marginRight: 8, cursor: "pointer" }}
+                  style={{ cursor: "pointer" }}
                 />
-                <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>
-                  {r.revisionNumber ?? r.id}
-                </div>
+                <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{revName}</div>
+                {agent && <AgentBadge slug={agent} />}
               </div>
               <div style={{ display: "flex", gap: 4 }}>
-                {isCurrent && <span className="badge badge-cream">current</span>}
-                {isSelected && <span className="badge badge-primary-soft">viewing</span>}
+                {isCurrent && <span className="badge badge-cream">jelenlegi</span>}
+                {isSelected && <span className="badge badge-primary-soft">megtekintve</span>}
               </div>
             </div>
             {r.note && (
               <div className="body-sm" style={{ marginTop: 4 }}>{r.note}</div>
             )}
             <div className="body-sm muted" style={{ marginTop: 4 }}>
-              {r.agentSlug ?? "—"} · {timeLabel}
+              {timeLabel}
             </div>
           </button>
         );
