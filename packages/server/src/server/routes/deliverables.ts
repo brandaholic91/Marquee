@@ -52,6 +52,39 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 			.all();
 	});
 
+	app.post<{ Params: { id: string }; Body: { contentMd: string } }>(
+		"/api/deliverables/:id/revisions",
+		async (req, reply) => {
+			const d = opts.db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).get();
+			if (!d) return reply.code(404).send({ error: "not found" });
+			const { contentMd } = req.body;
+			if (!contentMd?.trim()) return reply.code(400).send({ error: "contentMd required" });
+
+			// Count existing revisions to name the new one
+			const existing = opts.db.select().from(deliverableRevisions)
+				.where(eq(deliverableRevisions.deliverableId, req.params.id)).all();
+			const revNum = String(existing.length + 1).padStart(3, "0");
+
+			const { mkdirSync, writeFileSync } = await import("node:fs");
+			const { join } = await import("node:path");
+			const artifactDir = join(opts.dataDir, "artifacts", req.params.id);
+			mkdirSync(artifactDir, { recursive: true });
+			const artifactPath = join(artifactDir, `rev_${revNum}.md`);
+			writeFileSync(artifactPath, contentMd, "utf8");
+
+			const revisionId = randomUUID();
+			opts.db.insert(deliverableRevisions).values({
+				id: revisionId, deliverableId: req.params.id,
+				artifactPath, createdByAgent: "human",
+			}).run();
+			opts.db.update(deliverables).set({
+				currentRevisionId: revisionId, status: "awaiting_approval",
+			}).where(eq(deliverables.id, req.params.id)).run();
+
+			return { id: revisionId, ok: true };
+		},
+	);
+
 	app.get<{ Params: { id: string } }>("/api/deliverables/:id/eval", async (req, reply) => {
 		const d = opts.db
 			.select()

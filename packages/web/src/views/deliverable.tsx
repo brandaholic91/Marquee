@@ -382,13 +382,50 @@ interface MarkdownPreviewProps {
   revision: RevisionData | null;
 }
 
-function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
+function MarkdownPreview({ deliverable, revision, onSaved }: MarkdownPreviewProps & { onSaved?: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function startEdit() {
+    setEditText(revision?.contentMd ?? "");
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    if (!editText.trim()) return;
+    setSaving(true);
+    try {
+      await api.deliverables.createRevision(deliverable.id, editText);
+      setEditing(false);
+      onSaved?.();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Pre-process: ensure single newlines become paragraph breaks for display
+  function normaliseContent(md: string): string {
+    // If already has double newlines, keep as is; otherwise convert single to double
+    return md.includes("\n\n") ? md : md.replace(/\n/g, "\n\n");
+  }
+
   return (
     <div style={{ padding: "24px 32px", overflow: "auto" }}>
       <article className="card" style={{ background: "var(--white)", padding: "28px 32px", maxWidth: 720 }}>
         {deliverable.type === "campaign_brief" && <CampaignBriefBadge />}
-        <div className="caption" style={{ marginBottom: 8, color: "var(--ink-3)" }}>
-          {`${deliverable.type?.replace(/_/g, " ") ?? "draft"} · ${deliverable.status.replace(/_/g, " ")}`}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div className="caption" style={{ color: "var(--ink-3)" }}>
+            {`${deliverable.type?.replace(/_/g, " ") ?? "draft"} · ${deliverable.status.replace(/_/g, " ")}`}
+          </div>
+          {!editing && (
+            <button
+              onClick={startEdit}
+              style={{ fontSize: 12, padding: "3px 10px", borderRadius: 4, border: "1px solid var(--rule)", background: "transparent", cursor: "pointer", color: "var(--ink-2)" }}
+            >
+              Szerkesztés
+            </button>
+          )}
         </div>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
           {revision?.title ?? deliverable.title}
@@ -396,12 +433,40 @@ function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
 
         <hr className="hr" style={{ margin: "24px 0" }} />
 
-        {revision?.contentMd ? (
-          <div>{renderMarkdown(revision.contentMd)}</div>
+        {editing ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              style={{
+                width: "100%", minHeight: 320, padding: "10px 12px",
+                border: "1px solid var(--rule)", borderRadius: 4,
+                fontSize: 14, fontFamily: "var(--font-mono)", lineHeight: 1.7,
+                resize: "vertical", background: "var(--parchment)", boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: saving ? "default" : "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
+              >
+                {saving ? "Mentés…" : "Mentés új revízióként"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
+              >
+                Mégse
+              </button>
+            </div>
+          </div>
+        ) : revision?.contentMd ? (
+          <div style={{ lineHeight: 1.75, fontSize: 15, color: "var(--ink-1)" }}>
+            {renderMarkdown(normaliseContent(revision.contentMd))}
+          </div>
         ) : (
-          <p className="body-md" style={{ color: "var(--ink-3)", fontSize: 15 }}>
-            Még nincs revízió tartalom.
-          </p>
+          <p style={{ color: "var(--ink-3)", fontSize: 15 }}>Még nincs revízió tartalom.</p>
         )}
       </article>
     </div>
@@ -941,7 +1006,7 @@ export function DeliverableView() {
           onRepurpose={deliverable.status === "shipped" ? () => setRepurposeOpen(true) : undefined}
         />
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: "60% 40%", minHeight: 0 }}>
-          <MarkdownPreview deliverable={deliverable} revision={revision} />
+          <MarkdownPreview deliverable={deliverable} revision={revision} onSaved={refresh} />
           <SidePanel
             deliverableId={deliverable.id}
             currentRevisionId={deliverable.currentRevisionId ?? null}
