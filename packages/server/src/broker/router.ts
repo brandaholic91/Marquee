@@ -95,11 +95,11 @@ export class AgentRouter {
 		].filter(Boolean);
 
 		if (to === "content-lead") {
-			parts.push("Review this task and delegate it to the appropriate specialist (copywriter) using delegate_to_specialist.");
+			parts.push("Review this task and delegate it to the appropriate specialist (copywriter, repurposer) using delegate_to_specialist.");
 		} else if (to === "distribution-lead") {
-			parts.push("Review this task and delegate it to the appropriate specialist (social-manager, seo-analyst) using delegate_to_specialist.");
+			parts.push("Review this task and delegate it to the appropriate specialist (social-manager, paid-specialist) using delegate_to_specialist.");
 		} else if (to === "insights-lead") {
-			parts.push("Review this task and delegate it to the appropriate specialist (seo-analyst) using delegate_to_specialist.");
+			parts.push("Review this task and delegate it to the appropriate specialist (seo-analyst, analytics-analyst) using delegate_to_specialist.");
 		} else if (!this.warmAgents.has(to)) {
 			// Specialist: write the content and submit it
 			parts.push("Write the requested content, then call submit_deliverable with type, title, and contentMd (at least 50 characters).");

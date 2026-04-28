@@ -212,9 +212,10 @@ const CHANNEL_OPTIONS = [
 interface RepurposeModalProps {
   deliverableId: string;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-function RepurposeModal({ deliverableId, onClose }: RepurposeModalProps) {
+function RepurposeModal({ deliverableId, onClose, onSuccess }: RepurposeModalProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [other, setOther] = useState("");
   const [loading, setLoading] = useState(false);
@@ -231,6 +232,7 @@ function RepurposeModal({ deliverableId, onClose }: RepurposeModalProps) {
     setLoading(true);
     try {
       await api.deliverables.repurpose(deliverableId, channels);
+      onSuccess();
       onClose();
     } finally {
       setLoading(false);
@@ -905,6 +907,7 @@ export function DeliverableView() {
         <RepurposeModal
           deliverableId={deliverable.id}
           onClose={() => setRepurposeOpen(false)}
+          onSuccess={refresh}
         />
       )}
     </div>
