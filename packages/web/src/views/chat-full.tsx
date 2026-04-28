@@ -650,7 +650,7 @@ export function ChatFullView() {
           background: "var(--cream)",
         }}
       >
-        <Sidebar activeNav="home" collapsed />
+        <Sidebar activeNav="home" />
         <main
           style={{
             flex: 1,
