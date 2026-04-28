@@ -107,7 +107,7 @@ export const api = {
   },
   snapshot: () => fetch("/api/state/snapshot").then(json),
   tasks: {
-    list: (params?: { assigned_to?: string; status?: string }) => {
+    list: (params?: { assigned_to?: string; status?: string; campaignId?: string }) => {
       const qs = params
         ? "?" + new URLSearchParams(params as Record<string, string>).toString()
         : "";
