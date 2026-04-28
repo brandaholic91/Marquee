@@ -306,13 +306,15 @@ interface TopBarProps {
   deliverable: DeliverableData;
   revision: RevisionData | null;
   onApprove: () => void;
-  onRequestChanges: () => void;
+  onRequestChanges: (note: string) => void;
   onReject: () => void;
   onRepurpose?: () => void;
 }
 
 function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges, onReject, onRepurpose }: TopBarProps) {
   const { setView } = useAgencyStore();
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [note, setNote] = useState("");
 
   const wordCount = revision?.contentMd ? countWords(revision.contentMd) : deliverable.wordCount ?? null;
   const readMin = wordCount ? estimateReadMin(wordCount) : null;
@@ -363,13 +365,50 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           )}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-        {onRepurpose && (
-          <button className="btn btn-secondary" onClick={onRepurpose}>Újrafelhasználás</button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, alignItems: "flex-end" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {onRepurpose && (
+            <button className="btn btn-secondary" onClick={onRepurpose}>Újrafelhasználás</button>
+          )}
+          <button className="btn btn-primary" onClick={onApprove}>Jóváhagyás &amp; kiszállítás</button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowNoteInput((v) => !v)}
+          >
+            Változtatás kérése
+          </button>
+          <button className="btn btn-ghost" onClick={onReject}>Elutasítás</button>
+        </div>
+        {showNoteInput && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, width: 360 }}>
+            <textarea
+              autoFocus
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Mi a probléma? Mit javítson az agent?"
+              rows={3}
+              style={{
+                padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4,
+                fontSize: 13, resize: "none", fontFamily: "inherit", lineHeight: 1.5,
+                background: "var(--white)",
+              }}
+            />
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => { onRequestChanges(note); setShowNoteInput(false); setNote(""); }}
+                style={{ padding: "6px 14px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
+              >
+                Küldés
+              </button>
+              <button
+                onClick={() => { setShowNoteInput(false); setNote(""); }}
+                style={{ padding: "6px 10px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
+              >
+                Mégse
+              </button>
+            </div>
+          </div>
         )}
-        <button className="btn btn-primary" onClick={onApprove}>Jóváhagyás &amp; kiszállítás</button>
-        <button className="btn btn-secondary" onClick={onRequestChanges}>Változtatás kérése</button>
-        <button className="btn btn-ghost" onClick={onReject}>Elutasítás</button>
       </div>
     </header>
   );
@@ -985,8 +1024,8 @@ export function DeliverableView() {
     api.approvals.decide(deliverable!.id, "approved").then(refresh).catch(console.error);
   }
 
-  function handleRequestChanges() {
-    api.approvals.decide(deliverable!.id, "requested_changes").then(refresh).catch(console.error);
+  function handleRequestChanges(note: string) {
+    api.approvals.decide(deliverable!.id, "requested_changes", note || undefined).then(refresh).catch(console.error);
   }
 
   function handleReject() {
