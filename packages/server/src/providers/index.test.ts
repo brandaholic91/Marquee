@@ -23,4 +23,25 @@ describe("providers", () => {
 		process.env.MARQUEE_PROVIDER_MODE = "flat";
 		expect(providerMode()).toBe("flat");
 	});
+
+	it("returns openai-codex model for director in openai-subscription mode (no override)", () => {
+		process.env.MARQUEE_PROVIDER_MODE = "openai-subscription";
+		const m = modelForRole("director");
+		expect(m.provider).toBe("openai-codex");
+		expect(m.id).toBe("gpt-5.1");
+	});
+
+	it("returns openai-codex fallback for eval-judge in openai-subscription mode", () => {
+		process.env.MARQUEE_PROVIDER_MODE = "openai-subscription";
+		const m = modelForRole("eval-judge");
+		expect(m.provider).toBe("openai-codex");
+		expect(m.id).toBe("gpt-5.1-codex-mini");
+	});
+
+	it("uses configModel override in openai-subscription mode", () => {
+		process.env.MARQUEE_PROVIDER_MODE = "openai-subscription";
+		const m = modelForRole("director", "gpt-5.1-codex-mini");
+		expect(m.provider).toBe("openai-codex");
+		expect(m.id).toBe("gpt-5.1-codex-mini");
+	});
 });
