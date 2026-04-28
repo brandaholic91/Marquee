@@ -19,14 +19,14 @@ const API_MAP: Record<string, string> = {
 };
 
 const SUBSCRIPTION_FALLBACK_MAP: Record<string, string> = {
-	director:            "gpt-5.1",
-	copywriter:          "gpt-5.1",
-	"content-lead":      "gpt-5.1-codex-mini",
-	"distribution-lead": "gpt-5.1-codex-mini",
-	"insights-lead":     "gpt-5.1-codex-mini",
-	"social-manager":    "gpt-5.1-codex-mini",
-	"seo-analyst":       "gpt-5.1-codex-mini",
-	"eval-judge":        "gpt-5.1-codex-mini",
+	director:            "gpt-5.4",
+	copywriter:          "gpt-5.4",
+	"content-lead":      "gpt-5.4-mini",
+	"distribution-lead": "gpt-5.4-mini",
+	"insights-lead":     "gpt-5.4-mini",
+	"social-manager":    "gpt-5.4-mini",
+	"seo-analyst":       "gpt-5.4-mini",
+	"eval-judge":        "gpt-5.4-mini",
 };
 
 export function modelForRole(role: string, configModel?: string) {

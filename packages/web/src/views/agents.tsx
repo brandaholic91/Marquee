@@ -106,14 +106,11 @@ function ConfigPanel({ role }: { role: string }) {
               onChange={(e) => setConfig({ ...config, model: e.target.value || undefined })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="">— not set —</option>
-              <option value="gpt-5.1-codex-mini">gpt-5.1-codex-mini</option>
-              <option value="gpt-5.1">gpt-5.1</option>
-              <option value="gpt-5.4-mini">gpt-5.4-mini</option>
-              <option value="gpt-5.4">gpt-5.4</option>
-              <option value="gpt-5.5">gpt-5.5</option>
-              <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
-              <option value="claude-opus-4-6">claude-opus-4-6</option>
+              <option value="">— not set (use default) —</option>
+              <option value="gpt-5.4-mini">gpt-5.4-mini (fast)</option>
+              <option value="gpt-5.4">gpt-5.4 (balanced)</option>
+              <option value="gpt-5.5">gpt-5.5 (powerful)</option>
+              <option value="gpt-5.2">gpt-5.2</option>
             </select>
           </div>
           {preview && (
