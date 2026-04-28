@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadSkill, loadSkillsForRole } from "./loader.js";
+import { loadSkill, loadSkillBody, loadSkillsForRole, listSkillsForRole } from "./loader.js";
 
 describe("skills loader", () => {
 	let dir: string;
@@ -31,5 +31,26 @@ describe("skills loader", () => {
 	it("loads all recipes for a role", () => {
 		const all = loadSkillsForRole(dir, "copywriter");
 		expect(all).toHaveLength(1);
+	});
+
+	it("listSkillsForRole returns name and whenToUse only", () => {
+		const meta = listSkillsForRole(dir, "copywriter");
+		expect(meta).toHaveLength(1);
+		expect(meta[0].name).toBe("blog_post_writer");
+		expect(meta[0].whenToUse).toBe("blog_post delegation");
+	});
+
+	it("listSkillsForRole returns empty array for unknown role", () => {
+		expect(listSkillsForRole(dir, "unknown-role")).toEqual([]);
+	});
+
+	it("loadSkillBody returns body without frontmatter", () => {
+		const body = loadSkillBody(dir, "copywriter", "blog_post_writer");
+		expect(body).toContain("Write for");
+		expect(body).not.toContain("when_to_use");
+	});
+
+	it("loadSkillBody returns null for unknown skill", () => {
+		expect(loadSkillBody(dir, "copywriter", "nonexistent")).toBeNull();
 	});
 });

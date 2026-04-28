@@ -1,12 +1,9 @@
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import type { AgencyDb } from "../db/index.js";
-import { readMemoryFile } from "../memory/read.js";
 import { modelForRole, getEnvApiKey } from "../providers/index.js";
-import { loadSkillsForRole } from "../skills/loader.js";
+import { listSkillsForRole } from "../skills/loader.js";
 import { toolsForRole } from "../tools/registry.js";
 import type { ToolContext } from "../tools/types.js";
 import { convertToLlm } from "./convert-to-llm.js";
@@ -26,17 +23,15 @@ export interface MakeAgentOpts {
 }
 
 const buildSystemPrompt = (role: string, dataDir: string): string => {
-	const skills = loadSkillsForRole(dataDir, role);
-	const ctx: Record<string, unknown> = {};
-	for (const file of ["client_profile", "brand_guidelines"]) {
-		const path = join(dataDir, "memory", `${file}.md`);
-		if (existsSync(path)) {
-			ctx[file] = readMemoryFile(dataDir, file).frontmatter;
-		}
-	}
-	const skillBlocks = skills
-		.map((s) => `## Skill: ${s.frontmatter.name ?? "(unnamed)"}\n\n${s.render(ctx)}`)
-		.join("\n\n");
+	const skills = listSkillsForRole(dataDir, role);
+
+	const skillList = skills.length === 0 ? "" : [
+		"## Available Skills",
+		"",
+		"Call `use_skill` with a skill name to load its full instructions before starting work on a matching task.",
+		"",
+		...skills.map((s) => `- **${s.name}**: ${s.whenToUse}`),
+	].join("\n");
 
 	const config = loadAgentConfig(dataDir, role);
 	const behaviorBlock = config ? buildBehaviorBlock(config) : "";
@@ -45,7 +40,7 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 		`You are the ${role} agent of the AI marketing agency.`,
 		`Use only the tools provided. Do not attempt actions outside your toolset.`,
 		`Read memory before making client-specific decisions.`,
-		skillBlocks,
+		skillList,
 		behaviorBlock,
 	]
 		.filter(Boolean)

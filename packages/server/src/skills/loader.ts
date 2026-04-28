@@ -10,6 +10,11 @@ export interface SkillRecipe {
 	render(ctx: Record<string, unknown>): string;
 }
 
+export interface SkillMeta {
+	name: string;
+	whenToUse: string;
+}
+
 const skillsDir = (dataDir: string) => join(dataDir, "skills");
 
 export function loadSkill(dataDir: string, role: string, name: string): SkillRecipe {
@@ -32,6 +37,34 @@ export function loadSkillsForRole(dataDir: string, role: string): SkillRecipe[] 
 		return [];
 	}
 	return files.map((f) => loadSkill(dataDir, role, f.replace(/\.md$/, "")));
+}
+
+export function listSkillsForRole(dataDir: string, role: string): SkillMeta[] {
+	const dir = join(skillsDir(dataDir), role);
+	let files: string[];
+	try {
+		files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+	} catch {
+		return [];
+	}
+	return files.map((f) => {
+		const raw = readFileSync(join(dir, f), "utf8");
+		const parsed = matter(raw);
+		return {
+			name: (parsed.data.name as string) ?? f.replace(/\.md$/, ""),
+			whenToUse: (parsed.data.when_to_use as string) ?? "",
+		};
+	});
+}
+
+export function loadSkillBody(dataDir: string, role: string, name: string): string | null {
+	const path = join(skillsDir(dataDir), role, `${name}.md`);
+	try {
+		const raw = readFileSync(path, "utf8");
+		return matter(raw).content.trim();
+	} catch {
+		return null;
+	}
 }
 
 export function seedDefaultSkills(dataDir: string): void {

@@ -101,7 +101,7 @@ describe("agent factory", () => {
 		expect(toolNames).not.toContain("submit_deliverable");
 	});
 
-	it("system prompt includes role and skill recipe", () => {
+	it("system prompt includes role and skill list (not full body)", () => {
 		const agent = makeAgent({
 			role: "copywriter",
 			dataDir: dir,
@@ -110,9 +110,10 @@ describe("agent factory", () => {
 			emit: () => {},
 		});
 		expect(agent.state.systemPrompt).toContain("copywriter");
-		// Skill recipe body should be rendered with memory context
+		// Skill list with name and when_to_use — body is loaded on demand via use_skill
 		expect(agent.state.systemPrompt).toContain("blog_post_writer");
-		expect(agent.state.systemPrompt).toContain("Write for T");
+		expect(agent.state.systemPrompt).toContain("use_skill");
+		expect(agent.state.systemPrompt).not.toContain("Write for T");
 	});
 
 	it("exposes convertToLlm and transformContext functions on the agent", () => {
