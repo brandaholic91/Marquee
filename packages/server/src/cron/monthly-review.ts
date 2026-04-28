@@ -12,8 +12,8 @@ export async function runMonthlyReview(
   broker: Broker,
 ): Promise<void> {
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const monthEnd   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const monthLabel = monthStart.toISOString().slice(0, 7); // "YYYY-MM"
 
   const monthSessions = db.select().from(agentSessions)
