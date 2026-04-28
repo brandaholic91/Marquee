@@ -26,6 +26,9 @@ const TEAM: { slug: string; name: string }[] = [
   { slug: "social-manager",    name: "Social Manager" },
   { slug: "seo-analyst",       name: "SEO Analyst" },
   { slug: "eval-judge",        name: "Eval Judge" },
+  { slug: "paid-specialist",   name: "Paid Specialist" },
+  { slug: "repurposer",        name: "Repurposer" },
+  { slug: "analytics-analyst", name: "Analytics Analyst" },
 ];
 
 export interface SidebarProps {
