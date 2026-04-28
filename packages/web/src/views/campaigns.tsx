@@ -36,12 +36,12 @@ function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: Campaig
       )}
 
       <div style={{ marginBottom: 20 }}>
-        <div className="caption" style={{ marginBottom: 8 }}>Briefs ({campaign.briefs.length})</div>
+        <div className="caption" style={{ marginBottom: 8 }}>Briefek ({campaign.briefs.length})</div>
         {campaign.briefs.length === 0
-          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>None yet</div>
+          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>Még nincs</div>
           : campaign.briefs.map((b) => {
-              const statusLabel = b.status === "draft" ? "Draft" : b.status === "dispatched" ? "In progress" : "Done";
-              const title = b.contentMd.split("\n")[0].replace(/^#+\s*/, "").trim().slice(0, 60) || "Untitled brief";
+              const statusLabel = b.status === "draft" ? "Vázlat" : b.status === "dispatched" ? "Folyamatban" : "Kész";
+              const title = b.contentMd.split("\n")[0].replace(/^#+\s*/, "").trim().slice(0, 60) || "Névtelen brief";
               return (
                 <div key={b.id} style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 4, display: "flex", gap: 8 }}>
                   <span style={{ color: "var(--ink-3)", flexShrink: 0 }}>{statusLabel}</span>
@@ -53,9 +53,9 @@ function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: Campaig
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <div className="caption" style={{ marginBottom: 8 }}>Deliverables ({campaign.deliverables.length})</div>
+        <div className="caption" style={{ marginBottom: 8 }}>Deliverable-ek ({campaign.deliverables.length})</div>
         {campaign.deliverables.length === 0
-          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>None yet</div>
+          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>Még nincs</div>
           : Object.entries(deliverablesByStatus).map(([status, count]) => (
             <div key={status} style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 4 }}>
               {count}× {status.replace(/_/g, " ")}
@@ -65,9 +65,9 @@ function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: Campaig
       </div>
 
       <div>
-        <div className="caption" style={{ marginBottom: 8 }}>Tasks ({campaign.tasks.length})</div>
+        <div className="caption" style={{ marginBottom: 8 }}>Feladatok ({campaign.tasks.length})</div>
         {campaign.tasks.length === 0
-          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>None yet</div>
+          ? <div style={{ fontSize: 13, color: "var(--ink-3)" }}>Még nincs</div>
           : campaign.tasks.slice(0, 8).map((t) => (
             <div key={t.id} style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 4, display: "flex", gap: 8 }}>
               <span style={{ color: "var(--ink-3)" }}>{t.assignedTo}</span>
@@ -106,7 +106,7 @@ export function CampaignsView() {
   const listPanel = (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {campaigns.length === 0
-        ? <div style={{ padding: "40px 20px", color: "var(--ink-3)", fontSize: 13 }}>No campaigns yet. Create a brief to start one.</div>
+        ? <div style={{ padding: "40px 20px", color: "var(--ink-3)", fontSize: 13 }}>Még nincs kampány. Hozz létre egy briefet az induláshoz.</div>
         : campaigns.map((c) => (
           <button
             key={c.id}
@@ -126,8 +126,8 @@ export function CampaignsView() {
                 {c.title}
               </div>
               <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                {c.briefCount ?? 0} brief{c.briefCount !== 1 ? "s" : ""} · {c.deliverableCount ?? 0} deliverable{c.deliverableCount !== 1 ? "s" : ""} · {c.taskCount ?? 0} tasks
-                {(c.pendingApprovals ?? 0) > 0 && <span style={{ color: "var(--accent)" }}> · {c.pendingApprovals} pending</span>}
+                {c.briefCount ?? 0} brief · {c.deliverableCount ?? 0} deliverable · {c.taskCount ?? 0} feladat
+                {(c.pendingApprovals ?? 0) > 0 && <span style={{ color: "var(--accent)" }}> · {c.pendingApprovals} függőben</span>}
               </div>
             </div>
             <span style={{
@@ -149,7 +149,7 @@ export function CampaignsView() {
           onClick={() => setMobilePanel("list")}
           style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 13, padding: "0 16px", marginBottom: 12 }}
         >
-          ← Campaigns
+          ← Kampányok
         </button>
       )}
       <h2 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 16, fontSize: 18 }}>
@@ -159,7 +159,7 @@ export function CampaignsView() {
     </div>
   ) : (
     <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>
-      Select a campaign to view details
+      Válassz kampányt a részletek megtekintéséhez
     </div>
   );
 
@@ -167,7 +167,7 @@ export function CampaignsView() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="campaigns" />
       <main style={{ flex: 1, overflow: "auto", padding: isMobile ? "20px 0 88px" : "28px 0" }}>
-        <h1 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 24 }}>Campaigns</h1>
+        <h1 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 24 }}>Kampányok</h1>
 
         {isMobile ? (
           mobilePanel === "list" ? listPanel : detailPanel

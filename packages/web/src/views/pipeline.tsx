@@ -24,11 +24,11 @@ interface Deliverable {
 }
 
 const COLUMNS = [
-  { status: "drafting", label: "Drafting" },
-  { status: "awaiting_eval", label: "Awaiting Eval" },
-  { status: "awaiting_approval", label: "Awaiting Approval" },
-  { status: "shipped", label: "Shipped" },
-  { status: "archived", label: "Archived" },
+  { status: "drafting", label: "Vázlatkészítés" },
+  { status: "awaiting_eval", label: "Értékelésre vár" },
+  { status: "awaiting_approval", label: "Jóváhagyásra vár" },
+  { status: "shipped", label: "Kiszállítva" },
+  { status: "archived", label: "Archivált" },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -113,7 +113,7 @@ function Column({
         <DeliverableCard key={d.id} d={d} onClick={() => onCardClick(d.id)} />
       ))}
       {cards.length === 0 && (
-        <div className="caption" style={{ opacity: 0.35, padding: "8px 2px" }}>Empty</div>
+        <div className="caption" style={{ opacity: 0.35, padding: "8px 2px" }}>Üres</div>
       )}
     </div>
   );
@@ -175,7 +175,7 @@ export function PipelineView() {
         <div style={{ padding: isMobile ? "16px 16px 10px" : "20px 28px 12px", borderBottom: "1px solid var(--rule)", flexShrink: 0 }}>
           <div className="headline-md">Pipeline</div>
           <div className="body-sm" style={{ marginTop: 2 }}>
-            {filtered.length} deliverable{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} deliverable
           </div>
           {campaigns.length > 0 && (
             <select
@@ -191,7 +191,7 @@ export function PipelineView() {
                 color: "var(--ink-2)",
               }}
             >
-              <option value="">All campaigns</option>
+              <option value="">Összes kampány</option>
               {campaigns.map((c) => (
                 <option key={c.id} value={c.id}>{c.title}</option>
               ))}

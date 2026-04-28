@@ -8,14 +8,14 @@ import { useBreakpoint } from "../../hooks/useBreakpoint.js";
 type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents" | "skills" | "calendar" | "campaigns";
 
 const NAV: { id: NavId; label: string }[] = [
-  { id: "home",      label: "Home" },
-  { id: "campaigns", label: "Campaigns" },
+  { id: "home",      label: "Főoldal" },
+  { id: "campaigns", label: "Kampányok" },
   { id: "pipeline",  label: "Pipeline" },
-  { id: "tasks",     label: "Tasks" },
-  { id: "memory",    label: "Memory" },
-  { id: "agents",    label: "Agents" },
-  { id: "skills",    label: "Skills" },
-  { id: "calendar",  label: "Calendar" },
+  { id: "tasks",     label: "Feladatok" },
+  { id: "memory",    label: "Memória" },
+  { id: "agents",    label: "Agensek" },
+  { id: "skills",    label: "Skillek" },
+  { id: "calendar",  label: "Naptár" },
 ];
 
 const TEAM: { slug: string; name: string }[] = [
@@ -66,7 +66,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        title="Open navigation"
+        title="Navigáció megnyitása"
         style={{
           position: "fixed",
           bottom: 20,
@@ -128,11 +128,11 @@ export function Sidebar({ activeNav }: SidebarProps) {
             </div>
             <button
               onClick={() => setCollapsed(true)}
-              title="Close"
+              title="Bezárás"
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 20, padding: "2px 6px", lineHeight: 1 }}
             >✕</button>
           </div>
-          <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>your little marketing team</div>
+          <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>a kis marketing csapatod</div>
 
           <nav style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
             {NAV.map((n) => (
@@ -157,7 +157,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
           </nav>
 
           <div style={{ padding: "8px 20px 8px", marginTop: 8 }}>
-            <div className="caption">Team</div>
+            <div className="caption">Csapat</div>
           </div>
           <div style={{ padding: "4px 12px", display: "flex", flexDirection: "column", gap: 1 }}>
             {TEAM.map((t) => {
@@ -200,7 +200,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
       }}>
         <button
           onClick={() => setCollapsed(false)}
-          title="Expand sidebar"
+          title="Oldalsáv kinyitása"
           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 16, padding: "4px 0", lineHeight: 1 }}
         >›</button>
         <div
@@ -288,11 +288,11 @@ export function Sidebar({ activeNav }: SidebarProps) {
         </div>
         <button
           onClick={() => setCollapsed(true)}
-          title="Collapse sidebar"
+          title="Oldalsáv összecsukása"
           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", fontSize: 16, padding: "4px 6px", lineHeight: 1, marginTop: -4 }}
         >‹</button>
       </div>
-      <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>your little marketing team</div>
+      <div className="body-sm" style={{ padding: "6px 20px 0", color: "var(--ink-3)" }}>a kis marketing csapatod</div>
 
       {/* Nav */}
       <nav style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -320,7 +320,7 @@ export function Sidebar({ activeNav }: SidebarProps) {
 
       {/* Team section label */}
       <div style={{ padding: "8px 20px 8px", marginTop: 8 }}>
-        <div className="caption">Team</div>
+        <div className="caption">Csapat</div>
       </div>
 
       {/* Team list */}

@@ -88,7 +88,7 @@ function SkillEditor({
     <div style={{ padding: "0 32px", display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Slug */}
       <div>
-        <label className="caption" style={{ display: "block", marginBottom: 4 }}>Slug (filename)</label>
+        <label className="caption" style={{ display: "block", marginBottom: 4 }}>Fájlnév (slug)</label>
         <input
           type="text"
           value={slug}
@@ -106,7 +106,7 @@ function SkillEditor({
 
       {/* Agent checkboxes */}
       <div>
-        <label className="caption" style={{ display: "block", marginBottom: 8 }}>Agents</label>
+        <label className="caption" style={{ display: "block", marginBottom: 8 }}>Agensek</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
           {ALL_ROLES.map((r) => (
             <label key={r.slug} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
@@ -124,7 +124,7 @@ function SkillEditor({
 
       {/* Content editor */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-        <label className="caption">Content (Markdown + YAML frontmatter)</label>
+        <label className="caption">Tartalom (Markdown + YAML frontmatter)</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -150,7 +150,7 @@ function SkillEditor({
             background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500,
           }}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Mentés…" : "Mentés"}
         </button>
         {!isNew && (
           <button
@@ -160,7 +160,7 @@ function SkillEditor({
               cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13,
             }}
           >
-            Delete
+            Törlés
           </button>
         )}
         {error && <span style={{ fontSize: 12, color: "red" }}>{error}</span>}
@@ -201,7 +201,7 @@ export function SkillsView() {
   const skillList = (
     <div style={{ width: isMobile ? "100%" : 240, flexShrink: 0, borderRight: isMobile ? "none" : "1px solid var(--rule)", overflowY: "auto" }}>
       {skills.length === 0 && (
-        <div style={{ padding: "16px 20px", fontSize: 13, color: "var(--ink-3)" }}>No skills yet.</div>
+        <div style={{ padding: "16px 20px", fontSize: 13, color: "var(--ink-3)" }}>Még nincs skill.</div>
       )}
       {skills.map((s) => (
         <button
@@ -248,12 +248,12 @@ export function SkillsView() {
             marginBottom: 4,
           }}
         >
-          ← Skills
+          ← Skillek
         </button>
       )}
       {selected === null && (
         <div style={{ padding: "40px 32px", fontSize: 13, color: "var(--ink-3)" }}>
-          Select a skill to edit, or click "+ New skill" to create one.
+          Válassz egy skillt szerkesztéshez, vagy kattints a "+ Új skill" gombra újat létrehozni.
         </div>
       )}
       {selected !== null && (
@@ -274,7 +274,7 @@ export function SkillsView() {
       <Sidebar activeNav="skills" />
       <main style={{ flex: 1, padding: isMobile ? "20px 0 88px" : "28px 0", overflow: "auto", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 className="heading">Skills</h1>
+          <h1 className="heading">Skillek</h1>
           <button
             onClick={() => selectSkill("new")}
             style={{
@@ -282,7 +282,7 @@ export function SkillsView() {
               cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13,
             }}
           >
-            + New skill
+            + Új skill
           </button>
         </div>
 

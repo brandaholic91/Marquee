@@ -73,13 +73,13 @@ function Widget({ title, right, children }: { title: string; right?: ReactNode; 
 
 function HomeHeader({ onNewBrief }: { onNewBrief: () => void }) {
   const now = new Date();
-  const dayName = now.toLocaleDateString("en-US", { weekday: "long" });
-  const monthDay = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const dayName = now.toLocaleDateString("hu-HU", { weekday: "long" });
+  const monthDay = now.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
   const dateLabel = `${dayName} · ${monthDay}`;
 
   const hour = now.getHours();
   const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    hour < 12 ? "Jó reggelt" : hour < 17 ? "Jó napot" : "Jó estét";
 
   return (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -88,7 +88,7 @@ function HomeHeader({ onNewBrief }: { onNewBrief: () => void }) {
         <h1 className="headline-lg" style={{ margin: 0 }}>{greeting}, Balázs.</h1>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn btn-primary" onClick={onNewBrief}>New Brief</button>
+        <button className="btn btn-primary" onClick={onNewBrief}>Új brief</button>
       </div>
     </div>
   );
@@ -122,19 +122,19 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
       <textarea
         className="textarea-chat"
         style={{ width: "100%", minHeight: 80, border: "1px solid var(--rule-strong)", borderRadius: 4, padding: 8, resize: "vertical" }}
-        placeholder="Describe what you need…"
+        placeholder="Írd le, mire van szükséged…"
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
       {campaigns.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <label className="caption" style={{ display: "block", marginBottom: 4 }}>Campaign</label>
+          <label className="caption" style={{ display: "block", marginBottom: 4 }}>Kampány</label>
           <select
             value={selectedCampaignId}
             onChange={(e) => setSelectedCampaignId(e.target.value)}
             style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
           >
-            <option value="">— New campaign —</option>
+            <option value="">— Új kampány —</option>
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}
@@ -143,10 +143,10 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
         <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={submitting}>
-          Cancel
+          Mégse
         </button>
         <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting || !text.trim()}>
-          Send brief
+          Brief küldése
         </button>
       </div>
     </div>
@@ -174,7 +174,7 @@ function ApprovalsWidget({
 
   return (
     <Widget
-      title="Awaiting your approval"
+      title="Jóváhagyásra vár"
       right={
         approvals.length > 0 ? (
           <Badge kind="primary-soft">{approvals.length}</Badge>
@@ -183,7 +183,7 @@ function ApprovalsWidget({
     >
       {approvals.length === 0 ? (
         <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>
-          No deliverables awaiting approval.
+          Nincs jóváhagyásra váró deliverable.
         </div>
       ) : (
         <div>
@@ -228,13 +228,13 @@ function ApprovalsWidget({
                     className="btn btn-primary btn-sm"
                     onClick={() => api.approvals.decide(d.id, "approved").then(onRefresh).catch(console.error)}
                   >
-                    Approve
+                    Jóváhagyás
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => setSelectedDeliverable(d.id)}
                   >
-                    View
+                    Megtekintés
                   </button>
                 </div>
               </div>
@@ -257,13 +257,13 @@ function LiveFeedWidget({ events }: { events: LiveEvent[] }) {
 
   return (
     <Widget
-      title="Live"
-      right={<span className="caption" style={{ color: "var(--ink-3)" }}>auto-scroll</span>}
+      title="Élő"
+      right={<span className="caption" style={{ color: "var(--ink-3)" }}>auto-görgetés</span>}
     >
       <div className="scroll" style={{ height: 320, overflowY: "auto" }}>
         {events.length === 0 ? (
           <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>
-            Waiting for activity…
+            Aktivitásra várva…
           </div>
         ) : (
           events.map((ev, i) => {
@@ -308,7 +308,7 @@ function PipelineWidget({ pipeline }: { pipeline: PipelineCount[] }) {
     <Widget title="Pipeline">
       {pipeline.length === 0 ? (
         <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>
-          No pipeline data.
+          Nincs pipeline adat.
         </div>
       ) : (
         <div>
@@ -352,8 +352,8 @@ interface UsageStats {
 
 function UsageWidget({ stats }: { stats: UsageStats | null }) {
   if (!stats) return (
-    <Widget title="Usage">
-      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+    <Widget title="Használat">
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Betöltés…</div>
     </Widget>
   );
 
@@ -362,9 +362,9 @@ function UsageWidget({ stats }: { stats: UsageStats | null }) {
   const barColor = budgetUsedPct >= 100 ? "var(--primary)" : budgetUsedPct >= 80 ? "var(--secondary)" : "var(--bulb)";
 
   return (
-    <Widget title="Usage" right={<span className="caption" style={{ color: "var(--ink-3)" }}>today</span>}>
+    <Widget title="Használat" right={<span className="caption" style={{ color: "var(--ink-3)" }}>ma</span>}>
       {today.tokens === 0 ? (
-        <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>No activity yet.</div>
+        <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Még nincs aktivitás.</div>
       ) : (
         <div style={{ padding: "14px 18px" }}>
           <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-serif)", color: "var(--ink-1)", marginBottom: 4 }}>
@@ -380,7 +380,7 @@ function UsageWidget({ stats }: { stats: UsageStats | null }) {
               <div style={{ height: 6, background: "var(--rule)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${Math.min(100, budgetUsedPct)}%`, background: barColor, borderRadius: 3, transition: "width 0.3s" }} />
               </div>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 3 }}>{Math.round(budgetUsedPct)}% of daily limit</div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 3 }}>{Math.round(budgetUsedPct)}% a napi limitből</div>
             </div>
           )}
           <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 10 }}>
@@ -432,18 +432,18 @@ const DIM_LABEL: Record<string, string> = {
 function QualityWidget({ stats }: { stats: QualityStats | null }) {
   if (!stats) return (
     <Widget title="Quality">
-      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Betöltés…</div>
     </Widget>
   );
   if (stats.days.length === 0) return (
-    <Widget title="Quality" right={<span className="caption" style={{ color: "var(--ink-3)" }}>last 30 days</span>}>
-      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>No evals yet.</div>
+    <Widget title="Minőség" right={<span className="caption" style={{ color: "var(--ink-3)" }}>elmúlt 30 nap</span>}>
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Még nincs értékelés.</div>
     </Widget>
   );
 
   const dims = ["brand_voice", "factual_accuracy", "usp_usage"] as const;
   return (
-    <Widget title="Quality" right={<span className="caption" style={{ color: "var(--ink-3)" }}>last 30 days</span>}>
+    <Widget title="Minőség" right={<span className="caption" style={{ color: "var(--ink-3)" }}>elmúlt 30 nap</span>}>
       <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
         {dims.map((dim) => (
           <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -486,21 +486,21 @@ function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefr
 
   return (
     <Widget
-      title="Open chats"
+      title="Nyitott chatok"
       right={
         <button className="btn btn-ghost btn-sm" onClick={handleNewChat} disabled={creating}>
-          + new
+          + új
         </button>
       }
     >
       {threads.length === 0 ? (
         <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>
-          No active threads.{" "}
+          Nincs aktív szál.{" "}
           <button
             onClick={handleNewChat}
             style={{ color: "var(--primary)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}
           >
-            Start one
+            Indíts egyet
           </button>
         </div>
       ) : (

@@ -95,15 +95,15 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
       {/* Header */}
       <div style={{ padding: "20px 18px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div className="caption">Memory files</div>
+          <div className="caption">Memóriafájlok</div>
           <button
             onClick={() => setShowNew(true)}
             style={{ fontSize: 12, padding: "3px 10px", borderRadius: 4, border: "1px solid var(--rule)", background: "transparent", cursor: "pointer", color: "var(--ink-2)" }}
           >
-            + New file
+            + Új fájl
           </button>
         </div>
-        <div className="body-sm" style={{ marginTop: 2 }}>git-tracked, human-curated</div>
+        <div className="body-sm" style={{ marginTop: 2 }}>git-követett, ember által szerkesztett</div>
         {showNew && (
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <input
@@ -114,8 +114,8 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
               placeholder="filename.md"
               style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--rule)", borderRadius: 4, fontSize: 13 }}
             />
-            <button onClick={handleCreate} style={{ padding: "5px 12px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>Create</button>
-            <button onClick={() => setShowNew(false)} style={{ padding: "5px 12px", borderRadius: 4, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--rule)", cursor: "pointer", fontSize: 13 }}>Cancel</button>
+            <button onClick={handleCreate} style={{ padding: "5px 12px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>Létrehozás</button>
+            <button onClick={() => setShowNew(false)} style={{ padding: "5px 12px", borderRadius: 4, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--rule)", cursor: "pointer", fontSize: 13 }}>Mégse</button>
           </div>
         )}
       </div>
@@ -165,7 +165,7 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
         <>
           <div style={{ padding: "20px 18px 8px", marginTop: 12, borderTop: "1px solid var(--rule)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div className="caption">Pending proposals</div>
+              <div className="caption">Függő javaslatok</div>
               <span className="badge badge-primary-soft">{proposals.length}</span>
             </div>
           </div>
@@ -193,7 +193,7 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
                     textDecoration: "none",
                   }}
                 >
-                  View diff →
+                  Diff megtekintése →
                 </a>
               </div>
             ))}
@@ -250,7 +250,7 @@ function ReadTab({ frontmatter, body }: ReadTabProps) {
       )}
 
       {!body && fmEntries.length === 0 && (
-        <div className="body-sm muted" style={{ fontSize: 13 }}>No content available.</div>
+        <div className="body-sm muted" style={{ fontSize: 13 }}>Nincs elérhető tartalom.</div>
       )}
     </div>
   );
@@ -266,7 +266,7 @@ function HistoryTab({ history }: HistoryTabProps) {
   if (history.length === 0) {
     return (
       <div style={{ padding: "24px 32px" }}>
-        <div className="body-md muted" style={{ fontSize: 13 }}>No history available.</div>
+        <div className="body-md muted" style={{ fontSize: 13 }}>Nincs elérhető előzmény.</div>
       </div>
     );
   }
@@ -374,7 +374,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
         marginBottom: 16,
       }}
     >
-      ← Files
+      ← Fájlok
     </button>
   ) : null;
 
@@ -382,7 +382,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
     return (
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
         {backBtn}
-        <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
+        <div className="body-sm muted" style={{ fontSize: 13 }}>Betöltés…</div>
       </main>
     );
   }
@@ -391,7 +391,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
     return (
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
         {backBtn}
-        <div className="body-sm muted" style={{ fontSize: 13 }}>Select a file to view.</div>
+        <div className="body-sm muted" style={{ fontSize: 13 }}>Válassz egy fájlt a megtekintéshez.</div>
       </main>
     );
   }
@@ -401,8 +401,8 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
   const history = fileContent.history ?? [];
 
   const TABS: { id: TabId; label: string }[] = [
-    { id: "read", label: "Read" },
-    { id: "history", label: "History" },
+    { id: "read", label: "Olvasás" },
+    { id: "history", label: "Előzmények" },
   ];
 
   return (
@@ -425,7 +425,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
                 style={{ fontSize: 12, padding: "4px 12px" }}
                 onClick={handleEditClick}
               >
-                Edit
+                Szerkesztés
               </button>
             )}
           </div>
@@ -488,7 +488,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Mentés…" : "Mentés"}
               </button>
               <button
                 className="btn btn-ghost"
@@ -496,7 +496,7 @@ function MainContent({ fileContent, loading, selectedFile, onSaved, onBack }: Ma
                 onClick={handleCancel}
                 disabled={saving}
               >
-                Cancel
+                Mégse
               </button>
             </div>
           </div>

@@ -194,8 +194,8 @@ function CampaignBriefBadge() {
       border: "1px solid #fcd34d",
       borderRadius: 8, marginBottom: 12,
     }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}>! Paid campaign</span>
-      <span className="body-sm" style={{ color: "#92400e" }}>— review before approving</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}>! Fizetett kampány</span>
+      <span className="body-sm" style={{ color: "#92400e" }}>— ellenőrizd jóváhagyás előtt</span>
     </div>
   );
 }
@@ -254,9 +254,9 @@ function RepurposeModal({ deliverableId, onClose, onSuccess }: RepurposeModalPro
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="headline-md" style={{ margin: "0 0 16px" }}>Repurpose content</h2>
+        <h2 className="headline-md" style={{ margin: "0 0 16px" }}>Tartalom újrafelhasználása</h2>
         <p className="body-sm muted" style={{ margin: "0 0 16px" }}>
-          Select target channels. Content Lead will spawn one Repurposer per channel.
+          Válassz célcsatornákat. A Content Lead csatornánként egy Repurposert indít.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           {CHANNEL_OPTIONS.map(({ value, label }) => (
@@ -273,7 +273,7 @@ function RepurposeModal({ deliverableId, onClose, onSuccess }: RepurposeModalPro
         </div>
         <div style={{ marginBottom: 20 }}>
           <label className="body-sm muted" style={{ display: "block", marginBottom: 4 }}>
-            Other channel (optional)
+            Egyéb csatorna (opcionális)
           </label>
           <input
             className="input"
@@ -285,14 +285,14 @@ function RepurposeModal({ deliverableId, onClose, onSuccess }: RepurposeModalPro
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button className="btn btn-ghost" onClick={onClose} disabled={loading}>
-            Cancel
+            Mégse
           </button>
           <button
             className="btn btn-primary"
             onClick={handleSubmit}
             disabled={loading || (selected.length === 0 && !other.trim())}
           >
-            {loading ? "Dispatching…" : "Repurpose"}
+            {loading ? "Küldés…" : "Újrafelhasználás"}
           </button>
         </div>
       </div>
@@ -335,7 +335,7 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           style={{ textDecoration: "none", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           onClick={() => setView("home")}
         >
-          ← Approvals queue
+          ← Jóváhagyási sor
         </button>
         <h1 className="headline-lg" style={{ margin: "8px 0 0", maxWidth: 760 }}>
           {deliverable.title}
@@ -350,7 +350,7 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           {ownerSlug && (
             <>
               <span className="body-sm muted">·</span>
-              <span className="body-sm muted">owner</span>
+              <span className="body-sm muted">tulajdonos</span>
               <AgentBadge slug={ownerSlug} active />
             </>
           )}
@@ -365,11 +365,11 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
         {onRepurpose && (
-          <button className="btn btn-secondary" onClick={onRepurpose}>Repurpose</button>
+          <button className="btn btn-secondary" onClick={onRepurpose}>Újrafelhasználás</button>
         )}
-        <button className="btn btn-primary" onClick={onApprove}>Approve &amp; ship</button>
-        <button className="btn btn-secondary" onClick={onRequestChanges}>Request changes</button>
-        <button className="btn btn-ghost" onClick={onReject}>Reject</button>
+        <button className="btn btn-primary" onClick={onApprove}>Jóváhagyás &amp; kiszállítás</button>
+        <button className="btn btn-secondary" onClick={onRequestChanges}>Változtatás kérése</button>
+        <button className="btn btn-ghost" onClick={onReject}>Elutasítás</button>
       </div>
     </header>
   );
@@ -400,7 +400,7 @@ function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
           <div>{renderMarkdown(revision.contentMd)}</div>
         ) : (
           <p className="body-md" style={{ color: "var(--ink-3)", fontSize: 15 }}>
-            No revision content available yet.
+            Még nincs revízió tartalom.
           </p>
         )}
       </article>
@@ -452,9 +452,9 @@ function ThreadTab({ deliverableId: _deliverableId }: { deliverableId: string })
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <TMsg who="content-lead" name="Content Lead" time="—" active={true}>
-        Thread messages will appear here once the deliverable's activity log is wired to the API.
+        A szálüzenetek itt jelennek meg, amint a deliverable aktivitásnaplója össze van kötve az API-val.
       </TMsg>
-      <SysLine>no thread endpoint available yet</SysLine>
+      <SysLine>thread endpoint még nem elérhető</SysLine>
     </div>
   );
 }
@@ -481,7 +481,7 @@ function EvalTab({ evalReport, revision }: EvalTabProps) {
           color: "var(--ink-3)",
           fontSize: 13,
         }}>
-          Evaluation pending.
+          Értékelés függőben.
         </div>
       </div>
     );
@@ -573,7 +573,7 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
   if (allRevisions.length === 0) {
     return (
       <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
-        No revisions yet.
+        Még nincs revízió.
       </div>
     );
   }
@@ -641,7 +641,7 @@ function RevisionsTab({ currentRevisionId, allRevisions, onSelectRevision, selec
           }}
           style={{ padding: "5px 14px", borderRadius: 4, background: "var(--bulb)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}
         >
-          Compare
+          Összehasonlítás
         </button>
       )}
 
@@ -751,9 +751,9 @@ function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProp
   }, [selectedRevId, deliverableId]);
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: "thread", label: "Thread" },
-    { id: "eval", label: "Eval" },
-    { id: "revisions", label: "Revisions" },
+    { id: "thread", label: "Szál" },
+    { id: "eval", label: "Értékelés" },
+    { id: "revisions", label: "Revíziók" },
   ];
 
   return (
@@ -786,7 +786,7 @@ function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProp
         {tab === "eval" && (
           evalLoaded
             ? <EvalTab evalReport={evalReport} revision={revision} />
-            : <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
+            : <div className="body-sm muted" style={{ fontSize: 13 }}>Betöltés…</div>
         )}
         {tab === "revisions" && (
           revisionsLoaded
@@ -808,7 +808,7 @@ function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProp
                     border: "1px solid var(--rule)",
                   }}>
                     {revContentLoading ? (
-                      <div className="body-sm muted" style={{ fontSize: 13 }}>Loading revision…</div>
+                      <div className="body-sm muted" style={{ fontSize: 13 }}>Revízió betöltése…</div>
                     ) : selectedRevContent ? (
                       <>
                         <div className="caption" style={{ marginBottom: 8 }}>
@@ -819,13 +819,13 @@ function SidePanel({ deliverableId, currentRevisionId, revision }: SidePanelProp
                         </div>
                       </>
                     ) : (
-                      <div className="body-sm muted" style={{ fontSize: 13 }}>Could not load revision content.</div>
+                      <div className="body-sm muted" style={{ fontSize: 13 }}>Nem sikerült betölteni a revízió tartalmát.</div>
                     )}
                   </div>
                 )}
               </div>
             )
-            : <div className="body-sm muted" style={{ fontSize: 13 }}>Loading…</div>
+            : <div className="body-sm muted" style={{ fontSize: 13 }}>Betöltés…</div>
         )}
       </div>
     </aside>
@@ -864,7 +864,7 @@ export function DeliverableView() {
       <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
         <Sidebar activeNav="home" />
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-3)", fontSize: 14 }}>
-          {selectedDeliverableId ? "Loading…" : "Select a deliverable"}
+          {selectedDeliverableId ? "Betöltés…" : "Válassz egy deliverable-t"}
         </main>
       </div>
     );

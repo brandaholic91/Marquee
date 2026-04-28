@@ -56,9 +56,9 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
   }
 
   const preview = [
-    config.style && `Style: ${config.style}`,
-    config.tone && `Tone: ${config.tone}`,
-    config.response_length && `Response length: ${config.response_length}`,
+    config.style && `Stílus: ${config.style}`,
+    config.tone && `Hang: ${config.tone}`,
+    config.response_length && `Válasz hossza: ${config.response_length}`,
   ].filter(Boolean).join(" | ");
 
   return (
@@ -67,48 +67,48 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
         {/* Structured fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Style</label>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Stílus</label>
             <select
               value={config.style ?? ""}
               onChange={(e) => setConfig({ ...config, style: e.target.value || undefined })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="">— not set —</option>
-              <option value="terse">Terse</option>
-              <option value="balanced">Balanced</option>
-              <option value="verbose">Verbose</option>
+              <option value="">— nincs beállítva —</option>
+              <option value="terse">Tömör</option>
+              <option value="balanced">Kiegyensúlyozott</option>
+              <option value="verbose">Részletes</option>
             </select>
           </div>
           <div>
-            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Tone</label>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Hang</label>
             <select
               value={config.tone ?? ""}
               onChange={(e) => setConfig({ ...config, tone: e.target.value || undefined })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="">— not set —</option>
-              <option value="authoritative">Authoritative</option>
-              <option value="friendly">Friendly</option>
-              <option value="neutral">Neutral</option>
+              <option value="">— nincs beállítva —</option>
+              <option value="authoritative">Tekintélyes</option>
+              <option value="friendly">Barátságos</option>
+              <option value="neutral">Semleges</option>
             </select>
           </div>
           <div>
-            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Response length</label>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Válasz hossza</label>
             <select
               value={config.response_length ?? ""}
               onChange={(e) => setConfig({ ...config, response_length: e.target.value || undefined })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="">— not set —</option>
-              <option value="concise">Concise</option>
-              <option value="detailed">Detailed</option>
+              <option value="">— nincs beállítva —</option>
+              <option value="concise">Rövid</option>
+              <option value="detailed">Részletes</option>
             </select>
           </div>
           <div>
             <label className="caption" style={{ display: "block", marginBottom: 4 }}>
-              Model{" "}
+              Modell{" "}
               <span style={{ color: "var(--ink-3)", fontWeight: 400, fontSize: 11 }}>
-                (openai-subscription only)
+                (csak openai-előfizetéssel)
               </span>
             </label>
             <select
@@ -116,7 +116,7 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
               onChange={(e) => setConfig({ ...config, model: e.target.value || undefined })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="">— not set (use default) —</option>
+              <option value="">— nincs beállítva (alapértelmezett) —</option>
               <option value="gpt-5.4-mini">gpt-5.4-mini (fast)</option>
               <option value="gpt-5.4">gpt-5.4 (balanced)</option>
               <option value="gpt-5.5">gpt-5.5 (powerful)</option>
@@ -124,17 +124,17 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
             </select>
           </div>
           <div>
-            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Thinking level</label>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Gondolkodási szint</label>
             <select
               value={config.thinking_level ?? "off"}
               onChange={(e) => setConfig({ ...config, thinking_level: e.target.value === "off" ? undefined : e.target.value })}
               style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
             >
-              <option value="off">Off</option>
-              <option value="minimal">Minimal</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="off">Ki</option>
+              <option value="minimal">Minimális</option>
+              <option value="low">Alacsony</option>
+              <option value="medium">Közepes</option>
+              <option value="high">Magas</option>
             </select>
           </div>
           {preview && (
@@ -146,11 +146,11 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
 
         {/* Identity */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <label className="caption">Identity</label>
+          <label className="caption">Identitás</label>
           <textarea
             value={identity}
             onChange={(e) => setIdentity(e.target.value)}
-            placeholder={`You are the [role] agent of this AI marketing agency.\n\nDescribe the agent's role, responsibilities, decision-making style, and relationship to other agents.`}
+            placeholder={`Te vagy a [szerepkör] agentje ennek az AI marketing ügynökségnek.\n\nÍrd le az agent szerepét, feladatait, döntéshozatali stílusát és kapcsolatát a többi agenthez.`}
             rows={12}
             style={{ padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13, resize: "vertical", fontFamily: "var(--font-mono)" }}
           />
@@ -166,7 +166,7 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
             background: saved ? "var(--success, #22c55e)" : "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500,
           }}
         >
-          {saving ? "Saving…" : saved ? "Saved!" : "Save & restart agent"}
+          {saving ? "Mentés…" : saved ? "Mentve!" : "Mentés & agent újraindítása"}
         </button>
         <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
           A mentés újraindítja az agentet — a meglévő kontextusa elvész.
@@ -190,7 +190,7 @@ export function AgentsView() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="agents" />
       <main style={{ flex: 1, padding: isMobile ? "20px 0 88px" : "28px 0", overflow: "auto" }}>
-        <h1 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 24 }}>Agents</h1>
+        <h1 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 24 }}>Agensek</h1>
 
         {isMobile ? (
           mobilePanel === "list" ? (
@@ -223,7 +223,7 @@ export function AgentsView() {
                   marginBottom: 12,
                 }}
               >
-                ← Agents
+                ← Agensek
               </button>
               <div style={{ padding: "0 0 12px 16px", fontWeight: 600, fontSize: 15, color: "var(--ink-1)" }}>
                 {TEAM.find((t) => t.slug === selectedRole)?.name}
@@ -255,7 +255,7 @@ export function AgentsView() {
             <div style={{ flex: 1 }}>
               {selectedRole
                 ? <ConfigPanel key={selectedRole} role={selectedRole} />
-                : <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>Select an agent to configure</div>
+                : <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>Válassz egy agentet a beállításhoz</div>
               }
             </div>
           </div>

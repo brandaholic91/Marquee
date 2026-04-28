@@ -10,10 +10,10 @@ import { Sidebar } from "../components/layout/Sidebar";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const COLUMNS: { id: Task["status"]; label: string }[] = [
-  { id: "open",        label: "To Do" },
-  { id: "in_progress", label: "Doing" },
-  { id: "done",        label: "Done" },
-  { id: "blocked",     label: "Blocked" },
+  { id: "open",        label: "Teendő" },
+  { id: "in_progress", label: "Folyamatban" },
+  { id: "done",        label: "Kész" },
+  { id: "blocked",     label: "Blokkolt" },
 ];
 
 function TaskCard({ task, isDragging = false }: { task: Task; isDragging?: boolean }) {
@@ -120,7 +120,7 @@ export function TasksView() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar activeNav="tasks" />
       <main style={{ flex: 1, padding: isMobile ? "20px 12px 88px" : "28px 32px", overflow: "auto" }}>
-        <h1 className="heading" style={{ marginBottom: 24 }}>Tasks</h1>
+        <h1 className="heading" style={{ marginBottom: 24 }}>Feladatok</h1>
         {campaigns.length > 0 && (
           <select
             value={campaignFilter}
@@ -135,7 +135,7 @@ export function TasksView() {
               color: "var(--ink-2)",
             }}
           >
-            <option value="">All campaigns</option>
+            <option value="">Összes kampány</option>
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}
