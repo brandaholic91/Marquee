@@ -183,6 +183,121 @@ function estimateReadMin(words: number): number {
   return Math.max(1, Math.round(words / 200));
 }
 
+// ---- CampaignBriefBadge ----
+
+function CampaignBriefBadge() {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      padding: "8px 14px",
+      background: "#fffbeb",
+      border: "1px solid #fcd34d",
+      borderRadius: 8, marginBottom: 12,
+    }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}>! Paid campaign</span>
+      <span className="body-sm" style={{ color: "#92400e" }}>— review before approving</span>
+    </div>
+  );
+}
+
+// ---- RepurposeModal ----
+
+const CHANNEL_OPTIONS = [
+  { value: "linkedin_post", label: "LinkedIn Post" },
+  { value: "twitter_thread", label: "Twitter Thread" },
+  { value: "email_snippet", label: "Email Snippet" },
+  { value: "instagram_caption", label: "Instagram Caption" },
+];
+
+interface RepurposeModalProps {
+  deliverableId: string;
+  onClose: () => void;
+}
+
+function RepurposeModal({ deliverableId, onClose }: RepurposeModalProps) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [other, setOther] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  function toggleChannel(value: string) {
+    setSelected((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    );
+  }
+
+  async function handleSubmit() {
+    const channels = [...selected, ...(other.trim() ? [other.trim()] : [])];
+    if (channels.length === 0) return;
+    setLoading(true);
+    try {
+      await api.deliverables.repurpose(deliverableId, channels);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "var(--cream)", borderRadius: 12, padding: 28,
+          minWidth: 340, maxWidth: 420, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="headline-md" style={{ margin: "0 0 16px" }}>Repurpose content</h2>
+        <p className="body-sm muted" style={{ margin: "0 0 16px" }}>
+          Select target channels. Content Lead will spawn one Repurposer per channel.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+          {CHANNEL_OPTIONS.map(({ value, label }) => (
+            <label key={value} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={selected.includes(value)}
+                onChange={() => toggleChannel(value)}
+                style={{ width: 16, height: 16 }}
+              />
+              <span className="body-sm">{label}</span>
+            </label>
+          ))}
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label className="body-sm muted" style={{ display: "block", marginBottom: 4 }}>
+            Other channel (optional)
+          </label>
+          <input
+            className="input"
+            value={other}
+            onChange={(e) => setOther(e.target.value)}
+            placeholder="e.g. podcast_description"
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button className="btn btn-ghost" onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={loading || (selected.length === 0 && !other.trim())}
+          >
+            {loading ? "Dispatching…" : "Repurpose"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- DeliverableTopBar ----
 
 interface TopBarProps {
@@ -191,9 +306,10 @@ interface TopBarProps {
   onApprove: () => void;
   onRequestChanges: () => void;
   onReject: () => void;
+  onRepurpose?: () => void;
 }
 
-function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges, onReject }: TopBarProps) {
+function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges, onReject, onRepurpose }: TopBarProps) {
   const { setView } = useAgencyStore();
 
   const wordCount = revision?.contentMd ? countWords(revision.contentMd) : deliverable.wordCount ?? null;
@@ -246,6 +362,9 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        {deliverable.status === "shipped" && onRepurpose && (
+          <button className="btn btn-secondary" onClick={onRepurpose}>Repurpose</button>
+        )}
         <button className="btn btn-primary" onClick={onApprove}>Approve &amp; ship</button>
         <button className="btn btn-secondary" onClick={onRequestChanges}>Request changes</button>
         <button className="btn btn-ghost" onClick={onReject}>Reject</button>
@@ -265,6 +384,7 @@ function MarkdownPreview({ deliverable, revision }: MarkdownPreviewProps) {
   return (
     <div style={{ padding: "24px 32px", overflow: "auto" }}>
       <article className="card" style={{ background: "var(--white)", padding: "40px 48px", maxWidth: 720 }}>
+        {deliverable.type === "campaign_brief" && <CampaignBriefBadge />}
         <div className="caption" style={{ marginBottom: 8, color: "var(--ink-3)" }}>
           {`${deliverable.type?.replace(/_/g, " ").toUpperCase() ?? "DRAFT"} · ${deliverable.status.toUpperCase()}`}
         </div>
@@ -716,6 +836,7 @@ export function DeliverableView() {
   const { selectedDeliverableId, setView } = useAgencyStore();
   const [deliverable, setDeliverable] = useState<DeliverableData | null>(null);
   const [revision, setRevision] = useState<RevisionData | null>(null);
+  const [repurposeOpen, setRepurposeOpen] = useState(false);
 
   const refresh = useCallback(() => {
     if (!selectedDeliverableId) return;
@@ -769,6 +890,7 @@ export function DeliverableView() {
           onApprove={handleApprove}
           onRequestChanges={handleRequestChanges}
           onReject={handleReject}
+          onRepurpose={() => setRepurposeOpen(true)}
         />
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: "60% 40%", minHeight: 0 }}>
           <MarkdownPreview deliverable={deliverable} revision={revision} />
@@ -779,6 +901,12 @@ export function DeliverableView() {
           />
         </div>
       </main>
+      {repurposeOpen && (
+        <RepurposeModal
+          deliverableId={deliverable.id}
+          onClose={() => setRepurposeOpen(false)}
+        />
+      )}
     </div>
   );
 }

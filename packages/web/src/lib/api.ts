@@ -92,6 +92,8 @@ export const api = {
       }).then(json),
     revisionContent: (revisionId: string) =>
       fetch(`/api/deliverables/revisions/${revisionId}/content`).then(json) as Promise<{ content: string }>,
+    repurpose: (id: string, channels: string[]) =>
+      post<{ delegationId: string }>(`/api/deliverables/${id}/repurpose`, { channels }),
   },
   snapshot: () => fetch("/api/state/snapshot").then(json),
   tasks: {
