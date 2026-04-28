@@ -7,6 +7,7 @@ import { MemoryView } from "./views/memory";
 import { ChatFullView } from "./views/chat-full";
 import { PipelineView } from "./views/pipeline";
 import { TasksView } from "./views/tasks";
+import { AgentsView } from "./views/agents";
 
 export function App() {
   const currentView = useAgencyStore((s) => s.currentView);
@@ -35,6 +36,7 @@ export function App() {
       {currentView === "chat" && <ChatFullView />}
       {currentView === "pipeline" && <PipelineView />}
       {currentView === "tasks" && <TasksView />}
+      {currentView === "agents" && <AgentsView />}
     </div>
   );
 }
