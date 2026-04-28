@@ -19,7 +19,7 @@ export function registerMessageRoutes(app: FastifyInstance, opts: ServerOpts) {
 		opts.db.insert(chatThreads).values({
 			id: threadId, title: "Onboarding", type: "consultative",
 		}).run();
-		const trigger = "## New Client Onboarding\n\nUse the `onboarding` skill to begin the client onboarding interview.";
+		const trigger = "## Új ügyfél onboarding\n\nTöltsd be az `onboarding` skill-t és kezdd el az ügyfél-onboarding interjút magyarul, tegező formában.";
 		opts.db.insert(messages).values({
 			id: randomUUID(), threadId, sender: "human",
 			type: "chat", contentJson: { text: trigger } as never,
