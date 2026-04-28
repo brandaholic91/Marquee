@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import { Sidebar } from "../components/layout/Sidebar";
-import { useBreakpoint } from "../hooks/useBreakpoint";
-import type { Campaign } from "../store/useAgencyStore";
+import { api } from "../lib/api.js";
+import { Sidebar } from "../components/layout/Sidebar.js";
+import { useBreakpoint } from "../hooks/useBreakpoint.js";
+import type { Campaign } from "../store/useAgencyStore.js";
 
 const STATUS_COLOR: Record<string, string> = {
   active: "var(--success, #2d7a4f)",
@@ -80,6 +80,7 @@ export function CampaignsView() {
   }, []);
 
   async function handleSelect(id: string) {
+    setSelected(null);
     setLoading(true);
     try {
       const detail = await api.campaigns.get(id);
