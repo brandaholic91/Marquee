@@ -435,6 +435,7 @@ function OtherThreadsStrip({
   return (
     <aside style={{
       width: 200,
+      height: "100%",
       background: "var(--parchment)",
       borderLeft: "1px solid var(--rule)",
       display: "flex",
