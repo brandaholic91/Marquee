@@ -62,9 +62,9 @@ export function makeCompleteOnboarding(dataDir: string): AgentToolDef<z.infer<ty
 			const files = buildOnboardingFiles(input);
 			// Emit preview — the frontend shows the content for review before saving
 			ctx.emit("onboarding_preview", {
+				threadId: ctx.threadId,
 				clientProfile: files.clientProfile,
 				brandGuidelines: files.brandGuidelines,
-				input,
 			});
 			return { ok: true };
 		},

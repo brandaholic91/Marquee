@@ -62,12 +62,12 @@ export function registerMessageRoutes(app: FastifyInstance, opts: ServerOpts) {
 		return { threadId };
 	});
 
-	app.post<{ Body: { clientProfile: string; brandGuidelines: string } }>("/api/onboarding/save", async (req, reply) => {
-		const { clientProfile, brandGuidelines } = req.body;
+	app.post<{ Body: { clientProfile: string; brandGuidelines: string; threadId?: string } }>("/api/onboarding/save", async (req, reply) => {
+		const { clientProfile, brandGuidelines, threadId } = req.body;
 		if (!clientProfile || !brandGuidelines) return reply.code(400).send({ error: "missing content" });
 		await writeMemoryFile(opts.dataDir, "client_profile", clientProfile);
 		await writeMemoryFile(opts.dataDir, "brand_guidelines", brandGuidelines);
-		opts.broker.emit("onboarding_complete", {});
+		opts.broker.emit("onboarding_complete", { threadId });
 		return { ok: true };
 	});
 }

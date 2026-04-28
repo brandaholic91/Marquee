@@ -24,8 +24,6 @@ export function OnboardingView() {
 
   // Start SSE + onboarding thread on mount
   useEffect(() => {
-    // Clear SSE replay position so old events don't show up in this session
-    localStorage.removeItem("agency:lastEventId");
     agencyEvents.start();
     api.onboarding.start().then(({ threadId: tid }) => {
       setThreadId(tid);
@@ -59,13 +57,16 @@ export function OnboardingView() {
     }));
 
     unsubs.push(agencyEvents.on("onboarding_preview", (ev) => {
-      const e = ev as { clientProfile?: string; brandGuidelines?: string };
+      const e = ev as { threadId?: string; clientProfile?: string; brandGuidelines?: string };
+      if (e.threadId !== threadId) return;
       if (e.clientProfile && e.brandGuidelines) {
         setPreview({ clientProfile: e.clientProfile, brandGuidelines: e.brandGuidelines });
       }
     }));
 
-    unsubs.push(agencyEvents.on("onboarding_complete", () => {
+    unsubs.push(agencyEvents.on("onboarding_complete", (ev) => {
+      const e = ev as { threadId?: string };
+      if (e.threadId !== threadId) return;
       setComplete(true);
     }));
 
@@ -100,7 +101,7 @@ export function OnboardingView() {
     if (!preview) return;
     setSaving(true);
     try {
-      await api.onboarding.save(preview.clientProfile, preview.brandGuidelines);
+      await api.onboarding.save(preview.clientProfile, preview.brandGuidelines, threadId);
       setPreview(null);
       setComplete(true);
     } finally {
