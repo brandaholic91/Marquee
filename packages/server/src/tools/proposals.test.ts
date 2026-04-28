@@ -74,4 +74,30 @@ describe("proposal tools", () => {
 			),
 		).rejects.toThrow();
 	});
+
+	it("propose_brief uses existing campaign when campaignId provided", async () => {
+		const emit = vi.fn();
+		const campaignId = randomUUID();
+		db.insert(campaigns).values({ id: campaignId, title: "Existing", status: "active" }).run();
+
+		const result = await proposeBrief.execute(
+			{ threadId: randomUUID(), title: "New Brief", scope: "blog", deliverables: ["blog_post"], campaignId },
+			{ db, agentSlug: "director", agentSessionId: randomUUID(), emit },
+		);
+
+		const brief = db.select().from(briefs).where(eq(briefs.id, result.briefId)).get()!;
+		expect(brief.campaignId).toBe(campaignId);
+		// no new campaign created — still only 1 campaign in DB
+		expect(db.select().from(campaigns).all()).toHaveLength(1);
+	});
+
+	it("propose_brief throws when campaignId does not exist", async () => {
+		const emit = vi.fn();
+		await expect(
+			proposeBrief.execute(
+				{ threadId: randomUUID(), title: "Brief", scope: "blog", deliverables: ["blog_post"], campaignId: "nonexistent" },
+				{ db, agentSlug: "director", agentSessionId: randomUUID(), emit },
+			),
+		).rejects.toThrow("Campaign nonexistent not found");
+	});
 });

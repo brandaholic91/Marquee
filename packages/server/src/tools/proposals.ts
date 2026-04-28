@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { briefs, campaigns, memoryProposals } from "../db/schema.js";
 import type { AgentToolDef } from "./types.js";
@@ -9,6 +10,7 @@ const proposeBriefInput = z.object({
 	scope: z.string(),
 	deliverables: z.array(z.string()).min(1),
 	deadline: z.string().optional(),
+	campaignId: z.string().optional(),
 });
 
 export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { briefId: string }> = {
@@ -22,13 +24,21 @@ export const proposeBrief: AgentToolDef<z.infer<typeof proposeBriefInput>, { bri
 			scope: { type: "string" },
 			deliverables: { type: "array", items: { type: "string" }, minItems: 1 },
 			deadline: { type: "string" },
+			campaignId: { type: "string" },
 		},
 		required: ["threadId", "title", "scope", "deliverables"],
 	},
 	input: proposeBriefInput,
 	async execute(input, ctx) {
-		const campaignId = randomUUID();
-		ctx.db.insert(campaigns).values({ id: campaignId, title: input.title, status: "active" }).run();
+		let campaignId: string;
+		if (input.campaignId) {
+			const existing = ctx.db.select().from(campaigns).where(eq(campaigns.id, input.campaignId)).get();
+			if (!existing) throw new Error(`Campaign ${input.campaignId} not found`);
+			campaignId = input.campaignId;
+		} else {
+			campaignId = randomUUID();
+			ctx.db.insert(campaigns).values({ id: campaignId, title: input.title, status: "active" }).run();
+		}
 
 		const id = randomUUID();
 		const md = [
