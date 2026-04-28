@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { schedule } from "node-cron";
 import { openDb } from "./db/index.js";
 import { Broker } from "./broker/event-bus.js";
 import { AgentRouter } from "./broker/router.js";
@@ -8,6 +9,7 @@ import { EvalTrigger } from "./broker/eval-trigger.js";
 import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
 import { TaskManager } from "./tasks/manager.js";
+import { runDailySummary } from "./cron/daily-summary.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -38,6 +40,7 @@ async function main() {
 
 	await app.listen({ host: "0.0.0.0", port });
 	console.log(`marquee server listening on :${port}`);
+	schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
 }
 
 main().catch((e) => {

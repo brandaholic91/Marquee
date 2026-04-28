@@ -12,6 +12,7 @@
     "format": "biome format --write ."
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "typebox": "1.1.24"
   },
   "devDependencies": {
