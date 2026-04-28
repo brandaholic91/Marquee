@@ -15,7 +15,7 @@ function makeServer(db: AgencyDb, dataDir: string) {
   return buildServer({ db, broker, router, dataDir, webRoot: "/nonexistent" });
 }
 
-function insertTask(db: AgencyDb, status = "open" as const) {
+function insertTask(db: AgencyDb, status: "open" | "in_progress" | "done" | "blocked" = "open") {
   const delegationId = randomUUID();
   db.insert(delegations).values({
     id: delegationId, fromAgent: "director", toAgent: "copywriter",

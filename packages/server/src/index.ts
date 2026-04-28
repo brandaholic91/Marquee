@@ -33,14 +33,16 @@ async function main() {
 	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
 	const app = await buildServer({ db, broker, router, dataDir, webRoot });
 
+	const cronTask = schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
+
 	process.on("SIGTERM", async () => {
+		cronTask.stop();
 		await app.close();
 		close();
 	});
 
 	await app.listen({ host: "0.0.0.0", port });
 	console.log(`marquee server listening on :${port}`);
-	schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
 }
 
 main().catch((e) => {
