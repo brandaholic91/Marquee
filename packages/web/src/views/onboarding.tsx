@@ -1,460 +1,270 @@
 import { useState, useEffect, useRef } from "react";
 import { Avatar } from "../components/ui/index.js";
+import { api } from "../lib/api.js";
+import { agencyEvents } from "../lib/sse.js";
 import { useAgencyStore } from "../store/useAgencyStore.js";
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
-interface ChatMsg {
-  role: "director" | "user";
+interface Msg {
+  id: string;
+  sender: "human" | "director";
   text: string;
 }
 
-// ── Scripted conversation ──────────────────────────────────────────────────
-
-const DIRECTOR_QUESTIONS = [
-  "What's your company or product name?",
-  "Who is your ideal customer? Describe them in a sentence.",
-  "What's your main value proposition — what do you help them do faster, better, or cheaper?",
-  "Finally, how would you describe your brand voice? (e.g. data-driven and direct, friendly and encouraging, authoritative)",
-];
-
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-function WelcomeHeader() {
-  return (
-    <div>
-      <div className="display-lg">Your marketing team is ready.</div>
-      <div
-        className="body-md"
-        style={{ color: "var(--ink-2)", marginTop: 12, maxWidth: 560 }}
-      >
-        Let's set up your workspace. I'll ask a few questions to build a shared
-        memory your agents will use on every campaign.
-      </div>
-    </div>
-  );
+interface Proposal {
+  id: string;
+  file: string;
+  patch: string;
+  status: "pending" | "approved" | "rejected";
 }
-
-interface OMsgProps {
-  text: string;
-}
-
-function OMsg({ text }: OMsgProps) {
-  return (
-    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-      <Avatar who="director" size="sm" />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 8,
-            marginBottom: 4,
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Director</span>
-        </div>
-        <div className="body-md" style={{ color: "var(--ink-1)" }}>
-          {text}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface UserMsgProps {
-  text: string;
-}
-
-function UserMsg({ text }: UserMsgProps) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 12,
-        alignItems: "flex-start",
-        justifyContent: "flex-end",
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 8,
-            marginBottom: 4,
-            justifyContent: "flex-end",
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 600 }}>You</span>
-        </div>
-        <div
-          className="body-md"
-          style={{
-            color: "var(--ink-1)",
-            background: "var(--white)",
-            border: "1px solid var(--rule)",
-            borderRadius: 6,
-            padding: "8px 12px",
-            display: "inline-block",
-            maxWidth: "80%",
-            textAlign: "left",
-          }}
-        >
-          {text}
-        </div>
-      </div>
-      <Avatar who="human" size="sm" />
-    </div>
-  );
-}
-
-interface MemoryProposalCardProps {
-  answers: string[];
-  onApprove: () => void;
-  onEdit: () => void;
-  onDiscard: () => void;
-}
-
-function MemoryProposalCard({
-  answers,
-  onApprove,
-  onEdit,
-  onDiscard,
-}: MemoryProposalCardProps) {
-  const yaml = [
-    `client_name: ${answers[0] ?? ""}`,
-    `icp: ${answers[1] ?? ""}`,
-    `usp: ${answers[2] ?? ""}`,
-    `brand_voice: ${answers[3] ?? ""}`,
-  ].join("\n");
-
-  return (
-    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-      <Avatar who="director" size="sm" />
-      <div style={{ flex: 1 }}>
-        <div
-          className="card"
-          style={{
-            border: "2px solid var(--secondary)",
-            borderRadius: 6,
-            background: "var(--white)",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              padding: "14px 18px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              borderBottom: "1px solid var(--rule)",
-              background: "var(--secondary-soft)",
-            }}
-          >
-            <span
-              className="mono"
-              style={{
-                fontSize: 11,
-                color: "var(--warning-deep)",
-                letterSpacing: "0.08em",
-                fontWeight: 600,
-              }}
-            >
-              MEMORY · PROPOSAL
-            </span>
-            <span
-              className="body-sm"
-              style={{ color: "var(--warning-deep)", marginLeft: "auto" }}
-            >
-              director · just now
-            </span>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div className="title-md">Client profile draft</div>
-            <p className="body-md" style={{ color: "var(--ink-2)", marginTop: 6 }}>
-              I'll save this to{" "}
-              <code
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 13,
-                  color: "var(--ink-1)",
-                }}
-              >
-                client_profile.md
-              </code>{" "}
-              so the team can reference it on every campaign.
-            </p>
-
-            <pre
-              className="mono"
-              style={{
-                marginTop: 16,
-                padding: "12px 16px",
-                background: "var(--parchment, #F2EBDA)",
-                borderRadius: 4,
-                fontSize: 12,
-                lineHeight: 1.7,
-                color: "var(--ink-1)",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {yaml}
-            </pre>
-
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-              <button className="btn btn-primary" onClick={onApprove}>
-                Approve &amp; save
-              </button>
-              <button className="btn btn-secondary" onClick={onEdit}>
-                Edit
-              </button>
-              <button className="btn btn-ghost" onClick={onDiscard}>
-                Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface ReplyInputProps {
-  value: string;
-  onChange: (v: string) => void;
-  onSend: () => void;
-  disabled?: boolean;
-  placeholder?: string;
-}
-
-function ReplyInput({
-  value,
-  onChange,
-  onSend,
-  disabled = false,
-  placeholder = "Reply to Director…",
-}: ReplyInputProps) {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (!disabled && value.trim()) onSend();
-    }
-  };
-
-  return (
-    <div style={{ position: "sticky", bottom: 24, marginTop: 24, paddingBottom: 24 }}>
-      <div
-        className="card"
-        style={{
-          padding: 14,
-          background: "var(--white)",
-          borderColor: "var(--rule-strong)",
-        }}
-      >
-        <textarea
-          className="textarea-chat"
-          style={{ border: 0, padding: 4, minHeight: 56, width: "100%", resize: "none" }}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 8,
-          }}
-        >
-          <div className="body-sm muted">⏎ to send</div>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={onSend}
-            disabled={disabled || !value.trim()}
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main view ──────────────────────────────────────────────────────────────
 
 export function OnboardingView() {
-  const [step, setStep] = useState(0); // 0=welcome, 1-4=questions, 5=proposal
-  const [answers, setAnswers] = useState<string[]>([]);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [typing, setTyping] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const setView = useAgencyStore((s) => s.setView);
 
-  // Kick off first question when the component mounts
+  // Start onboarding thread on mount
   useEffect(() => {
-    setTimeout(() => {
-      setMessages([{ role: "director", text: DIRECTOR_QUESTIONS[0] }]);
-      setStep(1);
-    }, 400);
+    api.onboarding.start().then(({ threadId: tid }) => {
+      setThreadId(tid);
+    }).catch(console.error);
   }, []);
 
-  // Scroll to bottom on new messages
+  // Subscribe to SSE events once we have a threadId
+  useEffect(() => {
+    if (!threadId) return;
+
+    const unsubs: (() => void)[] = [];
+
+    unsubs.push(agencyEvents.on("agent_message", (ev) => {
+      const e = ev as { threadId?: string; text?: string; agentSlug?: string };
+      if (e.threadId !== threadId) return;
+      setTyping(false);
+      setMsgs((prev) => [...prev, {
+        id: Math.random().toString(36).slice(2),
+        sender: "director",
+        text: e.text ?? "",
+      }]);
+    }));
+
+    unsubs.push(agencyEvents.on("agent_typing", (ev) => {
+      const e = ev as { threadId?: string };
+      if (e.threadId === threadId) setTyping(true);
+    }));
+
+    unsubs.push(agencyEvents.on("memory_proposed", (ev) => {
+      const e = ev as { proposalId?: string; file?: string };
+      if (!e.proposalId) return;
+      // Fetch full proposal details
+      fetch("/api/memory-proposals").then((r) => r.json()).then((all: Proposal[]) => {
+        const p = all.find((x) => x.id === e.proposalId);
+        if (p) setProposals((prev) => [...prev.filter((x) => x.id !== p.id), p]);
+      }).catch(() => {});
+    }));
+
+    return () => unsubs.forEach((u) => u());
+  }, [threadId]);
+
+  // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [msgs, proposals, typing]);
 
-  const handleSend = () => {
+  async function handleSend() {
     const text = inputText.trim();
-    if (!text) return;
-
-    // Add user message
-    const newAnswers = [...answers, text];
-    setAnswers(newAnswers);
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    if (!text || !threadId || sending) return;
+    setSending(true);
     setInputText("");
-
-    const nextStep = step + 1;
-    setStep(nextStep);
-
-    if (nextStep <= 4) {
-      // Show next question after short delay
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { role: "director", text: DIRECTOR_QUESTIONS[nextStep - 1] },
-        ]);
-      }, 500);
-    }
-    // step 5 = proposal card, no additional director message needed
-  };
-
-  const handleApprove = async () => {
-    const profile = {
-      client_name: answers[0] ?? "",
-      icp: answers[1] ?? "",
-      usp: answers[2] ?? "",
-      brand_voice: answers[3] ?? "",
-    };
+    setMsgs((prev) => [...prev, {
+      id: Math.random().toString(36).slice(2),
+      sender: "human",
+      text,
+    }]);
     try {
-      await fetch("/api/memory/files", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ filename: "client_profile.md", content: profile }),
-      });
-    } catch {
-      // best-effort — proceed regardless
+      await api.messages.post(threadId, text);
+    } finally {
+      setSending(false);
     }
-    setView("home");
-  };
+  }
 
-  const handleDiscard = () => {
-    setAnswers([]);
-    setInputText("");
-    setStep(0);
-    setMessages([]);
-    setTimeout(() => {
-      setMessages([{ role: "director", text: DIRECTOR_QUESTIONS[0] }]);
-      setStep(1);
-    }, 400);
-  };
+  async function handleApprove(proposalId: string) {
+    await api.memory.approve(proposalId).catch(() => {});
+    setProposals((prev) => prev.map((p) => p.id === proposalId ? { ...p, status: "approved" } : p));
+  }
 
-  const handleEdit = () => {
-    // Drop back to step 4 so user can re-answer the last question
-    const trimmedAnswers = answers.slice(0, 3);
-    setAnswers(trimmedAnswers);
-    const trimmedMessages = messages.slice(0, messages.length - 1); // remove last user msg
-    setMessages(trimmedMessages);
-    setStep(4);
-    setInputText(answers[3] ?? "");
-  };
+  async function handleReject(proposalId: string) {
+    await api.memory.reject(proposalId).catch(() => {});
+    setProposals((prev) => prev.map((p) => p.id === proposalId ? { ...p, status: "rejected" } : p));
+  }
 
-  const showProposal = step === 5;
-  const inputDisabled = showProposal;
+  const allApproved = proposals.length > 0 && proposals.every((p) => p.status === "approved");
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: `radial-gradient(ellipse at top, #F2EBDA 0%, #EFE8DA 60%)`,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Slim top bar */}
-      <div
-        style={{
-          padding: "24px 32px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div
-          className="mono"
-          style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--ink-2)" }}
-        >
+    <div style={{
+      minHeight: "100vh",
+      background: "radial-gradient(ellipse at top, #F2EBDA 0%, #EFE8DA 60%)",
+      display: "flex",
+      flexDirection: "column",
+    }}>
+      {/* Top bar */}
+      <div style={{ padding: "24px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "var(--ink-2)", fontFamily: "var(--font-mono)" }}>
           MARQUEE
         </div>
         <button
-          className="btn btn-ghost btn-sm"
           onClick={() => setView("home")}
-          style={{ fontSize: 13 }}
+          style={{ fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)" }}
         >
           Skip to dashboard →
         </button>
       </div>
 
-      {/* Centered chat container */}
-      <div
-        style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 32px 0" }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 768,
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-          }}
-        >
-          <WelcomeHeader />
+      {/* Chat container */}
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 32px 0" }}>
+        <div style={{ width: "100%", maxWidth: 768, display: "flex", flexDirection: "column", gap: 24 }}>
 
-          <hr className="hr" />
+          {/* Header */}
+          <div>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.02em" }}>
+              Your marketing team is ready.
+            </div>
+            <div style={{ color: "var(--ink-2)", marginTop: 12, maxWidth: 560, fontSize: 15, lineHeight: 1.5 }}>
+              The Director will ask a few questions to build a shared memory your agents will reference on every campaign.
+            </div>
+          </div>
 
-          {/* Message thread */}
+          <hr style={{ border: "none", borderTop: "1px solid var(--rule)" }} />
+
+          {/* Messages */}
           <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            {messages.map((m, i) =>
-              m.role === "director" ? (
-                <OMsg key={i} text={m.text} />
-              ) : (
-                <UserMsg key={i} text={m.text} />
-              ),
+            {msgs.map((m) => m.sender === "director" ? (
+              <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Avatar who="director" size="sm" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Director</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)", whiteSpace: "pre-wrap" }}>{m.text}</div>
+                </div>
+              </div>
+            ) : (
+              <div key={m.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "flex-end" }}>
+                <div style={{ flex: 1, textAlign: "right" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>You</div>
+                  <div style={{
+                    fontSize: 15, lineHeight: 1.6, color: "var(--ink-1)",
+                    background: "var(--white)", border: "1px solid var(--rule)",
+                    borderRadius: 6, padding: "8px 12px", display: "inline-block", maxWidth: "80%", textAlign: "left",
+                  }}>
+                    {m.text}
+                  </div>
+                </div>
+                <Avatar who="human" size="sm" />
+              </div>
+            ))}
+
+            {typing && (
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Avatar who="director" size="sm" />
+                <div style={{ color: "var(--ink-3)", fontSize: 13, paddingTop: 4 }}>Typing…</div>
+              </div>
             )}
 
-            {showProposal && (
-              <MemoryProposalCard
-                answers={answers}
-                onApprove={handleApprove}
-                onEdit={handleEdit}
-                onDiscard={handleDiscard}
-              />
+            {/* Memory proposals */}
+            {proposals.map((p) => (
+              <div key={p.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Avatar who="director" size="sm" />
+                <div style={{
+                  flex: 1, border: "2px solid var(--secondary)", borderRadius: 6,
+                  background: "var(--white)", overflow: "hidden",
+                }}>
+                  <div style={{
+                    padding: "12px 16px", display: "flex", alignItems: "center", gap: 8,
+                    borderBottom: "1px solid var(--rule)", background: "var(--secondary-soft)",
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--warning-deep)", fontFamily: "var(--font-mono)" }}>
+                      MEMORY · PROPOSAL
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: "auto" }}>{p.file}</span>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <pre style={{
+                      padding: "10px 14px", background: "var(--parchment)", borderRadius: 4,
+                      fontSize: 12, lineHeight: 1.7, color: "var(--ink-1)", whiteSpace: "pre-wrap", wordBreak: "break-word",
+                      margin: 0,
+                    }}>
+                      {p.patch}
+                    </pre>
+                    {p.status === "pending" && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                        <button
+                          onClick={() => handleApprove(p.id)}
+                          style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
+                        >
+                          Approve &amp; save
+                        </button>
+                        <button
+                          onClick={() => handleReject(p.id)}
+                          style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {p.status === "approved" && (
+                      <div style={{ marginTop: 10, fontSize: 13, color: "var(--success, #2d7a4f)", fontWeight: 500 }}>✓ Saved</div>
+                    )}
+                    {p.status === "rejected" && (
+                      <div style={{ marginTop: 10, fontSize: 13, color: "var(--ink-3)" }}>Rejected</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Setup complete CTA */}
+            {allApproved && (
+              <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 32px" }}>
+                <button
+                  onClick={() => setView("home")}
+                  style={{ padding: "12px 32px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 15, fontWeight: 600 }}
+                >
+                  Go to dashboard →
+                </button>
+              </div>
             )}
 
             <div ref={bottomRef} />
           </div>
 
-          {/* Sticky reply input */}
-          {!showProposal && (
-            <ReplyInput
-              value={inputText}
-              onChange={setInputText}
-              onSend={handleSend}
-              disabled={inputDisabled}
-            />
+          {/* Input */}
+          {!allApproved && (
+            <div style={{ position: "sticky", bottom: 24, marginTop: 8, paddingBottom: 24 }}>
+              <div style={{ padding: 14, background: "var(--white)", border: "1px solid var(--rule-strong)", borderRadius: 6 }}>
+                <textarea
+                  style={{ border: 0, padding: 4, minHeight: 56, width: "100%", resize: "none", fontSize: 14, fontFamily: "inherit", background: "transparent", outline: "none" }}
+                  placeholder="Reply to Director…"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+                  }}
+                  disabled={sending || !threadId}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                  <span style={{ fontSize: 12, color: "var(--ink-3)" }}>⏎ to send</span>
+                  <button
+                    onClick={handleSend}
+                    disabled={sending || !inputText.trim() || !threadId}
+                    style={{ padding: "6px 16px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", fontSize: 13 }}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -105,6 +105,9 @@ export const api = {
         body: JSON.stringify(body),
       }).then(json),
   },
+  onboarding: {
+    start: () => post<{ threadId: string }>("/api/onboarding/start", {}),
+  },
   snapshot: () => fetch("/api/state/snapshot").then(json),
   tasks: {
     list: (params?: { assigned_to?: string; status?: string; campaignId?: string }) => {
