@@ -376,6 +376,70 @@ function UsageWidget({ stats }: { stats: UsageStats | null }) {
   );
 }
 
+// ---- QualityWidget ----
+
+interface QualityStats {
+  days: { date: string; brand_voice: number; factual_accuracy: number; usp_usage: number; count: number }[];
+  avg: { brand_voice: number; factual_accuracy: number; usp_usage: number };
+}
+
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2) return <span style={{ color: "var(--ink-3)", fontSize: 11 }}>—</span>;
+  const W = 120, H = 20;
+  const xStep = W / (values.length - 1);
+  const toY = (v: number) => H - ((v - 1) / (5 - 1)) * H;
+  const points = values.map((v, i) => `${i * xStep},${toY(v)}`).join(" ");
+  return (
+    <svg width={W} height={H} style={{ display: "inline-block", verticalAlign: "middle" }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const DIM_COLOR: Record<string, string> = {
+  brand_voice: "var(--bulb)",
+  factual_accuracy: "#4a9e8e",
+  usp_usage: "#7c6fbf",
+};
+
+const DIM_LABEL: Record<string, string> = {
+  brand_voice: "brand voice",
+  factual_accuracy: "factual acc.",
+  usp_usage: "usp usage",
+};
+
+function QualityWidget({ stats }: { stats: QualityStats | null }) {
+  if (!stats) return (
+    <Widget title="Quality">
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
+    </Widget>
+  );
+  if (stats.days.length === 0) return (
+    <Widget title="Quality" right={<span className="caption" style={{ color: "var(--ink-3)" }}>last 30 days</span>}>
+      <div style={{ padding: "20px 18px", color: "var(--ink-3)", fontSize: 13 }}>No evals yet.</div>
+    </Widget>
+  );
+
+  const dims = ["brand_voice", "factual_accuracy", "usp_usage"] as const;
+  return (
+    <Widget title="Quality" right={<span className="caption" style={{ color: "var(--ink-3)" }}>last 30 days</span>}>
+      <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {dims.map((dim) => (
+          <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 72, fontSize: 12, color: "var(--ink-2)", flexShrink: 0 }}>
+              {DIM_LABEL[dim]}
+            </span>
+            <span style={{ width: 28, fontSize: 13, fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+              {stats.avg[dim].toFixed(1)}
+            </span>
+            <Sparkline values={stats.days.map((d) => d[dim])} color={DIM_COLOR[dim]} />
+          </div>
+        ))}
+      </div>
+    </Widget>
+  );
+}
+
 // ---- ConversationsWidget ----
 
 function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefresh: () => void }) {
@@ -455,6 +519,7 @@ export function HomeView() {
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [showBriefForm, setShowBriefForm] = useState(false);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
+  const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
   const refreshPendingRef = useRef(false);
   const { isMobile } = useBreakpoint();
 
@@ -470,6 +535,7 @@ export function HomeView() {
   useEffect(() => {
     refresh();
     api.stats.usage().then(setUsageStats).catch(() => {});
+    api.stats.quality().then(setQualityStats).catch(() => {});
     agencyEvents.start();
     const unsub = agencyEvents.on("*", (ev) => {
       const typed = ev as { type?: string; agentSlug?: string };
@@ -523,6 +589,7 @@ export function HomeView() {
           <PipelineWidget pipeline={snapshot.pipeline} />
           <ConversationsWidget threads={snapshot.threads} onRefresh={refresh} />
           <UsageWidget stats={usageStats} />
+          <QualityWidget stats={qualityStats} />
         </div>
       </main>
 
