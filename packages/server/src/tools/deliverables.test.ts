@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import { openDb, type AgencyDb } from "../db/index.js";
 import { delegations, deliverables } from "../db/schema.js";
 import { makeSubmitDeliverable, readDeliverable } from "./deliverables.js";
@@ -78,6 +79,70 @@ describe("deliverable tools", () => {
 		);
 		expect(result.contentMd).toBe("B".repeat(60));
 		expect(result.title).toBe("Read Test");
+	});
+});
+
+describe("source_deliverable_id", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "agency-deliverable-tool-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+		const dlgId = randomUUID();
+		db.insert(delegations).values({
+			id: dlgId, fromAgent: "content-lead", toAgent: "copywriter",
+			status: "requested", payloadJson: {} as never,
+		}).run();
+		(db as any)._testDlgId = dlgId;
+	});
+
+	afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+	it("stores source_deliverable_id when provided", async () => {
+		const tool = makeSubmitDeliverable(dir);
+		const dlgId = (db as any)._testDlgId as string;
+
+		// Create the "source" deliverable first
+		const sourceDlgId = randomUUID();
+		const sourceDelId = randomUUID();
+		db.insert(delegations).values({
+			id: sourceDlgId, fromAgent: "director", toAgent: "content-lead",
+			status: "complete", payloadJson: {} as never,
+		}).run();
+		db.insert(deliverables).values({
+			id: sourceDelId, delegationId: sourceDlgId, type: "blog_post",
+			title: "Original", status: "shipped",
+		}).run();
+
+		const emit = vi.fn();
+		const result = await tool.execute(
+			{
+				type: "linkedin_post",
+				title: "LinkedIn version",
+				contentMd: "A".repeat(60),
+				source_deliverable_id: sourceDelId,
+			},
+			{ db, agentSlug: "repurposer", agentSessionId: "s1", delegationId: dlgId, emit },
+		);
+
+		const row = db.select().from(deliverables).where(eq(deliverables.id, result.deliverableId)).get();
+		expect(row?.sourceDeliverableId).toBe(sourceDelId);
+	});
+
+	it("leaves sourceDeliverableId null when not provided", async () => {
+		const tool = makeSubmitDeliverable(dir);
+		const dlgId = (db as any)._testDlgId as string;
+		const emit = vi.fn();
+		const result = await tool.execute(
+			{ type: "blog_post", title: "Post", contentMd: "A".repeat(60) },
+			{ db, agentSlug: "copywriter", agentSessionId: "s1", delegationId: dlgId, emit },
+		);
+		const row = db.select().from(deliverables).where(eq(deliverables.id, result.deliverableId)).get();
+		expect(row?.sourceDeliverableId).toBeNull();
 	});
 });
 

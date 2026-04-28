@@ -10,6 +10,7 @@ const submitDeliverableInput = z.object({
 	type: z.string(),
 	title: z.string(),
 	contentMd: z.string().min(50),
+	source_deliverable_id: z.string().optional(),
 });
 
 export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
@@ -25,6 +26,7 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 				type: { type: "string" },
 				title: { type: "string" },
 				contentMd: { type: "string", minLength: 50 },
+				source_deliverable_id: { type: "string" },
 			},
 			required: ["type", "title", "contentMd"],
 		},
@@ -42,6 +44,7 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 				id: deliverableId, delegationId: ctx.delegationId,
 				type: input.type, title: input.title, status: "awaiting_eval",
 				currentRevisionId: revisionId,
+				sourceDeliverableId: input.source_deliverable_id ?? null,
 			}).run();
 			ctx.db.insert(deliverableRevisions).values({
 				id: revisionId, deliverableId, artifactPath, createdByAgent: ctx.agentSlug,
