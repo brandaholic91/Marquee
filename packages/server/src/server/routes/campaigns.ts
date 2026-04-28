@@ -6,10 +6,12 @@ import { briefs, campaigns, deliverables, tasks } from "../../db/schema.js";
 export function registerCampaignRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get("/api/campaigns", async () => {
 		const allCampaigns = opts.db.select().from(campaigns).all();
+		const allBriefs = opts.db.select().from(briefs).all();
 		const allDeliverables = opts.db.select().from(deliverables).all();
 		const allTasks = opts.db.select().from(tasks).all();
 		return allCampaigns.map((c) => ({
 			...c,
+			briefCount: allBriefs.filter((b) => b.campaignId === c.id).length,
 			deliverableCount: allDeliverables.filter((d) => d.campaignId === c.id).length,
 			taskCount: allTasks.filter((t) => t.campaignId === c.id).length,
 			pendingApprovals: allDeliverables.filter((d) => d.campaignId === c.id && d.status === "awaiting_approval").length,

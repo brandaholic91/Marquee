@@ -97,13 +97,7 @@ export const api = {
   },
   campaigns: {
     list: () => fetch("/api/campaigns").then(json) as Promise<import("../store/useAgencyStore").Campaign[]>,
-    get: (id: string) => fetch(`/api/campaigns/${id}`).then(json) as Promise<
-      import("../store/useAgencyStore").Campaign & {
-        briefs: { id: string; status: string; contentMd: string; createdAt: string }[];
-        deliverables: { id: string; title: string; type: string; status: string }[];
-        tasks: { id: string; title: string; status: string; assignedTo: string }[];
-      }
-    >,
+    get: (id: string) => fetch(`/api/campaigns/${id}`).then(json) as Promise<import("../store/useAgencyStore.js").CampaignDetail>,
     patch: (id: string, body: { title?: string; description?: string; status?: string }) =>
       fetch(`/api/campaigns/${id}`, {
         method: "PATCH",

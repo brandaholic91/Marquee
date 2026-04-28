@@ -2,19 +2,13 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { Sidebar } from "../components/layout/Sidebar.js";
 import { useBreakpoint } from "../hooks/useBreakpoint.js";
-import type { Campaign } from "../store/useAgencyStore.js";
+import type { Campaign, CampaignDetail } from "../store/useAgencyStore.js";
 
 const STATUS_COLOR: Record<string, string> = {
   active: "var(--success, #2d7a4f)",
   completed: "var(--ink-2)",
   archived: "var(--ink-3)",
 };
-
-interface CampaignDetail extends Campaign {
-  briefs: { id: string; status: string; contentMd: string; createdAt: string }[];
-  deliverables: { id: string; title: string; type: string; status: string }[];
-  tasks: { id: string; title: string; status: string; assignedTo: string }[];
-}
 
 function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: CampaignDetail; isMobile?: boolean }) {
   const pad = isMobile ? 16 : 32;
@@ -132,7 +126,7 @@ export function CampaignsView() {
                 {c.title}
               </div>
               <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                {c.deliverableCount ?? 0} deliverable{c.deliverableCount !== 1 ? "s" : ""} · {c.taskCount ?? 0} tasks
+                {c.briefCount ?? 0} brief{c.briefCount !== 1 ? "s" : ""} · {c.deliverableCount ?? 0} deliverable{c.deliverableCount !== 1 ? "s" : ""} · {c.taskCount ?? 0} tasks
                 {(c.pendingApprovals ?? 0) > 0 && <span style={{ color: "var(--accent)" }}> · {c.pendingApprovals} pending</span>}
               </div>
             </div>

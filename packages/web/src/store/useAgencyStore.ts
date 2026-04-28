@@ -19,9 +19,16 @@ export interface Campaign {
   description: string | null;
   status: "active" | "completed" | "archived";
   createdAt: string;
+  briefCount?: number;
   deliverableCount?: number;
   taskCount?: number;
   pendingApprovals?: number;
+}
+
+export interface CampaignDetail extends Campaign {
+  briefs: { id: string; status: string; contentMd: string; createdAt: string }[];
+  deliverables: { id: string; title: string; type: string; status: string }[];
+  tasks: { id: string; title: string; status: string; assignedTo: string }[];
 }
 
 interface AgencyState {
