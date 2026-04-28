@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
@@ -26,13 +25,13 @@ const TEAM: { slug: string; name: string }[] = [
 
 export interface SidebarProps {
   activeNav: NavId;
-  collapsed?: boolean;
   activeAgents?: string[];
 }
 
-export function Sidebar({ activeNav, collapsed: initialCollapsed = false, activeAgents }: SidebarProps) {
+export function Sidebar({ activeNav, activeAgents }: SidebarProps) {
   const setView = useAgencyStore((s) => s.setView);
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const collapsed = useAgencyStore((s) => s.sidebarCollapsed);
+  const setCollapsed = useAgencyStore((s) => s.setSidebarCollapsed);
 
   function handleNav(id: NavId) {
     if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents") {

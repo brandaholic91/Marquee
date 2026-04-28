@@ -739,7 +739,7 @@ export function DeliverableView() {
   if (!selectedDeliverableId || !deliverable) {
     return (
       <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
-        <Sidebar activeNav="home" collapsed />
+        <Sidebar activeNav="home" />
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-3)", fontSize: 14 }}>
           {selectedDeliverableId ? "Loading…" : "Select a deliverable"}
         </main>
@@ -761,7 +761,7 @@ export function DeliverableView() {
 
   return (
     <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
-      <Sidebar activeNav="home" collapsed />
+      <Sidebar activeNav="home" />
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "auto" }}>
         <DeliverableTopBar
           deliverable={deliverable}

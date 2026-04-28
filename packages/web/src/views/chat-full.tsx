@@ -676,7 +676,7 @@ export function ChatFullView() {
       }}
     >
       {/* Collapsed sidebar */}
-      <Sidebar activeNav="home" collapsed />
+      <Sidebar activeNav="home" />
 
       {/* Main thread column */}
       <main

@@ -19,8 +19,10 @@ interface AgencyState {
   selectedDeliverableId: string | null;
   selectedMemoryFile: string | null;
   tasks: Task[];
+  sidebarCollapsed: boolean;
   setActiveThread: (id: string | null) => void;
   setDrawerOpen: (open: boolean) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   setView: (view: AgencyState["currentView"]) => void;
   setSelectedDeliverable: (id: string | null) => void;
   setSelectedMemoryFile: (file: string | null) => void;
@@ -35,8 +37,10 @@ export const useAgencyStore = create<AgencyState>((set) => ({
   selectedDeliverableId: null,
   selectedMemoryFile: null,
   tasks: [],
+  sidebarCollapsed: false,
   setActiveThread: (id) => set({ activeThreadId: id }),
   setDrawerOpen: (open) => set({ drawerOpen: open }),
+  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setView: (view) => set({ currentView: view }),
   setSelectedDeliverable: (id) => set({ selectedDeliverableId: id, currentView: "deliverable" }),
   setSelectedMemoryFile: (file) => set({ selectedMemoryFile: file }),
