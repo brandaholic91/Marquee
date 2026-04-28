@@ -35,8 +35,8 @@ export const api = {
     list: () => fetch("/api/briefs").then(json),
     dispatch: (id: string) =>
       fetch(`/api/briefs/${id}/dispatch`, { method: "POST" }).then(json),
-    create: (contentMd: string) =>
-      post<{ id: string; ok: boolean }>("/api/briefs", { contentMd }),
+    create: (contentMd: string, campaignId?: string) =>
+      post<{ id: string; ok: boolean }>("/api/briefs", { contentMd, ...(campaignId ? { campaignId } : {}) }),
   },
   approvals: {
     decide: (

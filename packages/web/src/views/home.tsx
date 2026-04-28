@@ -99,12 +99,18 @@ function HomeHeader({ onNewBrief }: { onNewBrief: () => void }) {
 function NewBriefForm({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [campaigns, setCampaigns] = useState<import("../store/useAgencyStore.js").Campaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+
+  useEffect(() => {
+    api.campaigns.list().then(setCampaigns).catch(() => {});
+  }, []);
 
   async function handleSubmit() {
     if (!text.trim()) return;
     setSubmitting(true);
     try {
-      await api.briefs.create(text.trim());
+      await api.briefs.create(text.trim(), selectedCampaignId || undefined);
       onClose();
     } finally {
       setSubmitting(false);
@@ -120,6 +126,21 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
+      {campaigns.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <label className="caption" style={{ display: "block", marginBottom: 4 }}>Campaign</label>
+          <select
+            value={selectedCampaignId}
+            onChange={(e) => setSelectedCampaignId(e.target.value)}
+            style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
+          >
+            <option value="">— New campaign —</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
         <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={submitting}>
           Cancel
