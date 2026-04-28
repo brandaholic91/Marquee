@@ -3,6 +3,7 @@
 ## Projekt összefoglaló
 
 Marquee egy AI marketing ügynökség orchestration felület, amely a WUPHF-et váltotta fel. A backend `pi-agent-core`-on alapul, a frontend React + Vite SPA. Jelenlegi verzió: **v0.1.0**.
+A projekt specifikációja a /Homelab/marquee/docs/superpowers/specs mappában található.
 
 ## Technológiai stack
 
