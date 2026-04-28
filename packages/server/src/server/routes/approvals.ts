@@ -20,6 +20,9 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 		} else if (decision === "rejected") {
 			opts.db.update(deliverables).set({ status: "archived", updatedAt: new Date() })
 				.where(eq(deliverables.id, id)).run();
+		} else if (decision === "requested_changes") {
+			opts.db.update(deliverables).set({ status: "drafting", updatedAt: new Date() })
+				.where(eq(deliverables.id, id)).run();
 		}
 		opts.broker.emit("approval_decision", { deliverableId: id, decision });
 		return { ok: true };
