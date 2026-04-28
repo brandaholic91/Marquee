@@ -591,7 +591,7 @@ function StickyInput({
             onClick={() => void handleSend()}
             disabled={sending || !text.trim()}
           >
-            Send
+            Küldés
           </button>
         </div>
       </div>
