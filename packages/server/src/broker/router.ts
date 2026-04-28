@@ -179,6 +179,13 @@ export class AgentRouter {
 		return [...this.warmAgents.keys()];
 	}
 
+	/** Deliver a plain-text nudge to a warm agent. Implemented fully in Task 3. */
+	promptWarmAgent(role: string, message: string): void {
+		const agent = this.warmAgents.get(role);
+		if (!agent) return;
+		agent.prompt(message).catch(console.error);
+	}
+
 	queueBrief(briefId: string): void {
 		const brief = this.db.select().from(briefs).where(eq(briefs.id, briefId)).get();
 		if (!brief) {
