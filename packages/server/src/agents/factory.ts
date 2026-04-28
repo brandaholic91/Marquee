@@ -12,6 +12,7 @@ import type { ToolContext } from "../tools/types.js";
 import { convertToLlm } from "./convert-to-llm.js";
 import { makeTransformContext } from "./transform-context.js";
 import { loadAgentConfig, buildBehaviorBlock } from "./config.js";
+import type { AuthManager } from "../providers/auth.js";
 
 export interface MakeAgentOpts {
 	role: string;
@@ -20,6 +21,7 @@ export interface MakeAgentOpts {
 	sessionId: string;
 	delegationId?: string;
 	threadId?: string;
+	authManager?: AuthManager;
 	emit: (eventType: string, payload: Record<string, unknown>) => void;
 }
 
@@ -61,7 +63,8 @@ export function makeAgent(opts: MakeAgentOpts): Agent {
 	};
 
 	const rawTools = toolsForRole(opts.role, opts.dataDir);
-	const model = modelForRole(opts.role);
+	const config = loadAgentConfig(opts.dataDir, opts.role);
+	const model = modelForRole(opts.role, config?.model ?? undefined);
 
 	const agentTools: AgentTool<TSchema>[] = rawTools.map((t) => ({
 		name: t.name,
@@ -76,8 +79,9 @@ export function makeAgent(opts: MakeAgentOpts): Agent {
 				const parsed = t.input.parse(params);
 				const value = await t.execute(parsed, toolCtx);
 				const text = typeof value === "string" ? value : JSON.stringify(value);
+				const prefixed = `[tool:${t.name}]\n${text}`;
 				return {
-					content: [{ type: "text", text }],
+					content: [{ type: "text", text: prefixed }],
 					details: value,
 				};
 			} catch (e) {
@@ -101,6 +105,7 @@ export function makeAgent(opts: MakeAgentOpts): Agent {
 		},
 		convertToLlm: convertToLlm as never,
 		transformContext: transformContextFn as never,
-		getApiKey: (provider: string) => getEnvApiKey(provider) ?? undefined,
+		getApiKey: (provider: string) =>
+			opts.authManager?.getApiKey(provider) ?? getEnvApiKey(provider) ?? undefined,
 	});
 }
