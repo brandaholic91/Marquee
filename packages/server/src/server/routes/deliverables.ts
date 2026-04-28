@@ -67,6 +67,30 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 			.get() ?? null;
 	});
 
+	app.get<{ Params: { id: string } }>("/api/deliverables/:id/thread", async (req, reply) => {
+		const d = opts.db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).get();
+		if (!d) return reply.code(404).send({ error: "not found" });
+
+		// Walk up the delegation chain from the deliverable's delegation
+		const steps: Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: Date | null }> = [];
+		let currentId: string | null | undefined = d.delegationId;
+		while (currentId) {
+			const del = opts.db.select().from(delegations).where(eq(delegations.id, currentId)).get();
+			if (!del) break;
+			const payload = del.payloadJson as { task?: string };
+			steps.unshift({
+				id: del.id,
+				fromAgent: del.fromAgent,
+				toAgent: del.toAgent,
+				task: payload.task ?? "",
+				status: del.status,
+				requestedAt: del.requestedAt,
+			});
+			currentId = del.parentDelegationId;
+		}
+		return { steps };
+	});
+
 	const VALID_TRANSITIONS: Record<string, string[]> = {
 		drafting: ["awaiting_eval"],
 		awaiting_eval: ["awaiting_approval", "drafting"],

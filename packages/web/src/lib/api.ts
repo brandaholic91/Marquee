@@ -88,6 +88,10 @@ export const api = {
       fetch(`/api/deliverables/${id}/revisions`).then(json),
     eval: (id: string) =>
       fetch(`/api/deliverables/${id}/eval`).then(json),
+    thread: (id: string) =>
+      fetch(`/api/deliverables/${id}/thread`).then(json) as Promise<{
+        steps: Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: string | null }>;
+      }>,
     patchStatus: (id: string, status: string) =>
       fetch(`/api/deliverables/${id}/status`, {
         method: "PATCH",

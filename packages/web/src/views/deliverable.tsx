@@ -446,15 +446,52 @@ function SysLine({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ThreadTab({ deliverableId: _deliverableId }: { deliverableId: string }) {
-  // No thread endpoint exists in api.ts for deliverables — show placeholder with static design
+function ThreadTab({ deliverableId }: { deliverableId: string }) {
+  const [steps, setSteps] = useState<Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.deliverables.thread(deliverableId)
+      .then((data) => setSteps(data.steps))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [deliverableId]);
+
+  if (loading) return <div style={{ padding: "20px 0", color: "var(--ink-3)", fontSize: 13 }}>Betöltés…</div>;
+  if (steps.length === 0) return <div style={{ padding: "20px 0", color: "var(--ink-3)", fontSize: 13 }}>Nincs elérhető delegálási lánc.</div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <TMsg who="content-lead" name="Content Lead" time="—" active={true}>
-        A szálüzenetek itt jelennek meg, amint a deliverable aktivitásnaplója össze van kötve az API-val.
-      </TMsg>
-      <SysLine>thread endpoint még nem elérhető</SysLine>
+      {steps.map((step, i) => (
+        <div key={step.id} style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <Avatar who={safeAvatarWho(step.toAgent)} size="sm" />
+            {i < steps.length - 1 && <div style={{ width: 1, flex: 1, background: "var(--rule)", minHeight: 16 }} />}
+          </div>
+          <div style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 8 : 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <AgentBadge slug={step.toAgent} active={step.status === "in_progress"} />
+              <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                {step.fromAgent} → {step.toAgent}
+              </span>
+              {step.requestedAt && (
+                <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto" }}>
+                  {new Date(step.requestedAt).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </div>
+            {step.task && (
+              <div style={{
+                padding: "10px 12px", background: "var(--surface)", borderRadius: 6,
+                fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5,
+                whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto",
+              }}>
+                {step.task.slice(0, 400)}{step.task.length > 400 ? "…" : ""}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
