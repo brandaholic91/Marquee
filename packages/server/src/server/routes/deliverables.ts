@@ -1,8 +1,9 @@
 import { asc, eq } from "drizzle-orm";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { deliverableRevisions, deliverables, evals } from "../../db/schema.js";
+import { deliverableRevisions, deliverables, evals, delegations } from "../../db/schema.js";
 
 export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get("/api/deliverables", async () => opts.db.select().from(deliverables).all());
@@ -96,6 +97,50 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 				to: req.body.status,
 			});
 			return { ok: true };
+		},
+	);
+
+	app.post<{ Params: { id: string }; Body: { channels: string[] } }>(
+		"/api/deliverables/:id/repurpose",
+		async (req, reply) => {
+			const d = opts.db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).get();
+			if (!d) return reply.code(404).send({ error: "not found" });
+			if (d.status !== "shipped") {
+				return reply.code(400).send({ error: "only shipped deliverables can be repurposed" });
+			}
+			const { channels } = req.body;
+			if (!channels || channels.length === 0) {
+				return reply.code(400).send({ error: "channels must not be empty" });
+			}
+			if (channels.length > 5) {
+				return reply.code(400).send({ error: "max 5 channels per repurpose request" });
+			}
+
+			let sourceContent = "";
+			if (d.currentRevisionId) {
+				const rev = opts.db
+					.select()
+					.from(deliverableRevisions)
+					.where(eq(deliverableRevisions.id, d.currentRevisionId))
+					.get();
+				if (rev) {
+					try { sourceContent = readFileSync(rev.artifactPath, "utf8"); } catch { /* ignore */ }
+				}
+			}
+
+			const delegationId = randomUUID();
+			opts.db.insert(delegations).values({
+				id: delegationId,
+				fromAgent: "human",
+				toAgent: "content-lead",
+				status: "requested",
+				payloadJson: {
+					task: `Repurpose the following content for these channels: ${channels.join(", ")}. For each channel, delegate to a repurposer specialist using delegate_to_specialist. Include the source deliverable ID "${req.params.id}" and the source content in each delegation context so the repurposer can set source_deliverable_id when submitting.`,
+					context: `Source deliverable ID: ${req.params.id}\n\nSource content:\n${sourceContent}`,
+				} as never,
+			}).run();
+			opts.broker.emit("delegation_created", { delegationId, from: "human", to: "content-lead" });
+			return { delegationId };
 		},
 	);
 }

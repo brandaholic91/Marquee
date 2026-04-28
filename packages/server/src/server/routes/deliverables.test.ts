@@ -191,3 +191,63 @@ describe("GET /api/deliverables/revisions/:revisionId/content", () => {
 		expect(res.statusCode).toBe(404);
 	});
 });
+
+describe("POST /api/deliverables/:id/repurpose", () => {
+  let deps: ReturnType<typeof makeTestDep>;
+
+  beforeEach(() => { deps = makeTestDep(); });
+  afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+
+  it("creates a delegation to content-lead and returns delegationId", async () => {
+    const { db, broker, router, dir } = deps;
+    const { delId } = seedDeliverable(db, "shipped");
+    const app = await makeApp(db, broker, router, dir);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/deliverables/${delId}/repurpose`,
+      headers: { "content-type": "application/json" },
+      payload: { channels: ["linkedin_post", "twitter_thread"] },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ delegationId: string }>();
+    expect(body.delegationId).toBeTruthy();
+  });
+
+  it("returns 400 when deliverable is not shipped", async () => {
+    const { db, broker, router, dir } = deps;
+    const { delId } = seedDeliverable(db, "awaiting_approval");
+    const app = await makeApp(db, broker, router, dir);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/deliverables/${delId}/repurpose`,
+      headers: { "content-type": "application/json" },
+      payload: { channels: ["linkedin_post"] },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("returns 400 when channels array is empty", async () => {
+    const { db, broker, router, dir } = deps;
+    const { delId } = seedDeliverable(db, "shipped");
+    const app = await makeApp(db, broker, router, dir);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/deliverables/${delId}/repurpose`,
+      headers: { "content-type": "application/json" },
+      payload: { channels: [] },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("returns 404 for unknown deliverable", async () => {
+    const { db, broker, router, dir } = deps;
+    const app = await makeApp(db, broker, router, dir);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/deliverables/${randomUUID()}/repurpose`,
+      headers: { "content-type": "application/json" },
+      payload: { channels: ["twitter_thread"] },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
