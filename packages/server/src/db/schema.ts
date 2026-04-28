@@ -6,6 +6,14 @@ const ts = (col: string) =>
 		.notNull()
 		.$defaultFn(() => new Date());
 
+export const campaigns = sqliteTable("campaigns", {
+	id: text("id").primaryKey(),
+	title: text("title").notNull(),
+	description: text("description"),
+	status: text("status", { enum: ["active", "completed", "archived"] }).notNull().default("active"),
+	createdAt: ts("created_at"),
+});
+
 export const chatThreads = sqliteTable("chat_threads", {
 	id: text("id").primaryKey(),
 	type: text("type", { enum: ["intake", "dispatched", "consultative"] }).notNull(),
@@ -18,7 +26,7 @@ export const chatParticipants = sqliteTable("chat_participants", {
 	threadId: text("thread_id")
 		.notNull()
 		.references(() => chatThreads.id),
-	agentSlug: text("agent_slug").notNull(), // 'human' is one
+	agentSlug: text("agent_slug").notNull(),
 });
 
 export const messages = sqliteTable(
@@ -27,7 +35,7 @@ export const messages = sqliteTable(
 		id: text("id").primaryKey(),
 		threadId: text("thread_id").references(() => chatThreads.id),
 		agentSessionId: text("agent_session_id"),
-		sender: text("sender").notNull(), // agent slug or 'human'
+		sender: text("sender").notNull(),
 		type: text("type", {
 			enum: [
 				"chat",
@@ -54,6 +62,7 @@ export const messages = sqliteTable(
 export const briefs = sqliteTable("briefs", {
 	id: text("id").primaryKey(),
 	sourceThreadId: text("source_thread_id").references(() => chatThreads.id),
+	campaignId: text("campaign_id").references(() => campaigns.id),
 	status: text("status", { enum: ["draft", "dispatched", "done"] }).notNull(),
 	contentMd: text("content_md").notNull(),
 	createdAt: ts("created_at"),
@@ -66,6 +75,7 @@ export const delegations = sqliteTable(
 		id: text("id").primaryKey(),
 		briefId: text("brief_id").references(() => briefs.id),
 		parentDelegationId: text("parent_delegation_id"),
+		campaignId: text("campaign_id").references(() => campaigns.id),
 		fromAgent: text("from_agent").notNull(),
 		toAgent: text("to_agent").notNull(),
 		status: text("status", { enum: ["requested", "in_progress", "complete", "blocked"] }).notNull(),
@@ -86,7 +96,8 @@ export const deliverables = sqliteTable(
 		delegationId: text("delegation_id")
 			.notNull()
 			.references(() => delegations.id),
-		type: text("type").notNull(), // 'blog_post' for v0.1
+		campaignId: text("campaign_id").references(() => campaigns.id),
+		type: text("type").notNull(),
 		title: text("title").notNull(),
 		status: text("status", {
 			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived"],
@@ -106,7 +117,7 @@ export const deliverableRevisions = sqliteTable("deliverable_revisions", {
 	deliverableId: text("deliverable_id")
 		.notNull()
 		.references(() => deliverables.id),
-	artifactPath: text("artifact_path").notNull(), // ~/.marquee/artifacts/<id>/rev_NNN.md
+	artifactPath: text("artifact_path").notNull(),
 	createdByAgent: text("created_by_agent").notNull(),
 	createdAt: ts("created_at"),
 });
@@ -116,7 +127,7 @@ export const evals = sqliteTable("evals", {
 	revisionId: text("revision_id")
 		.notNull()
 		.references(() => deliverableRevisions.id),
-	scoresJson: text("scores_json", { mode: "json" }).notNull(), // { brand_voice, factual_accuracy, usp_usage }
+	scoresJson: text("scores_json", { mode: "json" }).notNull(),
 	summaryMd: text("summary_md").notNull(),
 	createdAt: ts("created_at"),
 });
@@ -156,7 +167,7 @@ export const turns = sqliteTable(
 		model: text("model").notNull(),
 		promptTokens: integer("prompt_tokens").notNull(),
 		completionTokens: integer("completion_tokens").notNull(),
-		costUsd: integer("cost_usd_cents").notNull(), // store in cents to avoid float
+		costUsd: integer("cost_usd_cents").notNull(),
 		latencyMs: integer("latency_ms").notNull(),
 		startedAt: ts("started_at"),
 		endedAt: integer("ended_at", { mode: "timestamp_ms" }),
@@ -185,6 +196,7 @@ export const events = sqliteTable(
 export const memoryProposals = sqliteTable("memory_proposals", {
 	id: text("id").primaryKey(),
 	agentSessionId: text("agent_session_id"),
+	campaignId: text("campaign_id").references(() => campaigns.id),
 	file: text("file").notNull(),
 	patch: text("patch").notNull(),
 	status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
@@ -196,6 +208,7 @@ export const tasks = sqliteTable(
 	{
 		id: text("id").primaryKey(),
 		delegationId: text("delegation_id").notNull().references(() => delegations.id),
+		campaignId: text("campaign_id").references(() => campaigns.id),
 		title: text("title").notNull(),
 		descriptionMd: text("description_md").notNull().default(""),
 		status: text("status", { enum: ["open", "in_progress", "done", "blocked"] }).notNull(),
