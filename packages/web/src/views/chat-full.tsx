@@ -703,100 +703,52 @@ export function ChatFullView() {
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100%",
-        background: "var(--cream)",
-      }}
-    >
-      {/* Collapsed sidebar */}
+    <div style={{ display: "flex", height: "100%", background: "var(--cream)", overflow: "hidden" }}>
       <Sidebar activeNav="home" />
 
-      {/* Main thread column */}
-      <main
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          justifyContent: "center",
-          overflow: "auto",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 896,
-            padding: "32px 32px 32px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <ChatHeader
-            thread={activeThread}
-            messageCount={messages.length}
-            onBack={() => setView("home")}
-            onRename={handleRename}
-            onDelete={() => handleDeleteThread(activeThreadId)}
-          />
+      {/* Main: scrolls as a row — threads panel is sticky inside, scrollbar ends up at viewport right edge */}
+      <main style={{ flex: 1, minWidth: 0, display: "flex", overflowY: "auto" }}>
+        {/* Chat content */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 896, padding: "32px", display: "flex", flexDirection: "column" }}>
+            <ChatHeader
+              thread={activeThread}
+              messageCount={messages.length}
+              onBack={() => setView("home")}
+              onRename={handleRename}
+              onDelete={() => handleDeleteThread(activeThreadId)}
+            />
 
-          {/* Messages */}
-          <div
-            style={{
-              marginTop: 24,
-              display: "flex",
-              flexDirection: "column",
-              gap: 22,
-              paddingBottom: 100,
-            }}
-          >
-            {loading && (
-              <div
-                style={{
-                  color: "var(--ink-3)",
-                  fontSize: 13,
-                  paddingLeft: 42,
-                }}
-              >
-                Loading…
-              </div>
-            )}
-            {!loading && messages.length === 0 && (
-              <div
-                style={{
-                  color: "var(--ink-3)",
-                  fontSize: 13,
-                  paddingLeft: 42,
-                }}
-              >
-                No messages yet. Start the conversation below.
-              </div>
-            )}
-            {messages.map((msg) => (
-              <MessageRenderer
-                key={msg.id}
-                msg={msg}
-                onRefresh={refreshMessages}
-              />
-            ))}
-            {typingAgent && (
-              <TypingBubble agentSlug={typingAgent} />
-            )}
-            <div ref={bottomRef} />
+            <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 22, paddingBottom: 100 }}>
+              {loading && (
+                <div style={{ color: "var(--ink-3)", fontSize: 13, paddingLeft: 42 }}>Loading…</div>
+              )}
+              {!loading && messages.length === 0 && (
+                <div style={{ color: "var(--ink-3)", fontSize: 13, paddingLeft: 42 }}>
+                  No messages yet. Start the conversation below.
+                </div>
+              )}
+              {messages.map((msg) => (
+                <MessageRenderer key={msg.id} msg={msg} onRefresh={refreshMessages} />
+              ))}
+              {typingAgent && <TypingBubble agentSlug={typingAgent} />}
+              <div ref={bottomRef} />
+            </div>
+
+            <StickyInput threadId={activeThreadId} onSent={refreshMessages} />
           </div>
+        </div>
 
-          {/* Sticky input */}
-          <StickyInput threadId={activeThreadId} onSent={refreshMessages} />
+        {/* Threads panel — sticky so it doesn't scroll with content */}
+        <div style={{ position: "sticky", top: 0, height: "100vh", alignSelf: "flex-start", flexShrink: 0 }}>
+          <OtherThreadsStrip
+            threads={snapshot?.threads ?? []}
+            activeThreadId={activeThreadId}
+            onDelete={handleDeleteThread}
+            onNewThread={() => setView("home")}
+          />
         </div>
       </main>
-
-      {/* Right thread strip */}
-      <OtherThreadsStrip
-        threads={snapshot?.threads ?? []}
-        activeThreadId={activeThreadId}
-        onDelete={handleDeleteThread}
-        onNewThread={() => setView("home")}
-      />
     </div>
   );
 }
