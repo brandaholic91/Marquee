@@ -1,6 +1,6 @@
 ---
 name: on_page_audit
-when_to_use: When delegated an on-page SEO audit task for a client page
+description: When delegated an on-page SEO audit task for a client page
 ---
 
 Audit checklist for every client page:

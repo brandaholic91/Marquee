@@ -8,6 +8,7 @@ import { loadAgentConfig, buildBehaviorBlock } from "../../agents/config.js";
 const VALID_ROLES = new Set([
   "director", "content-lead", "distribution-lead", "insights-lead",
   "copywriter", "social-manager", "seo-analyst", "eval-judge",
+  "paid-specialist", "repurposer", "analytics-analyst",
 ]);
 
 export function registerAgentRoutes(app: FastifyInstance, opts: ServerOpts) {

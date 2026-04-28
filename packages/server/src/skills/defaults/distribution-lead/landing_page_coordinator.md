@@ -1,6 +1,6 @@
 ---
 name: landing_page_coordinator
-when_to_use: When your delegation is to produce a landing_page deliverable
+description: When your delegation is to produce a landing_page deliverable
 ---
 
 For client landing pages, delegate to the copywriter (via content-lead, or request a direct delegation if available). Brief the copywriter with:

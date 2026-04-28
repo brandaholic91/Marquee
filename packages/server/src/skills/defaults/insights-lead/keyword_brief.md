@@ -1,6 +1,6 @@
 ---
 name: keyword_brief
-when_to_use: When compiling the final keyword brief for the content team
+description: When compiling the final keyword brief for the content team
 ---
 
 Output format for every keyword brief sent to director or content-lead:

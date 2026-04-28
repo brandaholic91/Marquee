@@ -30,7 +30,7 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 		"",
 		"Call `use_skill` with a skill name to load its full instructions before starting work on a matching task.",
 		"",
-		...skills.map((s) => `- **${s.name}**: ${s.whenToUse}`),
+		...skills.map((s) => `- **${s.name}**: ${s.description}`),
 	].join("\n");
 
 	const config = loadAgentConfig(dataDir, role);

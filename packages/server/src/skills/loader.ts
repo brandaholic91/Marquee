@@ -12,7 +12,7 @@ export interface SkillRecipe {
 
 export interface SkillMeta {
 	name: string;
-	whenToUse: string;
+	description: string;
 }
 
 const skillsDir = (dataDir: string) => join(dataDir, "skills");
@@ -52,7 +52,7 @@ export function listSkillsForRole(dataDir: string, role: string): SkillMeta[] {
 		const parsed = matter(raw);
 		return {
 			name: (parsed.data.name as string) ?? f.replace(/\.md$/, ""),
-			whenToUse: (parsed.data.when_to_use as string) ?? "",
+			description: (parsed.data.description as string) ?? "",
 		};
 	});
 }

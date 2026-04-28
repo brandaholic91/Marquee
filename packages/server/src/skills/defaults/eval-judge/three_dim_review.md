@@ -1,6 +1,6 @@
 ---
 name: three_dim_review
-when_to_use: When you receive a deliverable to evaluate
+description: When you receive a deliverable to evaluate
 ---
 
 Score every deliverable on three dimensions, each 1–5:

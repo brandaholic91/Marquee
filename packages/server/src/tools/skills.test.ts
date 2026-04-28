@@ -20,7 +20,7 @@ describe("use_skill tool", () => {
 		mkdirSync(join(dir, "skills/copywriter"), { recursive: true });
 		writeFileSync(
 			join(dir, "skills/copywriter/blog_post_writer.md"),
-			`---\nname: blog_post_writer\nwhen_to_use: blog_post delegation\n---\n\nWrite every blog post with this structure.\n`,
+			`---\nname: blog_post_writer\ndescription: blog_post delegation\n---\n\nWrite every blog post with this structure.\n`,
 		);
 	});
 	afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -29,7 +29,7 @@ describe("use_skill tool", () => {
 		const tool = makeUseSkill(dir);
 		const result = await tool.execute({ name: "blog_post_writer" }, fakeCtx("copywriter"));
 		expect(result).toContain("Write every blog post");
-		expect(result).not.toContain("when_to_use");
+		expect(result).not.toContain("description");
 	});
 
 	it("returns error with available skills when skill not found", async () => {

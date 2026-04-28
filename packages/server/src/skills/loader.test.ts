@@ -11,7 +11,7 @@ describe("skills loader", () => {
 		mkdirSync(join(dir, "skills/copywriter"), { recursive: true });
 		writeFileSync(
 			join(dir, "skills/copywriter/blog_post_writer.md"),
-			`---\nname: blog_post_writer\nwhen_to_use: blog_post delegation\n---\n\nWrite for {{client_profile.brand_voice}}\n`,
+			`---\nname: blog_post_writer\ndescription: blog_post delegation\n---\n\nWrite for {{client_profile.brand_voice}}\n`,
 		);
 	});
 	afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -33,11 +33,11 @@ describe("skills loader", () => {
 		expect(all).toHaveLength(1);
 	});
 
-	it("listSkillsForRole returns name and whenToUse only", () => {
+	it("listSkillsForRole returns name and description only", () => {
 		const meta = listSkillsForRole(dir, "copywriter");
 		expect(meta).toHaveLength(1);
 		expect(meta[0].name).toBe("blog_post_writer");
-		expect(meta[0].whenToUse).toBe("blog_post delegation");
+		expect(meta[0].description).toBe("blog_post delegation");
 	});
 
 	it("listSkillsForRole returns empty array for unknown role", () => {
@@ -47,7 +47,7 @@ describe("skills loader", () => {
 	it("loadSkillBody returns body without frontmatter", () => {
 		const body = loadSkillBody(dir, "copywriter", "blog_post_writer");
 		expect(body).toContain("Write for");
-		expect(body).not.toContain("when_to_use");
+		expect(body).not.toContain("description");
 	});
 
 	it("loadSkillBody returns null for unknown skill", () => {

@@ -1,6 +1,6 @@
 ---
 name: three_dim_review_extended
-when_to_use: When evaluating a linkedin_post deliverable
+description: When evaluating a linkedin_post deliverable
 ---
 
 For LinkedIn posts, use modified scoring weights:

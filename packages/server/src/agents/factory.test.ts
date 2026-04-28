@@ -110,7 +110,7 @@ describe("agent factory", () => {
 			emit: () => {},
 		});
 		expect(agent.state.systemPrompt).toContain("copywriter");
-		// Skill list with name and when_to_use — body is loaded on demand via use_skill
+		// Skill list with name and description — body is loaded on demand via use_skill
 		expect(agent.state.systemPrompt).toContain("blog_post_writer");
 		expect(agent.state.systemPrompt).toContain("use_skill");
 		expect(agent.state.systemPrompt).not.toContain("Write for T");

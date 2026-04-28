@@ -1,6 +1,6 @@
 ---
 name: linkedin_brief_coordinator
-when_to_use: When your delegation is to produce a LinkedIn post
+description: When your delegation is to produce a LinkedIn post
 ---
 
 Brief the social-manager with these specifics for every client LinkedIn post:

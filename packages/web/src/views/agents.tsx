@@ -34,7 +34,7 @@ function ConfigPanel({ role, isMobile = false }: { role: string; isMobile?: bool
 
   useEffect(() => {
     api.agents.getConfig(role).then((data: { config: AgentConfig } | null) => {
-      if (data) setConfig(data.config);
+      if (data?.config) setConfig(data.config);
       else setConfig({});
     }).catch(() => setConfig({}));
   }, [role]);

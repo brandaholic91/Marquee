@@ -1,6 +1,6 @@
 ---
 name: linkedin_post_writer
-when_to_use: When your delegation is to write a linkedin_post deliverable
+description: When your delegation is to write a linkedin_post deliverable
 ---
 
 Write every client LinkedIn post following this structure:

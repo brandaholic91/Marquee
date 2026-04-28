@@ -1,6 +1,6 @@
 ---
 name: lead_router
-when_to_use: After parsing a brief, to decide which lead(s) to delegate to
+description: After parsing a brief, to decide which lead(s) to delegate to
 ---
 
 Routing rules:

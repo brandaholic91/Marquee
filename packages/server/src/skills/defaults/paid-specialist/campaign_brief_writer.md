@@ -1,6 +1,6 @@
 ---
 name: campaign_brief_writer
-when_to_use: When your delegation is to create a paid advertising campaign brief
+description: When your delegation is to create a paid advertising campaign brief
 ---
 
 Write every campaign brief with this structure:

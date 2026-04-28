@@ -1,6 +1,6 @@
 ---
 name: performance_report
-when_to_use: When your delegation is to write a performance report
+description: When your delegation is to write a performance report
 ---
 
 Write a structured performance report using data from query_matomo and serpapi_search.

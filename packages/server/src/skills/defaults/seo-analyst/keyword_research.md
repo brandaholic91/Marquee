@@ -1,6 +1,6 @@
 ---
 name: keyword_research
-when_to_use: When delegated a keyword research task
+description: When delegated a keyword research task
 ---
 
 For client keyword research, use the web_fetch tool to check:

@@ -1,6 +1,6 @@
 ---
 name: editorial_brief_handoff
-when_to_use: When delegating a writing task to the copywriter
+description: When delegating a writing task to the copywriter
 ---
 
 When briefing the copywriter for a client blog post:

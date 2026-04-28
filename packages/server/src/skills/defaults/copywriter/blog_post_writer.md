@@ -1,6 +1,6 @@
 ---
 name: blog_post_writer
-when_to_use: When your delegation is to write a blog_post deliverable
+description: When your delegation is to write a blog_post deliverable
 ---
 
 Write every blog post with this structure:

@@ -1,6 +1,6 @@
 ---
 name: brief_parser
-when_to_use: When you receive a new brief from the human operator
+description: When you receive a new brief from the human operator
 ---
 
 Parse incoming briefs into a structured summary before routing.

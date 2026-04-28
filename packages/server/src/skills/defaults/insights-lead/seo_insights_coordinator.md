@@ -1,6 +1,6 @@
 ---
 name: seo_insights_coordinator
-when_to_use: When your delegation is to provide SEO insights for a content brief
+description: When your delegation is to provide SEO insights for a content brief
 ---
 
 Coordinate keyword research and on-page guidance for client content.
