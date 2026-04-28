@@ -120,7 +120,7 @@ export function OnboardingView() {
           onClick={() => setView("home")}
           style={{ fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)" }}
         >
-          Skip to dashboard →
+          Ugrás az irányítópultra →
         </button>
       </div>
 
@@ -131,10 +131,10 @@ export function OnboardingView() {
           {/* Header */}
           <div>
             <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.02em" }}>
-              Your marketing team is ready.
+              A marketing csapatod készen áll.
             </div>
             <div style={{ color: "var(--ink-2)", marginTop: 12, maxWidth: 560, fontSize: 15, lineHeight: 1.5 }}>
-              The Director will ask a few questions to build a shared memory your agents will reference on every campaign.
+              A Direktor feltesz néhány kérdést, hogy felépítse azt a közös memóriát, amit az agensek minden kampányban használnak majd.
             </div>
           </div>
 
@@ -204,13 +204,13 @@ export function OnboardingView() {
                           onClick={() => handleApprove(p.id)}
                           style={{ padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
                         >
-                          Approve &amp; save
+                          Jóváhagyás &amp; mentés
                         </button>
                         <button
                           onClick={() => handleReject(p.id)}
                           style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
                         >
-                          Reject
+                          Elutasítás
                         </button>
                       </div>
                     )}
@@ -232,7 +232,7 @@ export function OnboardingView() {
                   onClick={() => setView("home")}
                   style={{ padding: "12px 32px", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 15, fontWeight: 600 }}
                 >
-                  Go to dashboard →
+                  Tovább az irányítópultra →
                 </button>
               </div>
             )}
@@ -246,7 +246,7 @@ export function OnboardingView() {
               <div style={{ padding: 14, background: "var(--white)", border: "1px solid var(--rule-strong)", borderRadius: 6 }}>
                 <textarea
                   style={{ border: 0, padding: 4, minHeight: 56, width: "100%", resize: "none", fontSize: 14, fontFamily: "inherit", background: "transparent", outline: "none" }}
-                  placeholder="Reply to Director…"
+                  placeholder="Válasz a Direktornak…"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => {
@@ -255,13 +255,13 @@ export function OnboardingView() {
                   disabled={sending || !threadId}
                 />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                  <span style={{ fontSize: 12, color: "var(--ink-3)" }}>⏎ to send</span>
+                  <span style={{ fontSize: 12, color: "var(--ink-3)" }}>⏎ küldés</span>
                   <button
                     onClick={handleSend}
                     disabled={sending || !inputText.trim() || !threadId}
                     style={{ padding: "6px 16px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", fontSize: 13 }}
                   >
-                    Send
+                    Küldés
                   </button>
                 </div>
               </div>
