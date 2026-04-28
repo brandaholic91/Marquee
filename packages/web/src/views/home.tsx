@@ -449,7 +449,7 @@ export function HomeView() {
 
   return (
     <div style={{ display: "flex", height: "100%", background: "var(--cream)" }}>
-      <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
+      <Sidebar activeNav="home" />
 
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px 32px", overflow: "auto" }}>
         <HomeHeader onNewBrief={() => setShowBriefForm((v) => !v)} />

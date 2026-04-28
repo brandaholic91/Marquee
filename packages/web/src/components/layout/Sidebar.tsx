@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Avatar, type AvatarWho } from "../ui/Avatar.js";
 import { Bulb } from "../ui/Bulb.js";
 import { useAgencyStore } from "../../store/useAgencyStore.js";
+import { api } from "../../lib/api.js";
 
 type NavId = "home" | "pipeline" | "memory" | "tasks" | "agents";
 
@@ -25,13 +27,20 @@ const TEAM: { slug: string; name: string }[] = [
 
 export interface SidebarProps {
   activeNav: NavId;
-  activeAgents?: string[];
 }
 
-export function Sidebar({ activeNav, activeAgents }: SidebarProps) {
+export function Sidebar({ activeNav }: SidebarProps) {
   const setView = useAgencyStore((s) => s.setView);
   const collapsed = useAgencyStore((s) => s.sidebarCollapsed);
   const setCollapsed = useAgencyStore((s) => s.setSidebarCollapsed);
+  const activeAgents = useAgencyStore((s) => s.activeAgents);
+  const setActiveAgents = useAgencyStore((s) => s.setActiveAgents);
+
+  useEffect(() => {
+    api.snapshot().then((data: { activeAgents?: { agentSlug: string }[] }) => {
+      setActiveAgents(data.activeAgents?.map((a) => a.agentSlug) ?? []);
+    }).catch(() => {});
+  }, [setActiveAgents]);
 
   function handleNav(id: NavId) {
     if (id === "home" || id === "memory" || id === "pipeline" || id === "tasks" || id === "agents") {

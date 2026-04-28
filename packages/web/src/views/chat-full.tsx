@@ -652,7 +652,7 @@ export function ChatFullView() {
           background: "var(--cream)",
         }}
       >
-        <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
+        <Sidebar activeNav="home" />
         <main
           style={{
             flex: 1,
@@ -678,7 +678,7 @@ export function ChatFullView() {
       }}
     >
       {/* Collapsed sidebar */}
-      <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
+      <Sidebar activeNav="home" />
 
       {/* Main thread column */}
       <main
