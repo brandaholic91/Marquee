@@ -9,6 +9,8 @@ import { registerMemoryRoutes } from "./routes/memory.js";
 import { registerDeliverableRoutes } from "./routes/deliverables.js";
 import { registerThreadRoutes } from "./routes/threads.js";
 import { registerHealthRoute } from "./routes/dashboard.js";
+import { registerTaskRoutes } from "./routes/tasks.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 import { registerSseRoute } from "./sse.js";
 
 export interface ServerOpts {
@@ -50,6 +52,8 @@ export async function buildServer(opts: ServerOpts) {
 	registerApprovalRoutes(app, opts);
 	registerDeliverableRoutes(app, opts);
 	registerMemoryRoutes(app, opts);
+	registerTaskRoutes(app, opts);
+	registerAgentRoutes(app, opts);
 	registerSseRoute(app, opts);
 	return app;
 }

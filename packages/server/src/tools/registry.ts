@@ -3,6 +3,7 @@ import { makeSubmitDeliverable, readDeliverable, respondToLead } from "./deliver
 import { proposeBrief, proposeMemoryUpdate } from "./proposals.js";
 import { requestInput, submitEvalReport } from "./misc.js";
 import { makeReadMemory, webFetch } from "./integration.js";
+import { updateTask } from "./tasks.js";
 import type { AgentToolDef } from "./types.js";
 
 export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknown, unknown>[] {
@@ -10,17 +11,17 @@ export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknow
 	const submitDeliverable = makeSubmitDeliverable(dataDir);
 	switch (role) {
 		case "director":
-			return [delegateToLead, proposeBrief, proposeMemoryUpdate, readMemory, webFetch, requestInput] as never;
+			return [delegateToLead, proposeBrief, proposeMemoryUpdate, readMemory, webFetch, requestInput, updateTask] as never;
 		case "content-lead":
-			return [delegateToSpecialist, submitToDirector, readMemory, requestInput] as never;
+			return [delegateToSpecialist, submitToDirector, readMemory, requestInput, updateTask] as never;
 		case "copywriter":
 			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch] as never;
 		case "eval-judge":
 			return [submitEvalReport, readMemory, readDeliverable] as never;
 		case "distribution-lead":
-			return [delegateToSpecialist, submitToDirector, readMemory, requestInput] as never;
+			return [delegateToSpecialist, submitToDirector, readMemory, requestInput, updateTask] as never;
 		case "insights-lead":
-			return [delegateToSpecialist, submitToDirector, readMemory, requestInput] as never;
+			return [delegateToSpecialist, submitToDirector, readMemory, requestInput, updateTask] as never;
 		case "social-manager":
 			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch] as never;
 		case "seo-analyst":

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { simpleGit } from "simple-git";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { openDb } from "../../db/index.js";
+import { openDb, type AgencyDb } from "../../db/index.js";
 import { Broker } from "../../broker/event-bus.js";
 import { buildServer } from "../index.js";
 import type { AgentRouter } from "../../broker/router.js";
@@ -133,5 +133,52 @@ describe("MARQUEE_API_TOKEN auth guard", () => {
 		expect(res.statusCode).toBe(200);
 		delete process.env.MARQUEE_API_TOKEN;
 		cleanup();
+	});
+});
+
+describe("POST /api/memory (create new file)", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "memory-new-test-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+		mkdirSync(join(dir, "memory"), { recursive: true });
+	});
+
+	afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
+
+	it("creates a new memory file with starter frontmatter", async () => {
+		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
+		const res = await app.inject({
+			method: "POST", url: "/api/memory",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ filename: "new_client.md" }),
+		});
+		expect(res.statusCode).toBe(201);
+		expect(existsSync(join(dir, "memory", "new_client.md"))).toBe(true);
+	});
+
+	it("rejects filename with path traversal", async () => {
+		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
+		const res = await app.inject({
+			method: "POST", url: "/api/memory",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ filename: "../evil.md" }),
+		});
+		expect(res.statusCode).toBe(400);
+	});
+
+	it("rejects filename containing slash", async () => {
+		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
+		const res = await app.inject({
+			method: "POST", url: "/api/memory",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ filename: "sub/path.md" }),
+		});
+		expect(res.statusCode).toBe(400);
 	});
 });

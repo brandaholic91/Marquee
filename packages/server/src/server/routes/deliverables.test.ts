@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -146,6 +146,48 @@ describe("PATCH /api/deliverables/:id/status", () => {
 			headers: { "content-type": "application/json" },
 			payload: { status: "shipped" },
 		});
+		expect(res.statusCode).toBe(404);
+	});
+});
+
+describe("GET /api/deliverables/revisions/:revisionId/content", () => {
+	let deps: ReturnType<typeof makeTestDep>;
+
+	beforeEach(() => { deps = makeTestDep(); });
+	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+
+	it("returns revision file content", async () => {
+		const { db, broker, router, dir } = deps;
+		const artifactsDir = join(dir, "artifacts");
+		mkdirSync(artifactsDir, { recursive: true });
+		const artifactPath = join(artifactsDir, "rev_001.md");
+		writeFileSync(artifactPath, "# Hello world", "utf8");
+
+		const dlgId = randomUUID();
+		const deliverableId = randomUUID();
+		db.insert(delegations).values({
+			id: dlgId, fromAgent: "director", toAgent: "content-lead",
+			status: "complete", payloadJson: {} as never,
+		}).run();
+		db.insert(deliverables).values({
+			id: deliverableId, delegationId: dlgId, type: "blog_post",
+			title: "Test", status: "drafting",
+		}).run();
+		const revId = randomUUID();
+		db.insert(deliverableRevisions).values({
+			id: revId, deliverableId, artifactPath, createdByAgent: "copywriter",
+		}).run();
+
+		const app = await makeApp(db, broker, router, dir);
+		const res = await app.inject({ method: "GET", url: `/api/deliverables/revisions/${revId}/content` });
+		expect(res.statusCode).toBe(200);
+		expect(res.json().content).toContain("Hello world");
+	});
+
+	it("returns 404 for unknown revision", async () => {
+		const { db, broker, router, dir } = deps;
+		const app = await makeApp(db, broker, router, dir);
+		const res = await app.inject({ method: "GET", url: "/api/deliverables/revisions/nonexistent/content" });
 		expect(res.statusCode).toBe(404);
 	});
 });

@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { schedule } from "node-cron";
 import { openDb } from "./db/index.js";
 import { Broker } from "./broker/event-bus.js";
 import { AgentRouter } from "./broker/router.js";
@@ -7,6 +8,8 @@ import { recoverState } from "./broker/recovery.js";
 import { EvalTrigger } from "./broker/eval-trigger.js";
 import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
+import { TaskManager } from "./tasks/manager.js";
+import { runDailySummary } from "./cron/daily-summary.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -19,6 +22,8 @@ async function main() {
 	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
 	const broker = new Broker(db, webhookUrl);
 	const router = new AgentRouter(db, broker, dataDir);
+	const taskManager = new TaskManager(db, broker, router);
+	taskManager.boot();
 	router.boot();
 	recoverState(db, router);
 
@@ -28,7 +33,10 @@ async function main() {
 	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
 	const app = await buildServer({ db, broker, router, dataDir, webRoot });
 
+	const cronTask = schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
+
 	process.on("SIGTERM", async () => {
+		cronTask.stop();
 		await app.close();
 		close();
 	});

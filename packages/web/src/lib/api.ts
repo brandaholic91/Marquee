@@ -43,6 +43,31 @@ export const api = {
         body: JSON.stringify({ decision, note }),
       }).then(json),
   },
+  memory: {
+    files: () => fetch("/api/memory/files").then(json),
+    get: (filename: string) => fetch(`/api/memory/${filename}`).then(json),
+    put: (filename: string, content: string) =>
+      fetch(`/api/memory/${filename}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content }),
+      }).then(json),
+    create: (filename: string) =>
+      post<{ ok: boolean; filename: string }>("/api/memory", { filename }),
+    proposals: () => fetch("/api/memory-proposals").then(json),
+    approve: (id: string) =>
+      fetch(`/api/memory-proposals/${id}/approve`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision: "approved" }),
+      }).then(json),
+    reject: (id: string) =>
+      fetch(`/api/memory-proposals/${id}/approve`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision: "rejected" }),
+      }).then(json),
+  },
   deliverables: {
     list: () => fetch("/api/deliverables").then(json),
     get: (id: string) => fetch(`/api/deliverables/${id}`).then(json),
@@ -58,29 +83,31 @@ export const api = {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
       }).then(json),
-  },
-  memory: {
-    files: () => fetch("/api/memory/files").then(json),
-    get: (filename: string) => fetch(`/api/memory/${filename}`).then(json),
-    put: (filename: string, content: string) =>
-      fetch(`/api/memory/${filename}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content }),
-      }).then(json),
-    proposals: () => fetch("/api/memory-proposals").then(json),
-    approve: (id: string) =>
-      fetch(`/api/memory-proposals/${id}/approve`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision: "approved" }),
-      }).then(json),
-    reject: (id: string) =>
-      fetch(`/api/memory-proposals/${id}/approve`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision: "rejected" }),
-      }).then(json),
+    revisionContent: (revisionId: string) =>
+      fetch(`/api/deliverables/revisions/${revisionId}/content`).then(json) as Promise<{ content: string }>,
   },
   snapshot: () => fetch("/api/state/snapshot").then(json),
+  tasks: {
+    list: (params?: { assigned_to?: string; status?: string }) => {
+      const qs = params
+        ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+        : "";
+      return fetch(`/api/tasks${qs}`).then(json) as Promise<import("../store/useAgencyStore").Task[]>;
+    },
+    patch: (id: string, body: { title?: string; description_md?: string; status?: string; current_version: number }) =>
+      fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }).then(json),
+  },
+  agents: {
+    getConfig: (role: string) => fetch(`/api/agents/${role}/config`).then(json),
+    putConfig: (role: string, config: Record<string, unknown>) =>
+      fetch(`/api/agents/${role}/config`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(config),
+      }).then(json),
+  },
 };

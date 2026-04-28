@@ -7,6 +7,20 @@ import { deliverableRevisions, deliverables, evals } from "../../db/schema.js";
 export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get("/api/deliverables", async () => opts.db.select().from(deliverables).all());
 
+	app.get<{ Params: { revisionId: string } }>(
+		"/api/deliverables/revisions/:revisionId/content",
+		async (req, reply) => {
+			const rev = opts.db
+				.select()
+				.from(deliverableRevisions)
+				.where(eq(deliverableRevisions.id, req.params.revisionId))
+				.get();
+			if (!rev) return reply.code(404).send({ error: "not found" });
+			const content = readFileSync(rev.artifactPath, "utf8");
+			return { content };
+		},
+	);
+
 	app.get<{ Params: { id: string } }>("/api/deliverables/:id", async (req) => {
 		const d = opts.db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).get();
 		if (!d) return { statusCode: 404, error: "not found" };

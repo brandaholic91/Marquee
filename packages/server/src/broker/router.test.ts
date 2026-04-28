@@ -50,4 +50,23 @@ describe("AgentRouter", () => {
 		// getBriefQueue is a no-op stub in the new implementation
 		expect(router.getBriefQueue()).toEqual([]);
 	});
+
+	it("promptWarmAgent does not throw when role exists", () => {
+		router.boot();
+		expect(() => router.promptWarmAgent("director", "hello")).not.toThrow();
+	});
+
+	it("promptWarmAgent does not throw when role does not exist", () => {
+		router.boot();
+		expect(() => router.promptWarmAgent("nonexistent-role", "hello")).not.toThrow();
+	});
+
+	it("restartWarmAgent replaces the warm agent session", () => {
+		router.boot();
+		const roles1 = router.getWarmRoles();
+		router.restartWarmAgent("director");
+		const roles2 = router.getWarmRoles();
+		expect(roles1).toContain("director");
+		expect(roles2).toContain("director");
+	});
 });

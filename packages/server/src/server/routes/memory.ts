@@ -79,4 +79,29 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 			return { ok: true };
 		},
 	);
+
+	// create new memory file
+	app.post<{ Body: { filename: string } }>("/api/memory", async (req, reply) => {
+		const { filename } = req.body;
+		if (!filename || filename.includes("..") || filename.includes("/")) {
+			return reply.code(400).send({ error: "invalid filename" });
+		}
+		const name = filename.endsWith(".md") ? filename : `${filename}.md`;
+		const dir = memDir();
+		if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+		const filePath = join(dir, name);
+		if (existsSync(filePath)) return reply.code(409).send({ error: "file already exists" });
+		const starter = `---\ntitle: ${name.replace(/\.md$/, "")}\n---\n`;
+		writeFileSync(filePath, starter, "utf8");
+		try {
+			const git = simpleGit(opts.dataDir);
+			const isRepo = await git.checkIsRepo().catch(() => false);
+			if (isRepo) {
+				await git.add(filePath);
+				await git.commit(`memory: create ${name}`, [filePath]);
+			}
+		} catch { /* best effort */ }
+		opts.broker.emit("memory_created", { file: name });
+		return reply.code(201).send({ ok: true, filename: name });
+	});
 }

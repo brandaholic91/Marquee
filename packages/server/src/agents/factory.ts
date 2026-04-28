@@ -11,6 +11,7 @@ import { toolsForRole } from "../tools/registry.js";
 import type { ToolContext } from "../tools/types.js";
 import { convertToLlm } from "./convert-to-llm.js";
 import { makeTransformContext } from "./transform-context.js";
+import { loadAgentConfig, buildBehaviorBlock } from "./config.js";
 
 export interface MakeAgentOpts {
 	role: string;
@@ -35,11 +36,15 @@ const buildSystemPrompt = (role: string, dataDir: string): string => {
 		.map((s) => `## Skill: ${s.frontmatter.name ?? "(unnamed)"}\n\n${s.render(ctx)}`)
 		.join("\n\n");
 
+	const config = loadAgentConfig(dataDir, role);
+	const behaviorBlock = config ? buildBehaviorBlock(config) : "";
+
 	return [
 		`You are the ${role} agent of the AI marketing agency.`,
 		`Use only the tools provided. Do not attempt actions outside your toolset.`,
 		`Read memory before making client-specific decisions.`,
 		skillBlocks,
+		behaviorBlock,
 	]
 		.filter(Boolean)
 		.join("\n\n");
