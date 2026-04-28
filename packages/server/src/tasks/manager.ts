@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { AgencyDb } from "../db/index.js";
 import { delegations, tasks, taskPendingUpdates } from "../db/schema.js";
 import type { Broker, PersistedEvent } from "../broker/event-bus.js";
