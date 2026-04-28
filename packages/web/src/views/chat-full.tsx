@@ -594,6 +594,8 @@ export function ChatFullView() {
     }).catch(console.error);
   }
 
+  const activeAgentSlugs = snapshot?.activeAgents?.map((a) => a.agentSlug) ?? [];
+
   useEffect(() => {
     api.snapshot().then((data) => setSnapshot(data as SnapshotData)).catch(console.error);
   }, []);
@@ -650,7 +652,7 @@ export function ChatFullView() {
           background: "var(--cream)",
         }}
       >
-        <Sidebar activeNav="home" />
+        <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
         <main
           style={{
             flex: 1,
@@ -676,7 +678,7 @@ export function ChatFullView() {
       }}
     >
       {/* Collapsed sidebar */}
-      <Sidebar activeNav="home" />
+      <Sidebar activeNav="home" activeAgents={activeAgentSlugs} />
 
       {/* Main thread column */}
       <main
