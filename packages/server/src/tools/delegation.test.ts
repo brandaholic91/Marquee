@@ -126,3 +126,54 @@ describe("delegate_to_specialist — distribution-lead and insights-lead", () =>
 	});
 });
 
+describe("delegate_to_specialist — new specialist targets", () => {
+	let dir: string;
+	let db: AgencyDb;
+	let close: () => void;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "agency-tools-"));
+		const handle = openDb(join(dir, "test.db"));
+		db = handle.db;
+		close = handle.close;
+	});
+
+	afterEach(() => {
+		close();
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("content-lead can delegate to repurposer", async () => {
+		const result = await delegateToSpecialist.execute(
+			{ specialist: "repurposer", task: "Adapt blog post for LinkedIn" },
+			{ db, agentSlug: "content-lead", agentSessionId: randomUUID(), emit: vi.fn() },
+		);
+		expect(result.delegationId).toBeDefined();
+	});
+
+	it("distribution-lead can delegate to paid-specialist", async () => {
+		const result = await delegateToSpecialist.execute(
+			{ specialist: "paid-specialist", task: "Create Facebook ad campaign" },
+			{ db, agentSlug: "distribution-lead", agentSessionId: randomUUID(), emit: vi.fn() },
+		);
+		expect(result.delegationId).toBeDefined();
+	});
+
+	it("insights-lead can delegate to analytics-analyst", async () => {
+		const result = await delegateToSpecialist.execute(
+			{ specialist: "analytics-analyst", task: "Write performance report" },
+			{ db, agentSlug: "insights-lead", agentSessionId: randomUUID(), emit: vi.fn() },
+		);
+		expect(result.delegationId).toBeDefined();
+	});
+
+	it("content-lead cannot delegate to paid-specialist", async () => {
+		await expect(
+			delegateToSpecialist.execute(
+				{ specialist: "paid-specialist", task: "Ad campaign" },
+				{ db, agentSlug: "content-lead", agentSessionId: randomUUID(), emit: vi.fn() },
+			),
+		).rejects.toThrow(/cannot delegate/i);
+	});
+});
+

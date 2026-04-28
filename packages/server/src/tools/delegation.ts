@@ -6,9 +6,9 @@ import type { AgentToolDef, ToolContext } from "./types.js";
 
 const KNOWN_LEADS = new Set(["content-lead", "distribution-lead", "insights-lead"]);
 const KNOWN_SPECIALISTS_BY_LEAD: Record<string, Set<string>> = {
-	"content-lead": new Set(["copywriter"]),
-	"distribution-lead": new Set(["social-manager"]),
-	"insights-lead": new Set(["seo-analyst"]),
+	"content-lead": new Set(["copywriter", "repurposer"]),
+	"distribution-lead": new Set(["social-manager", "paid-specialist"]),
+	"insights-lead": new Set(["seo-analyst", "analytics-analyst"]),
 };
 
 const delegateToLeadInput = z.object({
