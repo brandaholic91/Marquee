@@ -27,8 +27,9 @@ export function OnboardingView() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const setView = useAgencyStore((s) => s.setView);
 
-  // Start onboarding thread on mount
+  // Start SSE + onboarding thread on mount
   useEffect(() => {
+    agencyEvents.start();
     api.onboarding.start().then(({ threadId: tid }) => {
       setThreadId(tid);
     }).catch(console.error);
