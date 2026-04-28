@@ -9,6 +9,7 @@ import { PipelineView } from "./views/pipeline";
 import { TasksView } from "./views/tasks";
 import { AgentsView } from "./views/agents";
 import { SkillsView } from "./views/skills";
+import { CalendarView } from "./views/calendar";
 
 export function App() {
   const currentView = useAgencyStore((s) => s.currentView);
@@ -39,6 +40,7 @@ export function App() {
       {currentView === "tasks" && <TasksView />}
       {currentView === "agents" && <AgentsView />}
       {currentView === "skills" && <SkillsView />}
+      {currentView === "calendar" && <CalendarView />}
     </div>
   );
 }

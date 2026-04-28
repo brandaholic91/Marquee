@@ -1,6 +1,5 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { schedule } from "node-cron";
 import { openDb } from "./db/index.js";
 import { Broker } from "./broker/event-bus.js";
 import { AgentRouter } from "./broker/router.js";
@@ -10,6 +9,7 @@ import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
 import { TaskManager } from "./tasks/manager.js";
 import { runDailySummary } from "./cron/daily-summary.js";
+import { CronManager } from "./cron/manager.js";
 import { providerMode } from "./providers/index.js";
 import { AuthManager } from "./providers/auth.js";
 
@@ -42,14 +42,22 @@ async function main() {
 	const evalTrigger = new EvalTrigger(db, broker, dataDir, authManager);
 	evalTrigger.attach();
 
-	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
-	const app = await buildServer({ db, broker, router, dataDir, webRoot });
+	const cronManager = new CronManager();
+	cronManager.register({
+		id: "daily_summary",
+		name: "Daily Summary",
+		expression: "0 2 * * *",
+		description: "Nightly agent activity summary written to memory/daily_notes/",
+		enabled: true,
+	}, () => runDailySummary(db, dataDir).catch(console.error));
+	cronManager.start();
 
-	const cronTask = schedule("0 2 * * *", () => runDailySummary(db, dataDir).catch(console.error));
+	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
+	const app = await buildServer({ db, broker, router, dataDir, webRoot, cronManager });
 
 	const shutdown = async () => {
 		authManager?.stop();
-		cronTask.stop();
+		cronManager.stop();
 		await app.close();
 		close();
 	};

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import type { AgencyDb } from "../db/index.js";
 import type { Broker } from "../broker/event-bus.js";
 import type { AgentRouter } from "../broker/router.js";
+import type { CronManager } from "../cron/manager.js";
 import { registerBriefRoutes } from "./routes/briefs.js";
 import { registerMessageRoutes } from "./routes/messages.js";
 import { registerApprovalRoutes } from "./routes/approvals.js";
@@ -20,6 +21,7 @@ export interface ServerOpts {
 	router: AgentRouter;
 	dataDir: string;
 	webRoot: string;
+	cronManager?: CronManager;
 }
 
 export async function buildServer(opts: ServerOpts) {
@@ -56,6 +58,8 @@ export async function buildServer(opts: ServerOpts) {
 	registerTaskRoutes(app, opts);
 	registerAgentRoutes(app, opts);
 	registerSkillRoutes(app, opts);
+	// Cron jobs list
+	app.get("/api/crons", async () => opts.cronManager?.list() ?? []);
 	registerSseRoute(app, opts);
 	return app;
 }

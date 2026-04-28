@@ -15,7 +15,7 @@ export interface Task {
 interface AgencyState {
   activeThreadId: string | null;
   drawerOpen: boolean;
-  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding" | "pipeline" | "tasks" | "agents" | "skills";
+  currentView: "home" | "chat" | "deliverable" | "memory" | "onboarding" | "pipeline" | "tasks" | "agents" | "skills" | "calendar";
   selectedDeliverableId: string | null;
   selectedMemoryFile: string | null;
   tasks: Task[];
