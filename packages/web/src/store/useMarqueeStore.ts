@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { briefsApi, deliverablesApi, type DeliverableRow, type ThreadRow, memoryApi, messagesApi, threadsApi } from '../lib/api.js';
+
 import { marqueeEvents } from '../lib/sse.js';
 
 export interface Message {
@@ -51,6 +52,7 @@ interface MarqueeStore {
   archiveThread: (id: string) => Promise<void>;
   renameThread: (id: string, title: string) => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
+  updateBrief: (id: string, title: string, contentMd: string) => Promise<void>;
   dispatchBrief: (id: string) => Promise<void>;
   discardBrief: (id: string) => Promise<void>;
   fetchDeliverables: (statusFilter?: string) => Promise<void>;
@@ -328,6 +330,15 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       };
       set((s) => ({ messages: [...s.messages, errMsg] }));
     }
+  },
+
+  updateBrief: async (id: string, title: string, contentMd: string) => {
+    await briefsApi.update(id, { title, content_md: contentMd });
+    set((s) => ({
+      proposedBriefs: s.proposedBriefs.map((b) =>
+        b.briefId === id ? { ...b, title, contentMd } : b,
+      ),
+    }));
   },
 
   dispatchBrief: async (id: string) => {

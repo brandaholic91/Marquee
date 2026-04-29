@@ -45,6 +45,22 @@ export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, op
     return all;
   });
 
+  app.patch<{ Params: { id: string }; Body: { title?: string; content_md?: string } }>(
+    '/api/briefs/:id',
+    async (req, reply) => {
+      const rows = await db.select().from(briefs).where(eq(briefs.id, req.params.id)).all();
+      if (rows.length === 0) return reply.code(404).send({ error: 'not_found' });
+      if (rows[0].status !== 'draft') return reply.code(400).send({ error: 'only_draft_editable' });
+
+      const current = JSON.parse(rows[0].contentMd) as Record<string, unknown>;
+      if (req.body?.title) current.title = req.body.title;
+      if (req.body?.content_md) current.body = req.body.content_md;
+
+      await db.update(briefs).set({ contentMd: JSON.stringify(current) }).where(eq(briefs.id, req.params.id));
+      return { ok: true };
+    },
+  );
+
   app.post<{ Params: { id: string } }>('/api/briefs/:id/dispatch', async (req, reply) => {
     try {
       await dispatchBrief({ db, broker, dataDir, authManager, briefId: req.params.id });

@@ -27,6 +27,12 @@ function put<T>(path: string, body: unknown): Promise<T> {
 // -------------------------
 export const briefsApi = {
   list: (): Promise<unknown[]> => fetch('/api/briefs').then(json),
+  update: (id: string, body: { title?: string; content_md?: string }): Promise<{ ok: true }> =>
+    fetch(`/api/briefs/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(json),
   create: (body: {
     title: string;
     content_md: string;
