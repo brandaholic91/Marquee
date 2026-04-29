@@ -626,7 +626,7 @@ function ThreadTab({ deliverableId }: { deliverableId: string }) {
                   </div>
                   {step.task && (
                     <div style={{ padding: "10px 12px", background: "var(--surface)", borderRadius: 6, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
-                      {step.task.slice(0, 600)}{(step.task.length ?? 0) > 600 ? "…" : ""}
+                      {step.task}
                     </div>
                   )}
                 </div>
