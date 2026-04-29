@@ -5,7 +5,7 @@ export interface Task {
   delegationId: string;
   title: string;
   descriptionMd: string;
-  status: "open" | "in_progress" | "done" | "blocked";
+  status: "open" | "in_progress" | "done" | "blocked" | "archived";
   assignedTo: string;
   version: number;
   createdAt: string;

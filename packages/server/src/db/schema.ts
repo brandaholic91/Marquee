@@ -211,7 +211,7 @@ export const tasks = sqliteTable(
 		campaignId: text("campaign_id").references(() => campaigns.id),
 		title: text("title").notNull(),
 		descriptionMd: text("description_md").notNull().default(""),
-		status: text("status", { enum: ["open", "in_progress", "done", "blocked"] }).notNull(),
+		status: text("status", { enum: ["open", "in_progress", "done", "blocked", "archived"] }).notNull(),
 		assignedTo: text("assigned_to").notNull(),
 		version: integer("version").notNull().default(1),
 		createdAt: ts("created_at"),

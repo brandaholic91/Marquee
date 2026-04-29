@@ -16,7 +16,7 @@ const COLUMNS: { id: Task["status"]; label: string }[] = [
   { id: "blocked",     label: "Blokkolt" },
 ];
 
-function TaskCard({ task, isDragging = false }: { task: Task; isDragging?: boolean }) {
+function TaskCard({ task, isDragging = false, onArchive }: { task: Task; isDragging?: boolean; onArchive?: () => void }) {
   return (
     <div style={{
       background: "var(--parchment)",
@@ -25,18 +25,32 @@ function TaskCard({ task, isDragging = false }: { task: Task; isDragging?: boole
       padding: "10px 12px",
       opacity: isDragging ? 0.5 : 1,
       cursor: "grab",
+      position: "relative",
     }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 4 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 4, paddingRight: 18 }}>
         {task.title}
       </div>
       <div className="caption" style={{ color: "var(--ink-3)" }}>
         {task.assignedTo}
       </div>
+      {onArchive && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onArchive(); }}
+          title="Archiválás"
+          style={{
+            position: "absolute", top: 6, right: 6,
+            background: "none", border: "none", cursor: "pointer",
+            color: "var(--ink-3)", fontSize: 14, lineHeight: 1, padding: 2,
+          }}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }
 
-function DroppableColumn({ status, label, tasks }: { status: Task["status"]; label: string; tasks: Task[] }) {
+function DroppableColumn({ status, label, tasks, onArchiveTask }: { status: Task["status"]; label: string; tasks: Task[]; onArchiveTask: (t: Task) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
     <div style={{ flex: 1, minWidth: 200 }}>
@@ -56,17 +70,18 @@ function DroppableColumn({ status, label, tasks }: { status: Task["status"]; lab
           transition: "background 0.15s",
         }}
       >
-        {tasks.map((t) => <DraggableCard key={t.id} task={t} />)}
+        {tasks.map((t) => <DraggableCard key={t.id} task={t} onArchive={() => onArchiveTask(t)} />)}
+
       </div>
     </div>
   );
 }
 
-function DraggableCard({ task }: { task: Task }) {
+function DraggableCard({ task, onArchive }: { task: Task; onArchive: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
   return (
     <div ref={setNodeRef} {...attributes} {...listeners}>
-      <TaskCard task={task} isDragging={isDragging} />
+      <TaskCard task={task} isDragging={isDragging} onArchive={onArchive} />
     </div>
   );
 }
@@ -112,9 +127,19 @@ export function TasksView() {
     }
   }
 
+  async function onArchiveTask(task: Task) {
+    upsertTask({ ...task, status: "archived" });
+    try {
+      await api.tasks.patch(task.id, { status: "archived", current_version: task.version });
+    } catch {
+      upsertTask(task);
+    }
+  }
+
+  const visibleTasks = tasks.filter((t) => t.status !== "archived");
   const filteredTasks = campaignFilter
-    ? tasks.filter((t) => t.campaignId === campaignFilter)
-    : tasks;
+    ? visibleTasks.filter((t) => t.campaignId === campaignFilter)
+    : visibleTasks;
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
@@ -149,6 +174,7 @@ export function TasksView() {
                 status={col.id}
                 label={col.label}
                 tasks={filteredTasks.filter((t) => t.status === col.id)}
+                onArchiveTask={onArchiveTask}
               />
             ))}
           </div>
