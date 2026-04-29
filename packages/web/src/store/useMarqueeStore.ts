@@ -56,21 +56,24 @@ function mapServerMessage(raw: {
   id: string;
   sender?: string;
   role?: string;
+  text?: string;
   content?: string;
   contentJson?: string;
+  ts?: number;
   created_at?: number;
   createdAt?: number;
 }): Message {
-  const text = raw.contentJson
-    ? (() => {
-        try {
-          const parsed = JSON.parse(raw.contentJson) as { text?: string };
-          return parsed.text ?? raw.content ?? '';
-        } catch {
-          return raw.content ?? '';
-        }
-      })()
-    : (raw.content ?? '');
+  const text = raw.text
+    ?? (raw.contentJson
+      ? (() => {
+          try {
+            const parsed = JSON.parse(raw.contentJson) as { text?: string };
+            return parsed.text ?? raw.content ?? '';
+          } catch {
+            return raw.content ?? '';
+          }
+        })()
+      : (raw.content ?? ''));
 
   const senderRaw = raw.sender ?? raw.role ?? 'system';
   const sender: Message['sender'] =
@@ -81,9 +84,12 @@ function mapServerMessage(raw: {
     type: 'chat',
     sender,
     text,
-    ts: (raw.created_at ?? raw.createdAt ?? Date.now()),
+    ts: (raw.ts ?? raw.created_at ?? raw.createdAt ?? Date.now()),
   };
 }
+
+// Module-level guard: prevents duplicate SSE handler registration in React StrictMode.
+let sseHandlersRegistered = false;
 
 export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
   threadId: null,
@@ -98,7 +104,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
     // 1. Fetch (or auto-create) threads
     const threads = await threadsApi.list();
     const firstThread = threads[0] ?? null;
-    const threadId = firstThread?.thread_id ?? null;
+    const threadId = firstThread?.id ?? null;
     set({ threadId });
 
     // 2. Fetch messages for the thread
@@ -128,7 +134,10 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 
     // 5. Start SSE
     marqueeEvents.start();
-    const state = get();
+
+    // Guard: register handlers exactly once even under React StrictMode double-mount
+    if (sseHandlersRegistered) return;
+    sseHandlersRegistered = true;
 
     // chat_message: agent message arrives
     marqueeEvents.on<{
@@ -137,9 +146,11 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       role?: string;
       id?: string;
       message_id?: string;
+      text?: string;
       content?: string;
       contentJson?: string;
       thread_id?: string;
+      ts?: number;
     }>('chat_message', (payload) => {
       // Skip user messages (already added optimistically)
       const senderRaw = payload.sender ?? payload.role ?? '';
@@ -147,11 +158,16 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       const msg = mapServerMessage({
         id: payload.id ?? payload.message_id ?? String(Date.now()),
         sender: senderRaw,
+        text: payload.text,
         content: payload.content,
         contentJson: payload.contentJson,
-        created_at: Date.now(),
+        ts: payload.ts,
       });
-      set((s) => ({ messages: [...s.messages, msg] }));
+      set((s) => {
+        // Dedupe by id (defends against SSE replay echoing already-fetched messages)
+        if (s.messages.some((m) => m.id === msg.id)) return s;
+        return { messages: [...s.messages, msg] };
+      });
     });
 
     // brief_proposed: push card + message
@@ -252,9 +268,6 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
     marqueeEvents.on('memory_proposed', () => {});
     marqueeEvents.on('memory_decided', () => {});
     marqueeEvents.on('deliverable_returned', () => {});
-
-    // Suppress unused variable warning
-    void state;
   },
 
   sendMessage: async (text: string) => {

@@ -97,9 +97,15 @@ export const memoryApi = {
 // -------------------------
 // Threads
 // -------------------------
+export interface ThreadRow {
+  id: string;
+  clientSlug: string;
+  title: string | null;
+  archivedAt: number | null;
+}
+
 export const threadsApi = {
-  list: (): Promise<{ thread_id: string; title: string | null }[]> =>
-    fetch('/api/threads').then(json),
+  list: (): Promise<ThreadRow[]> => fetch('/api/threads').then(json),
   create: (title?: string): Promise<{ thread_id: string }> =>
     post('/api/threads', { title }),
 };
@@ -107,19 +113,19 @@ export const threadsApi = {
 // -------------------------
 // Messages
 // -------------------------
+export interface MessageRow {
+  id: string;
+  threadId: string | null;
+  agentSessionId: string | null;
+  sender: string;
+  type: string;
+  contentJson: string;
+  ts: number;
+}
+
 export const messagesApi = {
-  list: (
-    threadId: string,
-  ): Promise<
-    {
-      id: string;
-      thread_id: string;
-      sender: string;
-      content: string;
-      contentJson?: string;
-      created_at: number;
-    }[]
-  > => fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}`).then(json),
+  list: (threadId: string): Promise<MessageRow[]> =>
+    fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}`).then(json),
   post: (
     threadId: string,
     content: string,
