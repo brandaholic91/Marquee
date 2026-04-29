@@ -4,7 +4,8 @@ import { events } from "../db/schema.js";
 
 export interface PersistedEvent {
 	id: number;
-	ts: Date;
+	ts: number;
+	clientSlug: string | null;
 	agentSlug: string | null;
 	sessionId: string | null;
 	turnId: string | null;
@@ -13,6 +14,7 @@ export interface PersistedEvent {
 }
 
 export interface EmitMeta {
+	clientSlug?: string;
 	agentSlug?: string;
 	sessionId?: string;
 	turnId?: string;
@@ -20,25 +22,29 @@ export interface EmitMeta {
 
 export class Broker {
 	private ee = new EventEmitter();
-	constructor(
-		private db: AgencyDb,
-		private webhookUrl?: string,
-	) {
+	constructor(private db: AgencyDb) {
 		this.ee.setMaxListeners(0);
 	}
 
 	emit(type: string, payload: Record<string, unknown>, meta: EmitMeta = {}): PersistedEvent {
+		const ts = Date.now();
 		const insert = this.db
 			.insert(events)
 			.values({
-				type, payloadJson: payload as never,
-				agentSlug: meta.agentSlug, sessionId: meta.sessionId, turnId: meta.turnId,
+				ts,
+				type,
+				payloadJson: JSON.stringify(payload) as never,
+				clientSlug: meta.clientSlug,
+				agentSlug: meta.agentSlug,
+				sessionId: meta.sessionId,
+				turnId: meta.turnId,
 			})
 			.returning()
 			.get();
 		const evt: PersistedEvent = {
 			id: insert.id as number,
-			ts: insert.ts as Date,
+			ts: insert.ts as number,
+			clientSlug: insert.clientSlug ?? null,
 			agentSlug: insert.agentSlug ?? null,
 			sessionId: insert.sessionId ?? null,
 			turnId: insert.turnId ?? null,
@@ -46,14 +52,6 @@ export class Broker {
 			payload,
 		};
 		this.ee.emit("event", evt);
-		if (this.webhookUrl) {
-			// fire-and-forget, never throws
-			fetch(this.webhookUrl, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify(evt),
-			}).catch(() => {});
-		}
 		return evt;
 	}
 

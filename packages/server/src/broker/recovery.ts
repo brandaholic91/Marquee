@@ -1,49 +1,37 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import type { AgencyDb } from "../db/index.js";
-import { agentSessions, briefs, delegations, deliverables } from "../db/schema.js";
-import type { AgentRouter } from "./router.js";
+import { agentSessions, delegations } from "../db/schema.js";
+import type { Broker } from "./event-bus.js";
 
-export function recoverState(db: AgencyDb, router: AgentRouter): void {
-	// 1. Re-queue dispatched briefs that have NO delegations yet (truly stuck at dispatch)
-	const dispatchedBriefs = db
-		.select()
-		.from(briefs)
-		.where(eq(briefs.status, "dispatched"))
-		.all();
-	for (const brief of dispatchedBriefs) {
-		// Skip if already has delegations — pipeline already started
-		const hasDelegation = db.select().from(delegations)
-			.where(eq(delegations.briefId, brief.id)).get();
-		if (hasDelegation) continue;
-
-		// Skip if already has a shipped deliverable via campaign
-		if (brief.campaignId) {
-			const shipped = db.select().from(deliverables)
-				.where(and(eq(deliverables.campaignId, brief.campaignId), eq(deliverables.status, "shipped")))
-				.get();
-			if (shipped) {
-				// Mark brief completed so it won't be re-queued next restart
-				db.update(briefs).set({ status: "done" }).where(eq(briefs.id, brief.id)).run();
-				continue;
-			}
-		}
-
-		router.queueBrief(brief.id);
-	}
-
-	// 2. Mark orphaned warm sessions (not in current warm pool) as ended
-	const warmRoles = new Set(router.getWarmRoles());
+export function recoverState(db: AgencyDb, broker: Broker): void {
+	const now = Date.now();
 	const openSessions = db
 		.select()
 		.from(agentSessions)
-		.where(and(eq(agentSessions.lifecycle, "warm"), isNull(agentSessions.endedAt)))
+		.where(isNull(agentSessions.endedAt))
 		.all();
+
 	for (const session of openSessions) {
-		if (!warmRoles.has(session.agentSlug)) {
-			db.update(agentSessions)
-				.set({ endedAt: new Date() })
-				.where(eq(agentSessions.id, session.id))
+		db.update(agentSessions)
+			.set({ endedAt: now })
+			.where(eq(agentSessions.id, session.id))
+			.run();
+
+		if (session.lifecycle === "transient" && session.parentDelegationId) {
+			// Fail the in-flight delegation
+			db.update(delegations)
+				.set({ status: "failed", completedAt: now })
+				.where(eq(delegations.id, session.parentDelegationId))
 				.run();
+
+			broker.emit("error", {
+				source: "recovery",
+				delegation_id: session.parentDelegationId,
+				agent_slug: session.agentSlug,
+				message: "transient session abandoned across restart",
+			});
 		}
+		// Warm sessions: just mark ended; they get respawned on first chat.
 	}
+	// Note: 'requested' delegations are left alone for now — operator re-runs the brief manually.
 }

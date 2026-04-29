@@ -1,12 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
-import { agentSessions, briefs, delegations } from "../db/schema.js";
+import { agentSessions, briefs, clients, delegations } from "../db/schema.js";
 import { Broker } from "./event-bus.js";
-import { AgentRouter } from "./router.js";
 import { recoverState } from "./recovery.js";
 
 describe("recoverState", () => {
@@ -14,19 +13,17 @@ describe("recoverState", () => {
 	let db: AgencyDb;
 	let close: () => void;
 	let broker: Broker;
-	let router: AgentRouter;
+	// Shared client slug for FK satisfaction
+	const CLIENT = "test-client";
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "agency-recovery-"));
 		const handle = openDb(join(dir, "test.db"));
 		db = handle.db;
 		close = handle.close;
-		mkdirSync(join(dir, "memory"), { recursive: true });
-		writeFileSync(join(dir, "memory/client_profile.md"), "---\nclient_name: T\n---\nbody");
-		writeFileSync(join(dir, "memory/brand_guidelines.md"), "---\ntone_of_voice: x\n---\nb");
+		// Insert a client row to satisfy FK constraints
+		db.insert(clients).values({ slug: CLIENT, name: "Test Client", createdAt: Date.now() }).run();
 		broker = new Broker(db);
-		router = new AgentRouter(db, broker, dir);
-		router.boot();
 	});
 
 	afterEach(() => {
@@ -34,26 +31,81 @@ describe("recoverState", () => {
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it("re-dispatches dispatched briefs to the director without throwing", () => {
-		const briefId = randomUUID();
-		db.insert(briefs).values({
-			id: briefId, status: "dispatched", contentMd: "# Test",
+	it("marks open warm session as ended on recovery", () => {
+		const sessionId = randomUUID();
+		db.insert(agentSessions).values({
+			id: sessionId,
+			clientSlug: CLIENT,
+			agentSlug: "director",
+			lifecycle: "warm",
+			startedAt: Date.now(),
 		}).run();
-		// recoverState now dispatches directly — no queue to inspect
-		expect(() => recoverState(db, router)).not.toThrow();
-		// getBriefQueue is a no-op stub; briefs are dispatched immediately via queueBrief
-		expect(router.getBriefQueue()).toEqual([]);
+
+		recoverState(db, broker);
+
+		const rows = db.select().from(agentSessions).all();
+		const session = rows.find((r) => r.id === sessionId);
+		expect(session?.endedAt).toBeDefined();
+		expect(typeof session?.endedAt).toBe("number");
 	});
 
-	it("marks orphaned warm sessions as ended", () => {
-		const orphanId = randomUUID();
-		db.insert(agentSessions).values({
-			id: orphanId, agentSlug: "director", lifecycle: "warm",
+	it("fails delegation and emits error for abandoned transient session", () => {
+		// Set up: brief → delegation → transient session
+		const briefId = randomUUID();
+		db.insert(briefs).values({
+			id: briefId,
+			clientSlug: CLIENT,
+			contentMd: "# Test brief",
+			status: "dispatched",
+			createdAt: Date.now(),
 		}).run();
-		recoverState(db, router);
-		const rows = db.select().from(agentSessions).all();
-		// orphaned session (not in current warm pool) should be marked ended
-		const orphan = rows.find((r) => r.id === orphanId);
-		expect(orphan?.endedAt).toBeDefined();
+
+		const delegationId = randomUUID();
+		db.insert(delegations).values({
+			id: delegationId,
+			briefId,
+			clientSlug: CLIENT,
+			fromAgent: "director",
+			toAgent: "copywriter",
+			payloadJson: "{}",
+			status: "in_progress",
+			requestedAt: Date.now(),
+		}).run();
+
+		const sessionId = randomUUID();
+		db.insert(agentSessions).values({
+			id: sessionId,
+			clientSlug: CLIENT,
+			agentSlug: "copywriter",
+			lifecycle: "transient",
+			parentDelegationId: delegationId,
+			startedAt: Date.now(),
+		}).run();
+
+		const emitSpy = vi.spyOn(broker, "emit");
+		recoverState(db, broker);
+
+		// Session should be marked ended
+		const sessionRows = db.select().from(agentSessions).all();
+		const session = sessionRows.find((r) => r.id === sessionId);
+		expect(session?.endedAt).toBeDefined();
+		expect(typeof session?.endedAt).toBe("number");
+
+		// Delegation should be marked failed with completedAt
+		const delegationRows = db.select().from(delegations).all();
+		const delegation = delegationRows.find((r) => r.id === delegationId);
+		expect(delegation?.status).toBe("failed");
+		expect(delegation?.completedAt).toBeDefined();
+		expect(typeof delegation?.completedAt).toBe("number");
+
+		// Broker should have emitted an error event
+		expect(emitSpy).toHaveBeenCalledWith(
+			"error",
+			expect.objectContaining({
+				source: "recovery",
+				delegation_id: delegationId,
+				agent_slug: "copywriter",
+			}),
+		);
 	});
 });
