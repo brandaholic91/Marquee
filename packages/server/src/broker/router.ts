@@ -108,12 +108,17 @@ export class AgentRouter {
 		const userMessage = parts.join("\n\n");
 
 		if (this.warmAgents.has(to)) {
-			const agent = this.warmAgents.get(to)!;
+			// Rebuild warm agent with correct delegationId so delegateToSpecialist gets parentDelegationId
+			const sessionId = randomUUID();
+			const agent = makeAgent({
+				role: to, dataDir: this.dataDir, db: this.db, sessionId, delegationId,
+				authManager: this.authManager,
+				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: to, sessionId }),
+			} satisfies MakeAgentOpts);
+			this.db.insert(agentSessions).values({ id: sessionId, agentSlug: to, lifecycle: "transient", parentDelegationId: delegationId }).run();
 			this.db.update(delegations).set({ status: "in_progress" })
 				.where(eq(delegations.id, delegationId)).run();
-			void agent.waitForIdle().then(() =>
-				agent.prompt(userMessage).catch((e) => console.error(`[${to}] prompt error:`, e))
-			);
+			agent.prompt(userMessage).catch((e) => console.error(`[${to}] prompt error:`, e));
 		} else {
 			this.spawnAndPrompt(to, delegationId, userMessage);
 		}

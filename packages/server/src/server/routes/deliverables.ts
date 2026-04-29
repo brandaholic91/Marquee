@@ -140,7 +140,7 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 		const deliverableApprovals = opts.db.select().from(approvals)
 			.where(eq(approvals.deliverableId, req.params.id)).all();
 		for (const a of deliverableApprovals) {
-			allSteps.push({ id: a.id, kind: "approval", fromAgent: "human", decision: a.decision, note: a.note ?? undefined, requestedAt: a.createdAt ?? null });
+			allSteps.push({ id: a.id, kind: "approval", fromAgent: "human", decision: a.decision, note: a.note ?? undefined, requestedAt: a.decidedAt ?? null });
 		}
 
 		// Sort chronologically
