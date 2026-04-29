@@ -155,11 +155,20 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
 
 // ---- ApprovalsWidget ----
 
+const PIPELINE_STATUS_LABEL: Record<string, string> = {
+  drafting: "Vázlatkészítés",
+  awaiting_eval: "Értékelésre vár",
+  awaiting_approval: "Jóváhagyásra vár",
+  shipped: "Kiszállítva",
+  archived: "Elutasítva",
+};
+
 const PIPELINE_BADGE_MAP: Record<string, string> = {
   drafting: "secondary-soft",
   awaiting_eval: "cream",
   awaiting_approval: "primary-soft",
   shipped: "success-soft",
+  archived: "cream",
   blocked: "danger-soft",
 };
 
@@ -327,7 +336,7 @@ function PipelineWidget({ pipeline }: { pipeline: PipelineCount[] }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className={`badge badge-${badgeKind}`}>{row.status}</span>
+                  <span className={`badge badge-${badgeKind}`}>{PIPELINE_STATUS_LABEL[row.status] ?? row.status}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <span className="serif" style={{ fontSize: 22, color: "var(--ink-1)" }}>{row.count}</span>
