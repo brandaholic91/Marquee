@@ -172,8 +172,7 @@ export class BriefOrchestrator {
       .set({ activeDelegationId: delegationId, updatedAt: new Date() })
       .where(eq(workflowRuns.id, run.id)).run();
 
-    (this.router as unknown as { spawnAndPrompt: (r: string, d: string, m: string) => void })
-      .spawnAndPrompt(agentRole, delegationId, taskText);
+    this.router.spawnAndPrompt(agentRole, delegationId, taskText);
   }
 
   private findRunByActiveDelegation(deliverableId: string): WorkflowRunRow | undefined {

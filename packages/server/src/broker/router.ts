@@ -18,6 +18,11 @@ export class AgentRouter {
 	private booted = false;
 	private turnStartTimes = new Map<string, number>(); // sessionId → start ms
 	private budgetWarnDate: string | null = null; // "YYYY-MM-DD" — resets each day
+	private orchestrator?: { onBriefDispatched: (briefId: string) => boolean };
+
+	setOrchestrator(orchestrator: { onBriefDispatched: (briefId: string) => boolean }): void {
+		this.orchestrator = orchestrator;
+	}
 
 	constructor(
 		private db: AgencyDb,
@@ -177,7 +182,7 @@ export class AgentRouter {
 		})();
 	}
 
-	private spawnAndPrompt(role: string, delegationId: string, userMessage: string): void {
+	spawnAndPrompt(role: string, delegationId: string, userMessage: string): void {
 		// Hard budget guard: block non-director specialists when daily limit is exceeded
 		if (this.telemetry && this.telemetry.opts.dailyBudgetCents > 0) {
 			try {
@@ -336,6 +341,13 @@ export class AgentRouter {
 			console.error("queueBrief: brief not found", briefId);
 			return;
 		}
+
+		// Orchestrator-first: ha van regisztrált workflow, az kezeli
+		if (this.orchestrator?.onBriefDispatched(briefId)) {
+			return;
+		}
+
+		// Fallback: régi director prompt logika
 		const director = this.warmAgents.get("director");
 		if (!director) {
 			console.error("queueBrief: director agent not initialized");
