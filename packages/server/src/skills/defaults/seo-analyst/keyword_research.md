@@ -3,7 +3,7 @@ name: keyword_research
 description: Researches keywords for a given topic using available search tools (Tavily, SerpAPI, or web_fetch). Outputs a structured seo_report with intent-classified keywords, priority tiers, topic cluster, and content format recommendations.
 ---
 
-## Első lépés: olvass memóriát
+## Memória beolvasása
 
 Mielőtt bármit keresel, olvasd be a `read_memory` eszközzel:
 - `client_profile.md` — client_name, icp, usp, competitors, brand_voice
@@ -17,66 +17,71 @@ A kulcsszavaknak a kliens **tényleges differenciátorait** kell tükrözniük, 
 2. **serpapi_search** — ha Tavily stub, próbáld ezt. Keress versenytársakra is.
 3. **web_fetch** — Google Trends a trend irányhoz; Reddit és releváns fórumok valódi fájdalompontokért.
 
-Ha mindhárom stub, vezess le a memóriából. Jelezd expliciten az adathiányt.
+Ha mindhárom stub, vezess le a memóriából — de jelezd egyértelműen, hogy nincs valódi keresési adat.
 
-## Keresési szándék klasszifikáció
+## Keresési szándék
 
-Minden kulcsszóhoz határozd meg a domináns szándékot. Az intent határozza meg az optimális tartalom formátumot:
+Minden kulcsszóhoz határozd meg a domináns szándékot, és rendeld hozzá a megfelelő tartalom formátumot:
 
-| Szándék | Leírás | Ajánlott formátumok |
+| Szándék | Mikor releváns | Ajánlott deliverable típusok |
 |---|---|---|
-| **Informational** | Tudáskeresés, "hogyan", "mi az" | blog poszt, útmutató, cikk, video script, newsletter |
-| **Commercial investigation** | Összehasonlítás, döntés előtt | összehasonlító cikk, case study, LinkedIn poszt, "miért mi" landing page |
-| **Transactional** | Cselekvésre kész, vásárlás/foglalás | landing page, termékoldal, ad copy, email kampány |
-| **Navigational** | Konkrét márkát/oldalt keres | brand keyword, homepage copy |
+| **Informational** | Tudáskeresés, "hogyan", "mi az" | blog_post, útmutató, video_script, newsletter |
+| **Commercial investigation** | Összehasonlítás, döntés előtt | blog_post (összehasonlító), case_study, linkedin_post, landing_page |
+| **Transactional** | Cselekvésre kész, vásárlás/foglalás | landing_page, termékoldal, ad_copy, email |
+| **Navigational** | Konkrét márkát keres | brand keyword, homepage copy |
 
-**Fontos**: A kért deliverable típusa (blog_post, landing_page, linkedin_post stb.) határozza meg melyik intent-re fókuszálj. Ha landing page-et kértek, a transactional és commercial kulcsszavak a relevánsak. Ha blog posztot, az informational és commercial investigation.
+**A kért deliverable típusa határozza meg a fókuszt.** Példák:
+- `landing_page` → transactional és commercial kulcsszavak
+- `blog_post` → informational és commercial investigation
+- `linkedin_post` / `twitter_thread` → a téma szöge és fájdalompont (nem exact-match ranking)
+- `ad_copy` / `email` → transactional
 
-**Megjegyzés social media deliverable-öknél**: LinkedIn, Twitter, Instagram esetén a "kulcsszó" inkább a téma szöge és az a kérdés amit a poszt megválaszol — nem feltétlenül exact-match ranking, hanem a célközönség fájdalompontja.
+## Prioritizálás
 
-## Prioritizálási framework
+Minden kulcsszóhoz becsüld meg kvalitatívan (1–5):
+- **Relevancia** — mennyire illeszkedik a kliens USP-jéhez és ICP-jéhez
+- **Versengés** — 1=alacsony, 5=magas (long-tail általában 1–2)
+- **Szándék értéke** — transactional=5, commercial=4, informational=2
 
-Minden kulcsszóhoz becsüld meg kvalitatívan (1-5):
-- **Relevancia** a kliens USP-hez és ICP-hez
-- **Versengés** (1=alacsony, 5=magas) — long-tail általában alacsonyabb
-- **Szándék értéke** (transactional=5, commercial=4, informational=2)
+**Pontszám = (Relevancia × Szándék értéke) / Versengés**
+Eredmény skála: ~0.4 (gyenge) → ~12.5 (kiváló). Magasabb = jobb prioritás.
 
-Összpontszám = (Relevancia × Szándék értéke) / Versengés → magasabb = jobb
+## Tipikus hibák
 
-## Gotchas
+- Stub adatból ne állíts bizonyított trendet vagy volumet — jelezd az adathiányt.
+- Specifikusan kell: "[kliens USP eleme] + [iparág] + [helyszín]" jobb, mint "[iparág] + [helyszín]".
+- A differenciátor legyen benne a kulcsszóban — a kliens USP az, ami megkülönbözteti a versenytársaktól.
 
-- Soha ne állítsd bizonyítottnak azt, ami stub adatból "levezetett" — jelezd az adathiányt.
-- A kulcsszavaknak specifikusaknak kell lenniük: a kliens USP elemeit tartalmazzák.
-- Ne legyen generikus: "[iparág] [helyszín]" rossz, "[kliens USP eleme] + [iparág] + [helyszín]" jó — a differenciátor legyen benne.
-
-## Output: strukturált seo_report
+## Output formátum
 
 ### Executive summary
-2-3 mondat: mi a fő megállapítás, melyik szándék domináns a témában, és hogyan illeszkedik ez a kért deliverable típushoz.
+2–3 mondat: fő megállapítás, domináns szándék, és hogyan illeszkedik a kért deliverable típushoz.
 
 ### Ügyfél pozicionálása
-Egy sor: mire épülnek a kulcsszavak (az USP-ből és ICP-ből).
+Egy mondat: mire épülnek a kulcsszavak (az USP-ből és ICP-ből levezetve).
 
-### Kulcsszó prioritás tiers
+### Kulcsszó prioritások
 
-**Quick wins** (alacsony versengés, magas relevancia — azonnal indítható):
-- [kulcsszó] | szándék: [intent] | pont: [X.X] | tartalom: [blog/landing/stb.]
+**Quick wins** (alacsony versengés, magas relevancia):
+- [kulcsszó] | szándék: [intent] | pont: [X.X] | tartalom: [deliverable típus]
 
-**Growth** (közepes versengés, magas érték — következő tartalmakhoz):
+**Growth** (közepes versengés, magas érték):
 - [kulcsszó] | szándék: [intent] | pont: [X.X] | tartalom: [típus]
 
-**Long-term** (magas versengés, de stratégiailag fontos):
+**Long-term** (magas versengés, stratégiailag fontos):
 - [kulcsszó] | szándék: [intent] | pont: [X.X] | tartalom: [típus]
 
-### Topic cluster javaslat
-- **Pillar kulcsszó**: [a legerősebb primary keyword]
-- **Cluster kulcsszavak**: [3-5 supporting keyword ami a pillar köré épül]
-- **Javasolt tartalom struktúra**: melyik kulcsszó melyik deliverable típushoz illik legjobban (blog, landing page, social poszt, ad copy, email)
+### Topic cluster
+- **Pillar kulcsszó**: a legerősebb primary keyword
+- **Cluster kulcsszavak**: 3–5 supporting keyword a pillar köré
+- **Tartalom térkép**: melyik kulcsszó melyik deliverable típushoz illik (blog, landing page, social, ad copy, email)
 
-### Közösségi fájdalompont
-1 konkrét idézet vagy parafrázis valódi keresési/fórum forrásból (ha stub, jelezd).
+### Fájdalompont
+1 konkrét idézet vagy parafrázis valódi keresési/fórum forrásból. Ha stub: jelezd és vezess le a kliens ICP-jéből.
 
 ### Adatminőség
-Milyen forrásból dolgozott: tavily / serpapi / web_fetch / levezetett memóriából.
+Forrás: tavily / serpapi / web_fetch / memóriából levezetett.
 
-Nyújtsd be `submit_deliverable`-ként `type="seo_report"` értékkel.
+---
+
+**Zárd le: `submit_deliverable` hívással, `type="seo_report"`.**
