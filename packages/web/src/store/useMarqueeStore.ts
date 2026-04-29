@@ -1,9 +1,348 @@
 import { create } from 'zustand';
+import { briefsApi, deliverablesApi, type DeliverableRow, memoryApi, messagesApi, threadsApi } from '../lib/api.js';
+import { marqueeEvents } from '../lib/sse.js';
 
-interface MarqueeStore {
-  awaitingApprovalCount: number;
+export interface Message {
+  id: string;
+  type: 'chat' | 'brief_proposal' | 'memory_proposal' | 'tool_call' | 'tool_result' | 'system';
+  sender: 'user' | 'director' | 'system';
+  text: string;
+  briefId?: string;
+  toolName?: string;
+  ts: number;
 }
 
-export const useMarqueeStore = create<MarqueeStore>(() => ({
+export interface ProposedBrief {
+  briefId: string;
+  title: string;
+  deliverableType: string;
+  targetSpecialist: string;
+  platform: string | null;
+}
+
+export type Deliverable = DeliverableRow;
+
+interface MarqueeStore {
+  // Chat
+  threadId: string | null;
+  messages: Message[];
+
+  // Brief proposals (in-flight from agents — appear as inline cards in chat)
+  proposedBriefs: ProposedBrief[];
+
+  // Counters / flags
+  awaitingApprovalCount: number;
+  memoryEmpty: boolean;
+
+  // Approvals view data
+  deliverables: Deliverable[];
+
+  // Active agent indicator
+  activeAgents: Set<string>;
+
+  // Actions
+  fetchInitialState: () => Promise<void>;
+  sendMessage: (text: string) => Promise<void>;
+  dispatchBrief: (id: string) => Promise<void>;
+  discardBrief: (id: string) => Promise<void>;
+  fetchDeliverables: (statusFilter?: string) => Promise<void>;
+  approveDeliverable: (id: string) => Promise<void>;
+  returnDeliverable: (id: string, note: string) => Promise<void>;
+  discardDeliverable: (id: string, note?: string) => Promise<void>;
+}
+
+// Helper to turn a raw server message into a Message
+function mapServerMessage(raw: {
+  id: string;
+  sender?: string;
+  role?: string;
+  content?: string;
+  contentJson?: string;
+  created_at?: number;
+  createdAt?: number;
+}): Message {
+  const text = raw.contentJson
+    ? (() => {
+        try {
+          const parsed = JSON.parse(raw.contentJson) as { text?: string };
+          return parsed.text ?? raw.content ?? '';
+        } catch {
+          return raw.content ?? '';
+        }
+      })()
+    : (raw.content ?? '');
+
+  const senderRaw = raw.sender ?? raw.role ?? 'system';
+  const sender: Message['sender'] =
+    senderRaw === 'user' || senderRaw === 'human' ? 'user' : senderRaw === 'director' ? 'director' : 'system';
+
+  return {
+    id: raw.id,
+    type: 'chat',
+    sender,
+    text,
+    ts: (raw.created_at ?? raw.createdAt ?? Date.now()),
+  };
+}
+
+export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
+  threadId: null,
+  messages: [],
+  proposedBriefs: [],
   awaitingApprovalCount: 0,
+  memoryEmpty: false,
+  deliverables: [],
+  activeAgents: new Set<string>(),
+
+  fetchInitialState: async () => {
+    // 1. Fetch (or auto-create) threads
+    const threads = await threadsApi.list();
+    const firstThread = threads[0] ?? null;
+    const threadId = firstThread?.thread_id ?? null;
+    set({ threadId });
+
+    // 2. Fetch messages for the thread
+    if (threadId) {
+      const rawMessages = await messagesApi.list(threadId);
+      const messages: Message[] = rawMessages.map(mapServerMessage);
+      set({ messages });
+    }
+
+    // 3. Check memory: if profile.md doesn't exist → memoryEmpty=true
+    try {
+      const files = await memoryApi.files('default');
+      const profileFile = files.find((f) => f.file === 'profile.md');
+      set({ memoryEmpty: !profileFile || !profileFile.exists });
+    } catch {
+      // If endpoint not available, assume memory exists
+      set({ memoryEmpty: false });
+    }
+
+    // 4. Count awaiting_approval deliverables
+    try {
+      const awaiting = await deliverablesApi.list('awaiting_approval');
+      set({ awaitingApprovalCount: awaiting.length });
+    } catch {
+      set({ awaitingApprovalCount: 0 });
+    }
+
+    // 5. Start SSE
+    marqueeEvents.start();
+    const state = get();
+
+    // chat_message: agent message arrives
+    marqueeEvents.on<{
+      type: string;
+      sender?: string;
+      role?: string;
+      id?: string;
+      message_id?: string;
+      content?: string;
+      contentJson?: string;
+      thread_id?: string;
+    }>('chat_message', (payload) => {
+      // Skip user messages (already added optimistically)
+      const senderRaw = payload.sender ?? payload.role ?? '';
+      if (senderRaw === 'user' || senderRaw === 'human') return;
+      const msg = mapServerMessage({
+        id: payload.id ?? payload.message_id ?? String(Date.now()),
+        sender: senderRaw,
+        content: payload.content,
+        contentJson: payload.contentJson,
+        created_at: Date.now(),
+      });
+      set((s) => ({ messages: [...s.messages, msg] }));
+    });
+
+    // brief_proposed: push card + message
+    marqueeEvents.on<{
+      type: string;
+      brief_id?: string;
+      briefId?: string;
+      title?: string;
+      deliverable_type?: string;
+      deliverableType?: string;
+      target_specialist?: string;
+      targetSpecialist?: string;
+      platform?: string | null;
+    }>('brief_proposed', (payload) => {
+      const briefId = payload.brief_id ?? payload.briefId ?? '';
+      const title = payload.title ?? '';
+      const deliverableType = payload.deliverable_type ?? payload.deliverableType ?? '';
+      const targetSpecialist = payload.target_specialist ?? payload.targetSpecialist ?? '';
+      const platform = payload.platform ?? null;
+
+      const brief: ProposedBrief = { briefId, title, deliverableType, targetSpecialist, platform };
+
+      const cardMsg: Message = {
+        id: `brief_card_${briefId}`,
+        type: 'brief_proposal',
+        sender: 'director',
+        text: '',
+        briefId,
+        ts: Date.now(),
+      };
+
+      set((s) => ({
+        proposedBriefs: [...s.proposedBriefs, brief],
+        messages: [...s.messages, cardMsg],
+      }));
+    });
+
+    // brief_dispatched: remove from proposedBriefs
+    marqueeEvents.on<{ type: string; brief_id?: string; briefId?: string }>('brief_dispatched', (payload) => {
+      const briefId = payload.brief_id ?? payload.briefId ?? '';
+      set((s) => ({
+        proposedBriefs: s.proposedBriefs.filter((b) => b.briefId !== briefId),
+      }));
+    });
+
+    // deliverable_submitted: increment counter
+    marqueeEvents.on('deliverable_submitted', () => {
+      set((s) => ({ awaitingApprovalCount: s.awaitingApprovalCount + 1 }));
+    });
+
+    // deliverable_approved / deliverable_discarded: decrement counter
+    marqueeEvents.on('deliverable_approved', () => {
+      set((s) => ({ awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1) }));
+    });
+    marqueeEvents.on('deliverable_discarded', () => {
+      set((s) => ({ awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1) }));
+    });
+
+    // delegation_started: add agent_slug to activeAgents
+    marqueeEvents.on<{ type: string; agent_slug?: string; agentSlug?: string }>('delegation_started', (payload) => {
+      const slug = payload.agent_slug ?? payload.agentSlug ?? '';
+      if (!slug) return;
+      set((s) => {
+        const next = new Set(s.activeAgents);
+        next.add(slug);
+        return { activeAgents: next };
+      });
+    });
+
+    // error: push system message
+    marqueeEvents.on<{ type: string; message?: string; error?: string }>('error', (payload) => {
+      const text = payload.message ?? payload.error ?? 'Ismeretlen hiba';
+      const errMsg: Message = {
+        id: `err_${Date.now()}`,
+        type: 'system',
+        sender: 'system',
+        text: `Hiba: ${text}`,
+        ts: Date.now(),
+      };
+      set((s) => ({ messages: [...s.messages, errMsg] }));
+    });
+
+    // memory_edited: re-check profile.md existence
+    marqueeEvents.on<{ type: string; file?: string }>('memory_edited', async (payload) => {
+      if (payload.file === 'profile.md' || !payload.file) {
+        try {
+          const files = await memoryApi.files('default');
+          const profileFile = files.find((f) => f.file === 'profile.md');
+          set({ memoryEmpty: !profileFile || !profileFile.exists });
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    // No-op registrations for completeness (SSE spec requires all 12 handled)
+    // memory_proposed, memory_decided, deliverable_returned — no state change needed here
+    marqueeEvents.on('memory_proposed', () => {});
+    marqueeEvents.on('memory_decided', () => {});
+    marqueeEvents.on('deliverable_returned', () => {});
+
+    // Suppress unused variable warning
+    void state;
+  },
+
+  sendMessage: async (text: string) => {
+    const { threadId } = get();
+    if (!threadId) return;
+
+    // Optimistic add
+    const optimisticMsg: Message = {
+      id: `optimistic_${Date.now()}`,
+      type: 'chat',
+      sender: 'user',
+      text,
+      ts: Date.now(),
+    };
+    set((s) => ({ messages: [...s.messages, optimisticMsg] }));
+
+    // Mark director as active
+    set((s) => {
+      const next = new Set(s.activeAgents);
+      next.add('director');
+      return { activeAgents: next };
+    });
+
+    try {
+      await messagesApi.post(threadId, text);
+    } catch {
+      // Push error message
+      const errMsg: Message = {
+        id: `err_send_${Date.now()}`,
+        type: 'system',
+        sender: 'system',
+        text: 'Üzenet küldése sikertelen. Próbáld újra.',
+        ts: Date.now(),
+      };
+      set((s) => ({ messages: [...s.messages, errMsg] }));
+    }
+  },
+
+  dispatchBrief: async (id: string) => {
+    await briefsApi.dispatch(id);
+    // Remove locally (SSE will also fire brief_dispatched — idempotent)
+    set((s) => ({
+      proposedBriefs: s.proposedBriefs.filter((b) => b.briefId !== id),
+    }));
+  },
+
+  discardBrief: (id: string) => {
+    // MVP: local only, no backend call
+    set((s) => ({
+      proposedBriefs: s.proposedBriefs.filter((b) => b.briefId !== id),
+    }));
+    return Promise.resolve();
+  },
+
+  fetchDeliverables: async (statusFilter?: string) => {
+    const deliverables = await deliverablesApi.list(statusFilter);
+    set({ deliverables });
+    if (statusFilter === 'awaiting_approval') {
+      set({ awaitingApprovalCount: deliverables.length });
+    }
+  },
+
+  approveDeliverable: async (id: string) => {
+    await deliverablesApi.approve(id);
+    set((s) => ({
+      deliverables: s.deliverables.map((d) =>
+        d.id === id ? { ...d, status: 'approved' } : d,
+      ),
+      awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1),
+    }));
+  },
+
+  returnDeliverable: async (id: string, note: string) => {
+    await deliverablesApi.return(id, note);
+    set((s) => ({
+      deliverables: s.deliverables.map((d) =>
+        d.id === id ? { ...d, status: 'returned' } : d,
+      ),
+    }));
+  },
+
+  discardDeliverable: async (id: string, note?: string) => {
+    await deliverablesApi.discard(id, note);
+    set((s) => ({
+      deliverables: s.deliverables.map((d) =>
+        d.id === id ? { ...d, status: 'discarded' } : d,
+      ),
+      awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1),
+    }));
+  },
 }));

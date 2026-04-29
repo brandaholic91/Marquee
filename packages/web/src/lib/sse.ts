@@ -1,23 +1,40 @@
-type Handler = (payload: unknown, id: number) => void;
+// Typed SSE event types for Marquee v1
+export type SseEventType =
+  | 'chat_message'
+  | 'brief_proposed'
+  | 'brief_dispatched'
+  | 'delegation_started'
+  | 'deliverable_submitted'
+  | 'deliverable_approved'
+  | 'deliverable_returned'
+  | 'deliverable_discarded'
+  | 'memory_proposed'
+  | 'memory_decided'
+  | 'memory_edited'
+  | 'error';
 
-export class AgencyEvents {
+type Handler<T = unknown> = (payload: T) => void;
+
+export class MarqueeEvents {
   private es: EventSource | null = null;
-  private subs = new Map<string, Set<Handler>>();
+  private subs = new Map<string, Set<Handler<unknown>>>();
 
   start() {
     if (this.es) return;
-    const lastId = localStorage.getItem("agency:lastEventId");
-    const url = lastId ? `/api/events?lastEventId=${lastId}` : "/api/events";
+    const lastId = localStorage.getItem('marquee:lastEventId');
+    const url = lastId ? `/api/events?lastEventId=${lastId}` : '/api/events';
     this.es = new EventSource(url);
     this.es.onmessage = (msg) => {
       try {
         const payload = JSON.parse(msg.data) as Record<string, unknown>;
-        const id = Number(msg.lastEventId);
-        if (id) localStorage.setItem("agency:lastEventId", String(id));
-        const type = (payload.type as string | undefined) ?? "message";
-        for (const h of this.subs.get(type) ?? []) h(payload, id);
-        for (const h of this.subs.get("*") ?? []) h(payload, id);
-      } catch {}
+        const id = msg.lastEventId;
+        if (id) localStorage.setItem('marquee:lastEventId', id);
+        const type = (payload.type as string | undefined) ?? 'unknown';
+        for (const h of this.subs.get(type) ?? []) h(payload);
+        for (const h of this.subs.get('*') ?? []) h(payload);
+      } catch {
+        // ignore parse errors
+      }
     };
     this.es.onerror = () => {
       this.es?.close();
@@ -31,15 +48,15 @@ export class AgencyEvents {
     this.es = null;
   }
 
-  on(type: string, h: Handler) {
-    let s = this.subs.get(type);
-    if (!s) {
-      s = new Set();
-      this.subs.set(type, s);
+  on<T = unknown>(type: SseEventType | '*', handler: Handler<T>): () => void {
+    let set = this.subs.get(type);
+    if (!set) {
+      set = new Set();
+      this.subs.set(type, set);
     }
-    s.add(h);
-    return () => s!.delete(h);
+    set.add(handler as Handler<unknown>);
+    return () => set!.delete(handler as Handler<unknown>);
   }
 }
 
-export const agencyEvents = new AgencyEvents();
+export const marqueeEvents = new MarqueeEvents();
