@@ -321,7 +321,7 @@ function PipelineWidget({ pipeline }: { pipeline: PipelineCount[] }) {
         </div>
       ) : (
         <div>
-          {pipeline.map((row, i) => {
+          {pipeline.filter((row) => row.status !== "dismissed").map((row, i) => {
             const badgeKind = PIPELINE_BADGE_MAP[row.status] ?? "cream";
             return (
               <div

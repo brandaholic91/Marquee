@@ -28,6 +28,7 @@ const COLUMNS = [
   { status: "awaiting_eval", label: "Értékelésre vár" },
   { status: "awaiting_approval", label: "Jóváhagyásra vár" },
   { status: "shipped", label: "Kiszállítva" },
+  { status: "archived", label: "Elutasítva" },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -155,13 +156,13 @@ export function PipelineView() {
   }, []);
 
   async function handleArchive(id: string) {
-    setDeliverables((prev) => prev.map((d) => d.id === id ? { ...d, status: "archived" } : d));
-    await api.deliverables.patchStatus(id, "archived").catch(() => {});
+    setDeliverables((prev) => prev.map((d) => d.id === id ? { ...d, status: "dismissed" } : d));
+    await api.deliverables.patchStatus(id, "dismissed").catch(() => {});
   }
 
   const activeCampaignIds = new Set(campaigns.filter((c) => c.status !== "archived").map((c) => c.id));
   const visibleDeliverables = deliverables.filter((d) =>
-    d.status !== "archived" && (!d.campaignId || activeCampaignIds.has(d.campaignId))
+    d.status !== "dismissed" && (!d.campaignId || activeCampaignIds.has(d.campaignId))
   );
   const filtered = campaignFilter
     ? visibleDeliverables.filter((d) => d.campaignId === campaignFilter)

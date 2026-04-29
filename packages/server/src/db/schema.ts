@@ -100,7 +100,7 @@ export const deliverables = sqliteTable(
 		type: text("type").notNull(),
 		title: text("title").notNull(),
 		status: text("status", {
-			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived"],
+			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived", "dismissed"],
 		}).notNull(),
 		currentRevisionId: text("current_revision_id"),
 		sourceDeliverableId: text("source_deliverable_id").references((): AnySQLiteColumn => deliverables.id),
