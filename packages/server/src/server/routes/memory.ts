@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { existsSync, mkdirSync, readdirSync, writeFileSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { simpleGit } from "simple-git";
@@ -36,53 +36,49 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 			}
 
 			const git = simpleGit(opts.dataDir);
-			const filePath = join(opts.dataDir, "memory", proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`);
-			const memRelPath = `memory/${proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`}`;
+			const fileBasename = proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`;
+			const filePath = join(opts.dataDir, "memory", fileBasename);
+			const memRelPath = `memory/${fileBasename}`;
 
-			// Normalize patch paths to correct memory/ location
+			// Normalize patch paths
 			const normalizedPatch = proposal.patch
 				.replace(/^--- [^\n]+/m, `--- a/${memRelPath}`)
 				.replace(/^\+\+\+ [^\n]+/m, `+++ b/${memRelPath}`);
 
-			const patchPath = join(tmpdir(), `marquee-patch-${id}.diff`);
-			let appliedViaGit = false;
+			// Check if patch has removal lines (replacement diff) vs append-only
+			const hasRemovals = proposal.patch.split("\n")
+				.some((l) => l.startsWith("-") && !l.startsWith("---"));
+
+			const addedLines = proposal.patch
+				.split("\n")
+				.filter((l) => l.startsWith("+") && !l.startsWith("+++"))
+				.map((l) => l.slice(1))
+				.join("\n");
+
+			if (!addedLines.trim()) {
+				return reply.code(409).send({ error: "patch_conflict", detail: "Patch has no applicable content" });
+			}
+
 			try {
-				writeFileSync(patchPath, normalizedPatch, "utf8");
-				await git.raw(["apply", "--ignore-whitespace", "--check", patchPath]);
-				await git.raw(["apply", "--ignore-whitespace", patchPath]);
-				appliedViaGit = true;
-			} catch {
-				// Fallback: append the added lines directly to the file
-				const addedLines = proposal.patch
-					.split("\n")
-					.filter((l) => l.startsWith("+") && !l.startsWith("+++"))
-					.map((l) => l.slice(1))
-					.join("\n");
-
-				if (!addedLines.trim()) {
-					// No usable content — truly invalid diff
-					try { unlinkSync(patchPath); } catch { /* ignore */ }
-					return reply.code(409).send({ error: "patch_conflict", detail: "Patch has no applicable content" });
-				}
-
-				try {
+				if (hasRemovals) {
+					// Replacement diff — use git apply
+					const patchPath = join(tmpdir(), `marquee-patch-${id}.diff`);
+					try {
+						writeFileSync(patchPath, normalizedPatch, "utf8");
+						await git.raw(["apply", "--ignore-whitespace", patchPath]);
+					} finally {
+						try { unlinkSync(patchPath); } catch { /* ignore */ }
+					}
+				} else {
+					// Append-only — write directly (avoids git apply context issues)
 					const existing = existsSync(filePath) ? readFileSync(filePath, "utf8").trimEnd() : "";
 					writeFileSync(filePath, existing ? `${existing}\n\n${addedLines}\n` : `${addedLines}\n`, "utf8");
-				} catch (fallbackErr) {
-					try { unlinkSync(patchPath); } catch { /* ignore */ }
-					return reply.code(500).send({ error: "git_apply_failed" });
 				}
-			}
-			try { unlinkSync(patchPath); } catch { /* ignore */ }
-
-			try {
-				await git.add(filePath);
+				await git.add(memRelPath);
 				await git.commit(`memory: apply agent proposal for ${proposal.file}`);
-			} catch {
-				if (appliedViaGit) {
-					try { await git.checkout([filePath]); } catch { /* ignore */ }
-					return reply.code(500).send({ error: "git_apply_failed" });
-				}
+			} catch (err) {
+				try { await git.checkout([memRelPath]); } catch { /* ignore */ }
+				return reply.code(500).send({ error: "git_apply_failed", detail: String(err) });
 			}
 
 			try { unlinkSync(patchPath); } catch { /* ignore */ }
