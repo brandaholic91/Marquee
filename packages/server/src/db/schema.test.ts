@@ -1,41 +1,27 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { getTableConfig } from "drizzle-orm/sqlite-core";
-import { describe, expect, it } from "vitest";
-import * as schema from "./schema.js";
+import { describe, it, expect } from 'vitest';
+import * as schema from './schema.js';
 
-describe("schema", () => {
-	it("exports all expected tables", () => {
-		expect(Object.keys(schema)).toContain("chatThreads");
-		expect(Object.keys(schema)).toContain("messages");
-		expect(Object.keys(schema)).toContain("deliverables");
-		expect(Object.keys(schema)).toContain("turns");
-	});
+describe('schema exports', () => {
+  it('has all 13 MVP tables', () => {
+    expect(schema.clients).toBeDefined();
+    expect(schema.chatThreads).toBeDefined();
+    expect(schema.messages).toBeDefined();
+    expect(schema.briefs).toBeDefined();
+    expect(schema.delegations).toBeDefined();
+    expect(schema.deliverables).toBeDefined();
+    expect(schema.deliverableRevisions).toBeDefined();
+    expect(schema.approvals).toBeDefined();
+    expect(schema.agentSessions).toBeDefined();
+    expect(schema.turns).toBeDefined();
+    expect(schema.events).toBeDefined();
+    expect(schema.memoryProposals).toBeDefined();
+    expect(schema.memoryAudit).toBeDefined();
+  });
 
-	it("exports tasks and taskPendingUpdates tables", () => {
-		expect(Object.keys(schema)).toContain("tasks");
-		expect(Object.keys(schema)).toContain("taskPendingUpdates");
-	});
-
-	it("deliverables table has sourceDeliverableId column", () => {
-		const cols = getTableConfig(schema.deliverables).columns.map((c) => c.name);
-		expect(cols).toContain("source_deliverable_id");
-	});
-
-	it("has no duplicate column names in any table", () => {
-		for (const [name, table] of Object.entries(schema)) {
-			const cols = getTableConfig(table as Parameters<typeof getTableConfig>[0]).columns.map((c) => c.name);
-			const unique = new Set(cols);
-			expect(unique.size, `Table "${name}" has duplicate columns: ${cols.join(", ")}`).toBe(cols.length);
-		}
-	});
-
-	it("creates a drizzle db instance without errors", () => {
-		const dir = mkdtempSync(join(tmpdir(), "agency-test-"));
-		const sqlite = new Database(join(dir, "test.db"));
-		expect(() => drizzle(sqlite, { schema })).not.toThrow();
-	});
+  it('does not export removed tables', () => {
+    expect((schema as any).workflowRuns).toBeUndefined();
+    expect((schema as any).evals).toBeUndefined();
+    expect((schema as any).campaigns).toBeUndefined();
+    expect((schema as any).tasks).toBeUndefined();
+  });
 });

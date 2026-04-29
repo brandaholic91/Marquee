@@ -1,249 +1,149 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
-const ts = (col: string) =>
-	integer(col, { mode: "timestamp_ms" })
-		.notNull()
-		.$defaultFn(() => new Date());
-
-export const campaigns = sqliteTable("campaigns", {
-	id: text("id").primaryKey(),
-	title: text("title").notNull(),
-	description: text("description"),
-	status: text("status", { enum: ["active", "inactive", "completed", "archived"] }).notNull().default("active"),
-	createdAt: ts("created_at"),
+export const clients = sqliteTable('clients', {
+  slug: text('slug').primaryKey(),
+  name: text('name').notNull(),
+  createdAt: integer('created_at').notNull(),
 });
 
-export const chatThreads = sqliteTable("chat_threads", {
-	id: text("id").primaryKey(),
-	type: text("type", { enum: ["intake", "dispatched", "consultative"] }).notNull(),
-	title: text("title").notNull(),
-	createdAt: ts("created_at"),
-	archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+export const chatThreads = sqliteTable('chat_threads', {
+  id: text('id').primaryKey(),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  title: text('title'),
+  archivedAt: integer('archived_at'),
 });
 
-export const chatParticipants = sqliteTable("chat_participants", {
-	threadId: text("thread_id")
-		.notNull()
-		.references(() => chatThreads.id),
-	agentSlug: text("agent_slug").notNull(),
+export const messages = sqliteTable('messages', {
+  id: text('id').primaryKey(),
+  threadId: text('thread_id').references(() => chatThreads.id),
+  agentSessionId: text('agent_session_id'),
+  sender: text('sender').notNull(),
+  type: text('type', { enum: ['chat', 'brief_proposal', 'memory_proposal', 'tool_call', 'tool_result', 'system'] }).notNull(),
+  contentJson: text('content_json').notNull(),
+  ts: integer('ts').notNull(),
+}, (t) => ({
+  byThread: index('idx_messages_thread').on(t.threadId, t.ts),
+}));
+
+export const briefs = sqliteTable('briefs', {
+  id: text('id').primaryKey(),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  sourceThreadId: text('source_thread_id').references(() => chatThreads.id),
+  contentMd: text('content_md').notNull(),
+  status: text('status', { enum: ['draft', 'dispatched', 'done'] }).notNull(),
+  createdAt: integer('created_at').notNull(),
+  dispatchedAt: integer('dispatched_at'),
 });
 
-export const messages = sqliteTable(
-	"messages",
-	{
-		id: text("id").primaryKey(),
-		threadId: text("thread_id").references(() => chatThreads.id),
-		agentSessionId: text("agent_session_id"),
-		sender: text("sender").notNull(),
-		type: text("type", {
-			enum: [
-				"chat",
-				"delegation_req",
-				"delegation_resp",
-				"brief_proposal",
-				"memory_proposal",
-				"eval_report",
-				"tool_call",
-				"tool_result",
-				"approval_decision",
-				"human_brief",
-			],
-		}).notNull(),
-		contentJson: text("content_json", { mode: "json" }).notNull(),
-		createdAt: ts("created_at"),
-	},
-	(t) => ({
-		threadIdx: index("messages_thread_idx").on(t.threadId, t.createdAt),
-		sessionIdx: index("messages_session_idx").on(t.agentSessionId, t.createdAt),
-	}),
-);
+export const delegations = sqliteTable('delegations', {
+  id: text('id').primaryKey(),
+  briefId: text('brief_id').notNull().references(() => briefs.id),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  fromAgent: text('from_agent').notNull(),
+  toAgent: text('to_agent', { enum: ['copywriter', 'social-manager', 'paid-specialist'] }).notNull(),
+  payloadJson: text('payload_json').notNull(),
+  status: text('status', { enum: ['requested', 'in_progress', 'complete', 'failed'] }).notNull(),
+  requestedAt: integer('requested_at').notNull(),
+  completedAt: integer('completed_at'),
+}, (t) => ({
+  byBrief: index('idx_delegations_brief').on(t.briefId, t.status),
+  byTarget: index('idx_delegations_target').on(t.toAgent, t.status),
+}));
 
-export const briefs = sqliteTable("briefs", {
-	id: text("id").primaryKey(),
-	sourceThreadId: text("source_thread_id").references(() => chatThreads.id),
-	campaignId: text("campaign_id").references(() => campaigns.id),
-	status: text("status", { enum: ["draft", "dispatched", "done"] }).notNull(),
-	contentMd: text("content_md").notNull(),
-	createdAt: ts("created_at"),
-	dispatchedAt: integer("dispatched_at", { mode: "timestamp_ms" }),
+export const deliverables = sqliteTable('deliverables', {
+  id: text('id').primaryKey(),
+  delegationId: text('delegation_id').notNull().references(() => delegations.id),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  type: text('type', { enum: ['social_post', 'email', 'blog_post', 'ad_copy'] }).notNull(),
+  status: text('status', { enum: ['drafting', 'awaiting_approval', 'shipped', 'archived'] }).notNull(),
+  currentRevisionId: text('current_revision_id'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (t) => ({
+  byClientStatus: index('idx_deliverables_client_status').on(t.clientSlug, t.status, t.updatedAt),
+}));
+
+export const deliverableRevisions = sqliteTable('deliverable_revisions', {
+  id: text('id').primaryKey(),
+  deliverableId: text('deliverable_id').notNull().references(() => deliverables.id),
+  revisionNo: integer('revision_no').notNull(),
+  artifactPath: text('artifact_path').notNull(),
+  createdByAgent: text('created_by_agent').notNull(),
+  feedbackNote: text('feedback_note'),
+  ts: integer('ts').notNull(),
+}, (t) => ({
+  unique: uniqueIndex('uq_deliverable_revision').on(t.deliverableId, t.revisionNo),
+}));
+
+export const approvals = sqliteTable('approvals', {
+  id: text('id').primaryKey(),
+  deliverableId: text('deliverable_id').notNull().references(() => deliverables.id),
+  revisionId: text('revision_id').notNull().references(() => deliverableRevisions.id),
+  decision: text('decision', { enum: ['approved', 'requested_changes', 'discarded'] }).notNull(),
+  note: text('note'),
+  decidedAt: integer('decided_at').notNull(),
 });
 
-export const delegations = sqliteTable(
-	"delegations",
-	{
-		id: text("id").primaryKey(),
-		briefId: text("brief_id").references(() => briefs.id),
-		parentDelegationId: text("parent_delegation_id"),
-		campaignId: text("campaign_id").references(() => campaigns.id),
-		fromAgent: text("from_agent").notNull(),
-		toAgent: text("to_agent").notNull(),
-		status: text("status", { enum: ["requested", "in_progress", "complete", "blocked"] }).notNull(),
-		payloadJson: text("payload_json", { mode: "json" }).notNull(),
-		requestedAt: ts("requested_at"),
-		completedAt: integer("completed_at", { mode: "timestamp_ms" }),
-	},
-	(t) => ({
-		parentIdx: index("delegations_parent_idx").on(t.parentDelegationId, t.status),
-		statusIdx: index("delegations_status_idx").on(t.status),
-	}),
-);
+export const agentSessions = sqliteTable('agent_sessions', {
+  id: text('id').primaryKey(),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  agentSlug: text('agent_slug').notNull(),
+  lifecycle: text('lifecycle', { enum: ['warm', 'transient'] }).notNull(),
+  parentDelegationId: text('parent_delegation_id').references(() => delegations.id),
+  startedAt: integer('started_at').notNull(),
+  endedAt: integer('ended_at'),
+}, (t) => ({
+  alive: index('idx_sessions_alive').on(t.endedAt),
+}));
 
-export const deliverables = sqliteTable(
-	"deliverables",
-	{
-		id: text("id").primaryKey(),
-		delegationId: text("delegation_id")
-			.notNull()
-			.references(() => delegations.id),
-		campaignId: text("campaign_id").references(() => campaigns.id),
-		type: text("type").notNull(),
-		title: text("title").notNull(),
-		status: text("status", {
-			enum: ["drafting", "awaiting_eval", "awaiting_approval", "shipped", "archived", "dismissed"],
-		}).notNull(),
-		currentRevisionId: text("current_revision_id"),
-		sourceDeliverableId: text("source_deliverable_id").references((): AnySQLiteColumn => deliverables.id),
-		createdAt: ts("created_at"),
-		updatedAt: ts("updated_at"),
-	},
-	(t) => ({
-		statusIdx: index("deliverables_status_idx").on(t.status),
-	}),
-);
-
-export const deliverableRevisions = sqliteTable("deliverable_revisions", {
-	id: text("id").primaryKey(),
-	deliverableId: text("deliverable_id")
-		.notNull()
-		.references(() => deliverables.id),
-	artifactPath: text("artifact_path").notNull(),
-	createdByAgent: text("created_by_agent").notNull(),
-	createdAt: ts("created_at"),
+export const turns = sqliteTable('turns', {
+  id: text('id').primaryKey(),
+  sessionId: text('session_id').notNull().references(() => agentSessions.id),
+  model: text('model').notNull(),
+  promptTokens: integer('prompt_tokens'),
+  completionTokens: integer('completion_tokens'),
+  latencyMs: integer('latency_ms'),
+  startedAt: integer('started_at').notNull(),
+  endedAt: integer('ended_at'),
 });
 
-export const evals = sqliteTable("evals", {
-	id: text("id").primaryKey(),
-	revisionId: text("revision_id")
-		.notNull()
-		.references(() => deliverableRevisions.id),
-	scoresJson: text("scores_json", { mode: "json" }).notNull(),
-	summaryMd: text("summary_md").notNull(),
-	createdAt: ts("created_at"),
-});
+export const events = sqliteTable('events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ts: integer('ts').notNull(),
+  clientSlug: text('client_slug').references(() => clients.slug),
+  agentSlug: text('agent_slug'),
+  sessionId: text('session_id').references(() => agentSessions.id),
+  turnId: text('turn_id').references(() => turns.id),
+  type: text('type').notNull(),
+  payloadJson: text('payload_json').notNull(),
+}, (t) => ({
+  byTs: index('idx_events_ts').on(t.ts),
+  byClientTs: index('idx_events_client_ts').on(t.clientSlug, t.ts),
+}));
 
-export const approvals = sqliteTable("approvals", {
-	id: text("id").primaryKey(),
-	deliverableId: text("deliverable_id")
-		.notNull()
-		.references(() => deliverables.id),
-	decision: text("decision", { enum: ["approved", "rejected", "requested_changes"] }).notNull(),
-	note: text("note"),
-	decidedAt: ts("decided_at"),
-});
+export const memoryProposals = sqliteTable('memory_proposals', {
+  id: text('id').primaryKey(),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  file: text('file').notNull(),
+  prevContentHash: text('prev_content_hash'),
+  newContent: text('new_content').notNull(),
+  agentSessionId: text('agent_session_id').references(() => agentSessions.id),
+  reason: text('reason'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull(),
+  createdAt: integer('created_at').notNull(),
+  decidedAt: integer('decided_at'),
+}, (t) => ({
+  byStatus: index('idx_proposals_status').on(t.clientSlug, t.status, t.createdAt),
+}));
 
-export const agentSessions = sqliteTable(
-	"agent_sessions",
-	{
-		id: text("id").primaryKey(),
-		agentSlug: text("agent_slug").notNull(),
-		lifecycle: text("lifecycle", { enum: ["warm", "transient"] }).notNull(),
-		parentDelegationId: text("parent_delegation_id").references(() => delegations.id),
-		startedAt: ts("started_at"),
-		endedAt: integer("ended_at", { mode: "timestamp_ms" }),
-	},
-	(t) => ({
-		activeIdx: index("sessions_active_idx").on(t.endedAt),
-	}),
-);
-
-export const turns = sqliteTable(
-	"turns",
-	{
-		id: text("id").primaryKey(),
-		sessionId: text("session_id")
-			.notNull()
-			.references(() => agentSessions.id),
-		model: text("model").notNull(),
-		promptTokens: integer("prompt_tokens").notNull(),
-		completionTokens: integer("completion_tokens").notNull(),
-		costUsd: integer("cost_usd_cents").notNull(),
-		latencyMs: integer("latency_ms").notNull(),
-		startedAt: ts("started_at"),
-		endedAt: integer("ended_at", { mode: "timestamp_ms" }),
-	},
-	(t) => ({
-		sessionIdx: index("turns_session_idx").on(t.sessionId, t.startedAt),
-	}),
-);
-
-export const events = sqliteTable(
-	"events",
-	{
-		id: integer("id").primaryKey({ autoIncrement: true }),
-		ts: ts("ts"),
-		agentSlug: text("agent_slug"),
-		sessionId: text("session_id"),
-		turnId: text("turn_id"),
-		type: text("type").notNull(),
-		payloadJson: text("payload_json", { mode: "json" }).notNull(),
-	},
-	(t) => ({
-		tsIdx: index("events_ts_idx").on(t.ts),
-	}),
-);
-
-export const memoryProposals = sqliteTable("memory_proposals", {
-	id: text("id").primaryKey(),
-	agentSessionId: text("agent_session_id"),
-	campaignId: text("campaign_id").references(() => campaigns.id),
-	file: text("file").notNull(),
-	patch: text("patch").notNull(),
-	status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
-	createdAt: ts("created_at"),
-});
-
-export const tasks = sqliteTable(
-	"tasks",
-	{
-		id: text("id").primaryKey(),
-		delegationId: text("delegation_id").notNull().references(() => delegations.id),
-		campaignId: text("campaign_id").references(() => campaigns.id),
-		title: text("title").notNull(),
-		descriptionMd: text("description_md").notNull().default(""),
-		status: text("status", { enum: ["open", "in_progress", "done", "blocked", "archived"] }).notNull(),
-		assignedTo: text("assigned_to").notNull(),
-		version: integer("version").notNull().default(1),
-		createdAt: ts("created_at"),
-		updatedAt: ts("updated_at"),
-	},
-	(t) => ({
-		assignedStatusIdx: index("tasks_assigned_status_idx").on(t.assignedTo, t.status),
-	}),
-);
-
-export const taskPendingUpdates = sqliteTable("task_pending_updates", {
-	id: text("id").primaryKey(),
-	taskId: text("task_id").notNull().references(() => tasks.id),
-	message: text("message").notNull(),
-	deliveredAt: integer("delivered_at", { mode: "timestamp_ms" }),
-	createdAt: ts("created_at"),
-});
-
-export const workflowRuns = sqliteTable("workflow_runs", {
-  id: text("id").primaryKey(),
-  briefId: text("brief_id").notNull().references(() => briefs.id),
-  campaignId: text("campaign_id").references(() => campaigns.id),
-  workflowId: text("workflow_id").notNull(),
-  currentStepId: text("current_step_id").notNull(),
-  stateJson: text("state_json", { mode: "json" }).notNull().$defaultFn(() => ({})),
-  status: text("status", {
-    enum: ["running", "awaiting_approval", "complete", "failed"],
-  })
-    .notNull()
-    .default("running"),
-  activeDelegationId: text("active_delegation_id"),
-  retryCount: integer("retry_count").notNull().default(0),
-  createdAt: ts("created_at"),
-  updatedAt: ts("updated_at"),
-});
+export const memoryAudit = sqliteTable('memory_audit', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  file: text('file').notNull(),
+  source: text('source').notNull(),
+  prevContentHash: text('prev_content_hash'),
+  newContentHash: text('new_content_hash').notNull(),
+  ts: integer('ts').notNull(),
+}, (t) => ({
+  byFile: index('idx_audit_file_ts').on(t.clientSlug, t.file, t.ts),
+}));

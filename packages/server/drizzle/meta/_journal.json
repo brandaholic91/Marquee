@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1777482821483,
+      "tag": "0000_rare_multiple_man",
+      "breakpoints": true
+    }
+  ]
+}
