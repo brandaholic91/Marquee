@@ -33,10 +33,15 @@ export function updateTaskInDb(
 }
 
 const SPECIALIST_TO_LEAD: Record<string, string> = {
-  copywriter:        "content-lead",
-  "social-manager":  "distribution-lead",
-  "seo-analyst":     "insights-lead",
+  copywriter:          "content-lead",
+  "social-manager":    "distribution-lead",
+  "seo-analyst":       "insights-lead",
 };
+
+const SPECIALISTS = new Set([
+  "copywriter", "social-manager", "seo-analyst",
+  "paid-specialist", "repurposer", "analytics-analyst",
+]);
 
 export class TaskManager {
   constructor(
@@ -58,6 +63,8 @@ export class TaskManager {
     const delegation = this.db.select().from(delegations)
       .where(eq(delegations.id, delegationId)).get();
     if (!delegation) return;
+    // Only create tasks for specialist agents — leads coordinate, not execute
+    if (!SPECIALISTS.has(delegation.toAgent)) return;
     const payload = delegation.payloadJson as { task?: string };
     const title = (payload.task ?? "Untitled task").slice(0, 300);
     this.db.insert(tasks).values({
