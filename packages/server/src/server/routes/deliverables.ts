@@ -105,45 +105,45 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 		if (!d) return reply.code(404).send({ error: "not found" });
 
 		type ThreadStep = { id: string; kind: "delegation" | "approval"; fromAgent: string; toAgent?: string; task?: string; note?: string; decision?: string; status?: string; requestedAt: Date | null };
-		const allSteps: ThreadStep[] = [];
-		const seenIds = new Set<string>();
+		const delegationMap = new Map<string, ThreadStep>();
 
-		// Walk a delegation chain upward, collect steps
-		function walkChain(startId: string | null | undefined) {
-			const chain: ThreadStep[] = [];
-			let currentId = startId;
-			while (currentId && !seenIds.has(currentId)) {
-				const del = opts.db.select().from(delegations).where(eq(delegations.id, currentId)).get();
-				if (!del) break;
-				seenIds.add(del.id);
-				const payload = del.payloadJson as { task?: string };
-				chain.unshift({ id: del.id, kind: "delegation", fromAgent: del.fromAgent, toAgent: del.toAgent, task: payload.task ?? "", status: del.status, requestedAt: del.requestedAt });
-				currentId = del.parentDelegationId;
-			}
-			return chain;
+		// Step 1: collect ALL delegations touching this deliverable's chain
+		// Walk upward from deliverable's delegation
+		let currentId: string | null | undefined = d.delegationId;
+		while (currentId && !delegationMap.has(currentId)) {
+			const del = opts.db.select().from(delegations).where(eq(delegations.id, currentId)).get();
+			if (!del) break;
+			const payload = del.payloadJson as { task?: string };
+			delegationMap.set(del.id, { id: del.id, kind: "delegation", fromAgent: del.fromAgent, toAgent: del.toAgent, task: payload.task ?? "", status: del.status, requestedAt: del.requestedAt });
+			currentId = del.parentDelegationId;
 		}
 
-		// 1. Original delegation chain
-		allSteps.push(...walkChain(d.delegationId));
+		// Step 2: iteratively expand — find delegations whose parent is already in our set
+		// (captures review cycles that branch off the original chain)
+		let prevSize = 0;
+		while (delegationMap.size !== prevSize) {
+			prevSize = delegationMap.size;
+			if (prevSize === 0) break;
+			const children = opts.db.select().from(delegations)
+				.where(inArray(delegations.parentDelegationId, [...delegationMap.keys()])).all();
+			for (const del of children) {
+				if (!delegationMap.has(del.id)) {
+					const payload = del.payloadJson as { task?: string };
+					delegationMap.set(del.id, { id: del.id, kind: "delegation", fromAgent: del.fromAgent, toAgent: del.toAgent, task: payload.task ?? "", status: del.status, requestedAt: del.requestedAt });
+				}
+			}
+		}
 
-		// 2. Approvals for this deliverable
+		const allSteps: ThreadStep[] = [...delegationMap.values()];
+
+		// Step 3: add approval events
 		const deliverableApprovals = opts.db.select().from(approvals)
 			.where(eq(approvals.deliverableId, req.params.id)).all();
 		for (const a of deliverableApprovals) {
 			allSteps.push({ id: a.id, kind: "approval", fromAgent: "human", decision: a.decision, note: a.note ?? undefined, requestedAt: a.createdAt ?? null });
 		}
 
-		// 3. Re-delegations: find delegations whose parentDelegationId is in our seen set (review cycles)
-		if (seenIds.size > 0) {
-			const allDels = opts.db.select().from(delegations).where(inArray(delegations.parentDelegationId, [...seenIds])).all();
-			for (const del of allDels) {
-				if (!seenIds.has(del.id)) {
-					allSteps.push(...walkChain(del.id));
-				}
-			}
-		}
-
-		// Sort by requestedAt
+		// Sort chronologically
 		allSteps.sort((a, b) => {
 			const ta = a.requestedAt ? new Date(a.requestedAt).getTime() : 0;
 			const tb = b.requestedAt ? new Date(b.requestedAt).getTime() : 0;
