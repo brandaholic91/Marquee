@@ -36,26 +36,53 @@ export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
 			}
 
 			const git = simpleGit(opts.dataDir);
+			const filePath = join(opts.dataDir, "memory", proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`);
+			const memRelPath = `memory/${proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`}`;
+
+			// Normalize patch paths to correct memory/ location
+			const normalizedPatch = proposal.patch
+				.replace(/^--- [^\n]+/m, `--- a/${memRelPath}`)
+				.replace(/^\+\+\+ [^\n]+/m, `+++ b/${memRelPath}`);
+
 			const patchPath = join(tmpdir(), `marquee-patch-${id}.diff`);
+			let appliedViaGit = false;
 			try {
-				writeFileSync(patchPath, proposal.patch, "utf8");
-				await git.raw(["apply", "--check", patchPath]);
-			} catch (err) {
-				try { unlinkSync(patchPath); } catch { /* ignore */ }
-				return reply.code(409).send({
-					error: "patch_conflict",
-					detail: err instanceof Error ? err.message : String(err),
-				});
+				writeFileSync(patchPath, normalizedPatch, "utf8");
+				await git.raw(["apply", "--ignore-whitespace", "--check", patchPath]);
+				await git.raw(["apply", "--ignore-whitespace", patchPath]);
+				appliedViaGit = true;
+			} catch {
+				// Fallback: append the added lines directly to the file
+				const addedLines = proposal.patch
+					.split("\n")
+					.filter((l) => l.startsWith("+") && !l.startsWith("+++"))
+					.map((l) => l.slice(1))
+					.join("\n");
+
+				if (!addedLines.trim()) {
+					// No usable content — truly invalid diff
+					try { unlinkSync(patchPath); } catch { /* ignore */ }
+					return reply.code(409).send({ error: "patch_conflict", detail: "Patch has no applicable content" });
+				}
+
+				try {
+					const existing = existsSync(filePath) ? readFileSync(filePath, "utf8").trimEnd() : "";
+					writeFileSync(filePath, existing ? `${existing}\n\n${addedLines}\n` : `${addedLines}\n`, "utf8");
+				} catch (fallbackErr) {
+					try { unlinkSync(patchPath); } catch { /* ignore */ }
+					return reply.code(500).send({ error: "git_apply_failed" });
+				}
 			}
+			try { unlinkSync(patchPath); } catch { /* ignore */ }
 
 			try {
-				await git.raw(["apply", patchPath]);
-				await git.add(join(opts.dataDir, "memory", proposal.file));
+				await git.add(filePath);
 				await git.commit(`memory: apply agent proposal for ${proposal.file}`);
-			} catch (err) {
-				try { unlinkSync(patchPath); } catch { /* ignore */ }
-				try { await git.checkout([join(opts.dataDir, "memory", proposal.file)]); } catch { /* ignore */ }
-				return reply.code(500).send({ error: "git_apply_failed" });
+			} catch {
+				if (appliedViaGit) {
+					try { await git.checkout([filePath]); } catch { /* ignore */ }
+					return reply.code(500).send({ error: "git_apply_failed" });
+				}
 			}
 
 			try { unlinkSync(patchPath); } catch { /* ignore */ }

@@ -630,7 +630,9 @@ export function MemoryView() {
             id: p.id,
             agent: p.agentSessionId ?? "agent",
             file: p.file,
-            summary: p.patch ? p.patch.split("\n")[0].slice(0, 80) : "Proposed change",
+            summary: p.patch
+              ? p.patch.split("\n").filter((l: string) => l.startsWith("+") && !l.startsWith("+++")).map((l: string) => l.slice(1)).join("\n").slice(0, 200) || p.patch.slice(0, 80)
+              : "Proposed change",
           }));
         setProposals(pending);
       })
