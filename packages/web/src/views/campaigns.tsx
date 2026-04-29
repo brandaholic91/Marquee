@@ -37,7 +37,7 @@ function CampaignDetailPanel({ campaign, onStatusChange, isMobile = false }: { c
         </span>
         {onStatusChange && (
           <div style={{ display: "flex", gap: 6 }}>
-            {campaign.status !== "active" && (
+            {campaign.status !== "active" && campaign.status !== "archived" && (
               <button
                 onClick={() => onStatusChange(campaign.id, "active")}
                 style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, border: "1px solid var(--success, #2d7a4f)", background: "transparent", color: "var(--success, #2d7a4f)", cursor: "pointer" }}
@@ -51,6 +51,14 @@ function CampaignDetailPanel({ campaign, onStatusChange, isMobile = false }: { c
                 style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, border: "1px solid var(--warning-deep, #b45309)", background: "transparent", color: "var(--warning-deep, #b45309)", cursor: "pointer" }}
               >
                 Inaktívvá tétel
+              </button>
+            )}
+            {campaign.status !== "archived" && (
+              <button
+                onClick={() => onStatusChange(campaign.id, "archived")}
+                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-3)", cursor: "pointer" }}
+              >
+                Archiválás
               </button>
             )}
           </div>
