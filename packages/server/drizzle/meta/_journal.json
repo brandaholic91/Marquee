@@ -15,6 +15,13 @@
       "when": 1746000000000,
       "tag": "0001_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1746060000000,
+      "tag": "0002_campaign_unique",
+      "breakpoints": true
     }
   ]
 }

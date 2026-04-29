@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq, and, ne, like } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { briefs, campaigns } from '../db/schema.js';
 
@@ -50,28 +50,25 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
         throw new Error(`${input.target_specialist} cannot produce ${input.deliverable_type}`);
       }
 
-      // Find or create campaign if campaign_name provided
+      // Find or create campaign — INSERT OR IGNORE + SELECT handles concurrent parallel tool calls
       let campaignId: string | null = null;
       if (input.campaign_name) {
-        const existing = await ctx.db.select().from(campaigns)
+        const tentativeId = createId();
+        await ctx.db.insert(campaigns).values({
+          id: tentativeId,
+          clientSlug: ctx.clientSlug,
+          title: input.campaign_name,
+          status: 'active',
+          createdAt: Date.now(),
+        }).onConflictDoNothing();
+        // Regardless of whether we inserted or hit conflict, fetch the canonical row
+        const rows = await ctx.db.select().from(campaigns)
           .where(and(
             eq(campaigns.clientSlug, ctx.clientSlug),
-            like(campaigns.title, input.campaign_name),
-            ne(campaigns.status, 'archived'),
+            eq(campaigns.title, input.campaign_name),
           ))
           .limit(1).all();
-        if (existing.length > 0) {
-          campaignId = existing[0].id;
-        } else {
-          campaignId = createId();
-          await ctx.db.insert(campaigns).values({
-            id: campaignId,
-            clientSlug: ctx.clientSlug,
-            title: input.campaign_name,
-            status: 'active',
-            createdAt: Date.now(),
-          });
-        }
+        campaignId = rows[0]?.id ?? null;
       }
 
       const id = createId();

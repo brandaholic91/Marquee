@@ -16,6 +16,7 @@ export const campaigns = sqliteTable('campaigns', {
   createdAt: integer('created_at').notNull(),
 }, (t) => ({
   byClient: index('idx_campaigns_client').on(t.clientSlug, t.status),
+  uniqueTitle: uniqueIndex('uq_campaigns_client_title').on(t.clientSlug, t.title),
 }));
 
 export const chatThreads = sqliteTable('chat_threads', {
