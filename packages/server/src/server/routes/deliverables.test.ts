@@ -1,318 +1,148 @@
-import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
-import { openDb, type AgencyDb } from "../../db/index.js";
-import { Broker } from "../../broker/event-bus.js";
-import { buildServer } from "../index.js";
-import { campaigns, delegations, deliverables, deliverableRevisions, evals } from "../../db/schema.js";
-import type { AgentRouter } from "../../broker/router.js";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import Fastify, { FastifyInstance } from 'fastify';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { deliverablesRoutes } from './deliverables.js';
+import * as schema from '../../db/schema.js';
 
-function makeTestDep() {
-	const dir = mkdtempSync(join(tmpdir(), "agency-route-test-"));
-	const { db, close } = openDb(join(dir, "test.db"));
-	const broker = new Broker(db);
-	const router = {} as AgentRouter;
-	return { dir, db, close, broker, router };
+vi.mock('@mariozechner/pi-agent-core', () => ({
+  Agent: class FakeAgent {
+    constructor(public opts: any) {}
+    async prompt() { /* no-op for tests */ }
+  },
+}));
+
+let app: FastifyInstance;
+let db: ReturnType<typeof drizzle>;
+let baseDir: string;
+const events: any[] = [];
+const broker = { emit: (e: any) => events.push(e) };
+
+async function seedDeliverable() {
+  const now = Date.now();
+  await db.insert(schema.briefs).values({
+    id: 'br_1', clientSlug: 'default', sourceThreadId: null,
+    contentMd: JSON.stringify({ title: 't', body: 'b', deliverable_type: 'social_post', target_specialist: 'social-manager', platform: 'instagram' }),
+    status: 'dispatched', createdAt: now, dispatchedAt: now,
+  });
+  await db.insert(schema.delegations).values({
+    id: 'del_1', briefId: 'br_1', clientSlug: 'default', fromAgent: 'director',
+    toAgent: 'social-manager', payloadJson: '{}', status: 'complete', requestedAt: now, completedAt: now,
+  });
+  // Insert deliverable first (without currentRevisionId) to satisfy the FK from deliverable_revisions → deliverables
+  await db.insert(schema.deliverables).values({
+    id: 'd_1', delegationId: 'del_1', clientSlug: 'default',
+    type: 'social_post', status: 'awaiting_approval',
+    currentRevisionId: null, createdAt: now, updatedAt: now,
+  });
+  await db.insert(schema.deliverableRevisions).values({
+    id: 'rev_1', deliverableId: 'd_1', revisionNo: 1,
+    artifactPath: '/tmp/test/rev_001.md', createdByAgent: 'social-manager',
+    feedbackNote: null, ts: now,
+  });
+  // Now set currentRevisionId back (revision row now exists)
+  await db.update(schema.deliverables).set({ currentRevisionId: 'rev_1' });
 }
 
-async function makeApp(db: AgencyDb, broker: Broker, router: AgentRouter, dir: string) {
-	return buildServer({ db, broker, router, dataDir: dir, webRoot: "/nonexistent" });
-}
-
-function seedDeliverable(db: AgencyDb, status: "drafting" | "awaiting_eval" | "awaiting_approval" | "shipped" | "archived" = "awaiting_approval") {
-	const dlgId = randomUUID();
-	const delId = randomUUID();
-	const revId = randomUUID();
-	db.insert(delegations).values({
-		id: dlgId, fromAgent: "director", toAgent: "content-lead",
-		status: "complete", payloadJson: {} as never,
-	}).run();
-	db.insert(deliverables).values({
-		id: delId, delegationId: dlgId, type: "blog_post",
-		title: "Test Post", status, currentRevisionId: revId,
-	}).run();
-	db.insert(deliverableRevisions).values({
-		id: revId, deliverableId: delId,
-		artifactPath: "/dev/null", createdByAgent: "copywriter",
-	}).run();
-	return { dlgId, delId, revId };
-}
-
-describe("GET /api/deliverables/:id/revisions", () => {
-	let deps: ReturnType<typeof makeTestDep>;
-
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
-
-	it("returns revision list for a known deliverable", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId, revId } = seedDeliverable(db);
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables/${delId}/revisions` });
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string }[]>();
-		expect(body).toHaveLength(1);
-		expect(body[0].id).toBe(revId);
-	});
-
-	it("returns empty array for deliverable with no revisions", async () => {
-		const { db, broker, router, dir } = deps;
-		const dlgId = randomUUID(); const delId = randomUUID();
-		db.insert(delegations).values({ id: dlgId, fromAgent: "director", toAgent: "content-lead", status: "complete", payloadJson: {} as never }).run();
-		db.insert(deliverables).values({ id: delId, delegationId: dlgId, type: "blog_post", title: "T", status: "drafting" }).run();
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables/${delId}/revisions` });
-		expect(res.statusCode).toBe(200);
-		expect(res.json()).toEqual([]);
-	});
+beforeEach(async () => {
+  events.length = 0;
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-deliv-'));
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  app = Fastify();
+  await app.register(deliverablesRoutes, { db, broker, dataDir: baseDir, n8nWebhookUrl: null });
 });
 
-describe("GET /api/deliverables/:id/eval", () => {
-	let deps: ReturnType<typeof makeTestDep>;
+describe('deliverables routes', () => {
+  it('GET /api/deliverables — lists by client (default)', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'GET', url: '/api/deliverables' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].id).toBe('d_1');
+  });
 
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+  it('GET /api/deliverables?status=awaiting_approval — filters', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'GET', url: '/api/deliverables?status=awaiting_approval' });
+    expect(res.json()).toHaveLength(1);
+    const res2 = await app.inject({ method: 'GET', url: '/api/deliverables?status=shipped' });
+    expect(res2.json()).toHaveLength(0);
+  });
 
-	it("returns null when no eval exists", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db);
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables/${delId}/eval` });
-		expect(res.statusCode).toBe(200);
-		expect(res.json()).toBeNull();
-	});
+  it('GET /api/deliverables/:id — returns deliverable + revisions', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'GET', url: '/api/deliverables/d_1' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.deliverable.id).toBe('d_1');
+    expect(body.revisions).toHaveLength(1);
+  });
 
-	it("returns the latest eval record", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId, revId } = seedDeliverable(db);
-		const evalId = randomUUID();
-		db.insert(evals).values({
-			id: evalId, revisionId: revId,
-			scoresJson: { brand_voice: 4, factual_accuracy: 5, usp_usage: 3 } as never,
-			summaryMd: "Good post",
-		}).run();
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables/${delId}/eval` });
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string; summaryMd: string }>();
-		expect(body.id).toBe(evalId);
-		expect(body.summaryMd).toBe("Good post");
-	});
-});
+  it('GET /api/deliverables/:id — 404 for missing', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/deliverables/nonexistent' });
+    expect(res.statusCode).toBe(404);
+  });
 
-describe("PATCH /api/deliverables/:id/status", () => {
-	let deps: ReturnType<typeof makeTestDep>;
+  it('POST /:id/approve — sets shipped + inserts approval + emits event', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'POST', url: '/api/deliverables/d_1/approve' });
+    expect(res.statusCode).toBe(200);
+    const ds = await db.select().from(schema.deliverables).all();
+    expect(ds[0].status).toBe('shipped');
+    const ap = await db.select().from(schema.approvals).all();
+    expect(ap).toHaveLength(1);
+    expect(ap[0].decision).toBe('approved');
+    expect(events.some(e => e.type === 'deliverable_approved')).toBe(true);
+  });
 
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
+  it('POST /:id/approve — 400 if not awaiting_approval', async () => {
+    await seedDeliverable();
+    await db.update(schema.deliverables).set({ status: 'shipped' }).run();
+    const res = await app.inject({ method: 'POST', url: '/api/deliverables/d_1/approve' });
+    expect(res.statusCode).toBe(400);
+  });
 
-	it("transitions awaiting_approval → shipped", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "awaiting_approval");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "PATCH",
-			url: `/api/deliverables/${delId}/status`,
-			headers: { "content-type": "application/json" },
-			payload: { status: "shipped" },
-		});
-		expect(res.statusCode).toBe(200);
-		const updated = db.select().from(deliverables).where(eq(deliverables.id, delId)).get();
-		expect(updated?.status).toBe("shipped");
-	});
+  it('POST /:id/return — sets drafting + creates new delegation + emits events', async () => {
+    await seedDeliverable();
+    const res = await app.inject({
+      method: 'POST', url: '/api/deliverables/d_1/return',
+      payload: { note: 'túl rövid' },
+    });
+    expect(res.statusCode).toBe(200);
+    const ds = await db.select().from(schema.deliverables).all();
+    expect(ds[0].status).toBe('drafting');
+    const dels = await db.select().from(schema.delegations).all();
+    expect(dels).toHaveLength(2);
+    const newDel = dels.find(d => d.id !== 'del_1');
+    expect(newDel?.status).toBe('in_progress');
+    expect(ds[0].delegationId).toBe(newDel?.id);
+    const ap = await db.select().from(schema.approvals).all();
+    expect(ap[0].decision).toBe('requested_changes');
+    expect(ap[0].note).toBe('túl rövid');
+    expect(events.some(e => e.type === 'deliverable_returned')).toBe(true);
+    expect(events.some(e => e.type === 'delegation_started')).toBe(true);
+  });
 
-	it("rejects an invalid transition (shipped → drafting)", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "shipped");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "PATCH",
-			url: `/api/deliverables/${delId}/status`,
-			headers: { "content-type": "application/json" },
-			payload: { status: "drafting" },
-		});
-		expect(res.statusCode).toBe(400);
-	});
-
-	it("returns 404 for unknown deliverable", async () => {
-		const { db, broker, router, dir } = deps;
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "PATCH",
-			url: `/api/deliverables/${randomUUID()}/status`,
-			headers: { "content-type": "application/json" },
-			payload: { status: "shipped" },
-		});
-		expect(res.statusCode).toBe(404);
-	});
-});
-
-describe("GET /api/deliverables/revisions/:revisionId/content", () => {
-	let deps: ReturnType<typeof makeTestDep>;
-
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
-
-	it("returns revision file content", async () => {
-		const { db, broker, router, dir } = deps;
-		const artifactsDir = join(dir, "artifacts");
-		mkdirSync(artifactsDir, { recursive: true });
-		const artifactPath = join(artifactsDir, "rev_001.md");
-		writeFileSync(artifactPath, "# Hello world", "utf8");
-
-		const dlgId = randomUUID();
-		const deliverableId = randomUUID();
-		db.insert(delegations).values({
-			id: dlgId, fromAgent: "director", toAgent: "content-lead",
-			status: "complete", payloadJson: {} as never,
-		}).run();
-		db.insert(deliverables).values({
-			id: deliverableId, delegationId: dlgId, type: "blog_post",
-			title: "Test", status: "drafting",
-		}).run();
-		const revId = randomUUID();
-		db.insert(deliverableRevisions).values({
-			id: revId, deliverableId, artifactPath, createdByAgent: "copywriter",
-		}).run();
-
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables/revisions/${revId}/content` });
-		expect(res.statusCode).toBe(200);
-		expect(res.json().content).toContain("Hello world");
-	});
-
-	it("returns 404 for unknown revision", async () => {
-		const { db, broker, router, dir } = deps;
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: "/api/deliverables/revisions/nonexistent/content" });
-		expect(res.statusCode).toBe(404);
-	});
-});
-
-describe("POST /api/deliverables/:id/repurpose", () => {
-	let deps: ReturnType<typeof makeTestDep>;
-
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
-
-	it("creates a delegation to content-lead and returns delegationId", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "shipped");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST",
-			url: `/api/deliverables/${delId}/repurpose`,
-			headers: { "content-type": "application/json" },
-			payload: { channels: ["linkedin_post", "twitter_thread"] },
-		});
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ delegationId: string }>();
-		expect(body.delegationId).toBeTruthy();
-		const row = deps.db.select().from(delegations).where(eq(delegations.id, body.delegationId)).get();
-		expect(row?.fromAgent).toBe("human");
-		expect(row?.toAgent).toBe("content-lead");
-		expect(row?.status).toBe("requested");
-	});
-
-	it("returns 400 when deliverable is not shipped", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "awaiting_approval");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST",
-			url: `/api/deliverables/${delId}/repurpose`,
-			headers: { "content-type": "application/json" },
-			payload: { channels: ["linkedin_post"] },
-		});
-		expect(res.statusCode).toBe(400);
-	});
-
-	it("returns 400 when channels array is empty", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "shipped");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST",
-			url: `/api/deliverables/${delId}/repurpose`,
-			headers: { "content-type": "application/json" },
-			payload: { channels: [] },
-		});
-		expect(res.statusCode).toBe(400);
-	});
-
-	it("returns 400 when channels array exceeds 5 items", async () => {
-		const { db, broker, router, dir } = deps;
-		const { delId } = seedDeliverable(db, "shipped");
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST",
-			url: `/api/deliverables/${delId}/repurpose`,
-			headers: { "content-type": "application/json" },
-			payload: { channels: ["a", "b", "c", "d", "e", "f"] },
-		});
-		expect(res.statusCode).toBe(400);
-	});
-
-	it("returns 404 for unknown deliverable", async () => {
-		const { db, broker, router, dir } = deps;
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST",
-			url: `/api/deliverables/${randomUUID()}/repurpose`,
-			headers: { "content-type": "application/json" },
-			payload: { channels: ["twitter_thread"] },
-		});
-		expect(res.statusCode).toBe(404);
-	});
-});
-
-describe("POST /api/deliverables/:id/repurpose — campaignId propagation", () => {
-	let deps: ReturnType<typeof makeTestDep>;
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
-
-	it("sets campaignId on the new delegation from source deliverable", async () => {
-		const { db, broker, router, dir } = deps;
-		const campaignId = randomUUID();
-		db.insert(campaigns).values({ id: campaignId, title: "Test Campaign", status: "active" }).run();
-		const { delId } = seedDeliverable(db, "shipped");
-		db.update(deliverables).set({ campaignId }).where(eq(deliverables.id, delId)).run();
-
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({
-			method: "POST", url: `/api/deliverables/${delId}/repurpose`,
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ channels: ["linkedin"] }),
-		});
-		expect(res.statusCode).toBe(200);
-
-		const newDelegation = db.select().from(delegations).all()
-			.find(d => d.toAgent === "content-lead" && d.fromAgent === "human")!;
-		expect(newDelegation.campaignId).toBe(campaignId);
-	});
-});
-
-describe("GET /api/deliverables?campaignId", () => {
-	let deps: ReturnType<typeof makeTestDep>;
-	beforeEach(() => { deps = makeTestDep(); });
-	afterEach(() => { deps.close(); rmSync(deps.dir, { recursive: true, force: true }); });
-
-	it("filters deliverables by campaignId", async () => {
-		const { db, broker, router, dir } = deps;
-		const campaignId = randomUUID();
-		db.insert(campaigns).values({ id: campaignId, title: "C", status: "active" }).run();
-		const { delId: id1 } = seedDeliverable(db);
-		db.update(deliverables).set({ campaignId }).where(eq(deliverables.id, id1)).run();
-		seedDeliverable(db);
-
-		const app = await makeApp(db, broker, router, dir);
-		const res = await app.inject({ method: "GET", url: `/api/deliverables?campaignId=${campaignId}` });
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string }[]>();
-		expect(body).toHaveLength(1);
-		expect(body[0].id).toBe(id1);
-	});
+  it('POST /:id/discard — sets archived + inserts discarded approval + emits event', async () => {
+    await seedDeliverable();
+    const res = await app.inject({
+      method: 'POST', url: '/api/deliverables/d_1/discard',
+      payload: { note: 'irreleváns' },
+    });
+    expect(res.statusCode).toBe(200);
+    const ds = await db.select().from(schema.deliverables).all();
+    expect(ds[0].status).toBe('archived');
+    const ap = await db.select().from(schema.approvals).all();
+    expect(ap[0].decision).toBe('discarded');
+    expect(ap[0].note).toBe('irreleváns');
+    expect(events.some(e => e.type === 'deliverable_discarded')).toBe(true);
+  });
 });
