@@ -57,7 +57,7 @@ async function main() {
 	cronManager.register({
 		id: "daily_summary",
 		name: "Daily Summary",
-		expression: "0 2 * * *",
+		expression: "50 23 * * *",
 		description: "Nightly agent activity summary written to memory/daily_notes/",
 		enabled: true,
 	}, () => runDailySummary(db, dataDir).catch(console.error));
