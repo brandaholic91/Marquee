@@ -25,12 +25,11 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 				if (del?.briefId) {
 					opts.db.update(briefs).set({ status: "done" }).where(eq(briefs.id, del.briefId)).run();
 				}
-				// Re-trigger parent lead agent so it can synthesize and continue pipeline
+				// Re-trigger parent lead agent to synthesize result and continue pipeline
 				if (del?.parentDelegationId) {
 					const parentDel = opts.db.select().from(delegations)
 						.where(eq(delegations.id, del.parentDelegationId)).get();
 					if (parentDel) {
-						// Read deliverable content to include in prompt
 						let contentMd = "";
 						if (d.currentRevisionId) {
 							const rev = opts.db.select().from(deliverableRevisions)
@@ -39,14 +38,36 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 								try { contentMd = readFileSync(rev.artifactPath, "utf8"); } catch { /* ignore */ }
 							}
 						}
-						const resumeMessage = [
-							`## Deliverable elkészült: ${d.type}`,
-							`A specialist (${del.toAgent}) leszállította és jóváhagyták.`,
-							contentMd ? `\n### Tartalom:\n${contentMd}` : "",
-							`\nEredetei feladatod: ${(parentDel.payloadJson as { task?: string }).task ?? ""}`,
-							`\nFolytasd a feladatot: szintetizáld az eredményt és küld vissza a directornak a \`submit_to_director\` eszközzel.`,
-						].filter(Boolean).join("\n");
-						opts.router.promptWarmAgent(parentDel.toAgent, resumeMessage);
+						// Use retrigger event with explicit synthesis instruction
+						// This spawns a NEW transient agent, not re-prompting the warm one
+						const synthesisTask = [
+							`## Szintetizálás — ${d.type} elkészült`,
+							``,
+							`A specialist elvégezte a feladatot. NE delegálj újra. A te feladatod most KIZÁRÓLAG:`,
+							`1. Olvasd el az alábbi eredményt`,
+							`2. Szintetizáld 2-3 mondatban a legfontosabb megállapításokat`,
+							`3. Hívd meg a \`submit_to_director\` eszközt az összefoglalóval`,
+							``,
+							`### Eredmény (${d.type}):`,
+							contentMd || "(tartalom nem olvasható)",
+						].join("\n");
+
+						// Create a new one-shot delegation for synthesis
+						const synthDelId = randomUUID();
+						opts.db.insert(delegations).values({
+							id: synthDelId,
+							fromAgent: "system",
+							toAgent: parentDel.toAgent,
+							status: "requested",
+							payloadJson: { task: synthesisTask } as never,
+							parentDelegationId: del.parentDelegationId,
+							campaignId: d.campaignId,
+						}).run();
+						opts.broker.emit("delegation_created", {
+							delegationId: synthDelId,
+							from: "system",
+							to: parentDel.toAgent,
+						});
 					}
 				}
 			}
