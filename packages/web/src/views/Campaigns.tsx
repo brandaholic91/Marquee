@@ -31,12 +31,18 @@ export function Campaigns() {
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [selected, setSelected] = useState<CampaignDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void campaignsApi.list().then((rows) => {
-      setCampaigns(rows);
-      setLoading(false);
-    });
+    campaignsApi.list()
+      .then((rows) => {
+        setCampaigns(Array.isArray(rows) ? rows : []);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        setError(String(err));
+        setLoading(false);
+      });
   }, []);
 
   async function selectCampaign(id: string) {
@@ -51,6 +57,7 @@ export function Campaigns() {
   }
 
   if (loading) return <p className="text-ink-2 text-sm py-8">Betöltés…</p>;
+  if (error) return <p className="text-red-600 text-sm py-8">Hiba: {error}</p>;
 
   if (campaigns.length === 0) {
     return (
