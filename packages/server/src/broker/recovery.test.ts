@@ -5,14 +5,12 @@ import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
 import { agentSessions, briefs, clients, delegations } from "../db/schema.js";
-import { Broker } from "./event-bus.js";
 import { recoverState } from "./recovery.js";
 
 describe("recoverState", () => {
 	let dir: string;
 	let db: AgencyDb;
 	let close: () => void;
-	let broker: Broker;
 	// Shared client slug for FK satisfaction
 	const CLIENT = "test-client";
 
@@ -23,7 +21,6 @@ describe("recoverState", () => {
 		close = handle.close;
 		// Insert a client row to satisfy FK constraints
 		db.insert(clients).values({ slug: CLIENT, name: "Test Client", createdAt: Date.now() }).run();
-		broker = new Broker(db);
 	});
 
 	afterEach(() => {
@@ -41,7 +38,7 @@ describe("recoverState", () => {
 			startedAt: Date.now(),
 		}).run();
 
-		recoverState(db, broker);
+		recoverState(db);
 
 		const rows = db.select().from(agentSessions).all();
 		const session = rows.find((r) => r.id === sessionId);
@@ -49,7 +46,7 @@ describe("recoverState", () => {
 		expect(typeof session?.endedAt).toBe("number");
 	});
 
-	it("fails delegation and emits error for abandoned transient session", () => {
+	it("fails delegation for abandoned transient session without emitting error event", () => {
 		// Set up: brief → delegation → transient session
 		const briefId = randomUUID();
 		db.insert(briefs).values({
@@ -82,8 +79,7 @@ describe("recoverState", () => {
 			startedAt: Date.now(),
 		}).run();
 
-		const emitSpy = vi.spyOn(broker, "emit");
-		recoverState(db, broker);
+		recoverState(db);
 
 		// Session should be marked ended
 		const sessionRows = db.select().from(agentSessions).all();
@@ -97,15 +93,5 @@ describe("recoverState", () => {
 		expect(delegation?.status).toBe("failed");
 		expect(delegation?.completedAt).toBeDefined();
 		expect(typeof delegation?.completedAt).toBe("number");
-
-		// Broker should have emitted an error event
-		expect(emitSpy).toHaveBeenCalledWith(
-			"error",
-			expect.objectContaining({
-				source: "recovery",
-				delegation_id: delegationId,
-				agent_slug: "copywriter",
-			}),
-		);
 	});
 });

@@ -57,7 +57,7 @@ async function main() {
 	console.log(`[marquee] auth loaded from ${authFile}`);
 
 	// 5. Recover from any open sessions left by a previous crash
-	recoverState(db, broker);
+	recoverState(db);
 
 	// 6. Warm Director chat loop — singleton, lazily spawned on first user chat_message
 	let director: SpawnedAgent | null = null;
