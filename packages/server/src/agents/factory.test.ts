@@ -35,7 +35,7 @@ describe('spawnAgent', () => {
       role: 'director', threadId: 'thr_1',
     });
     expect(a.session.lifecycle).toBe('warm');
-    const tools = (a.agent as any).opts.tools.map((t: any) => t.name).sort();
+    const tools = (a.agent as any).opts.initialState.tools.map((t: any) => t.name).sort();
     expect(tools).toEqual(['propose_brief', 'propose_memory_update', 'read_memory']);
   });
 
@@ -47,7 +47,7 @@ describe('spawnAgent', () => {
       role: 'social-manager', delegationId: 'del_1', deliverableType: 'social_post',
     });
     expect(a.session.lifecycle).toBe('transient');
-    const tools = (a.agent as any).opts.tools.map((t: any) => t.name).sort();
+    const tools = (a.agent as any).opts.initialState.tools.map((t: any) => t.name).sort();
     expect(tools).toEqual(['read_memory', 'submit_deliverable']);
   });
 });

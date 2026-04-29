@@ -10,6 +10,7 @@ import { seedClientIfNeeded } from "./memory/seed.js";
 import { spawnAgent, type SpawnedAgent } from "./agents/factory.js";
 import { messages } from "./db/schema.js";
 import { createId } from "@paralleldrive/cuid2";
+import { AuthManager } from "./providers/auth.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
@@ -49,6 +50,12 @@ async function main() {
 	// 4. Create the broker
 	const broker = new Broker(db);
 
+	// 4.5 Start AuthManager (loads ~/.pi/agent/auth.json, refreshes tokens)
+	const authFile = process.env.PI_AUTH_FILE ?? join(homedir(), ".pi", "agent", "auth.json");
+	const authManager = new AuthManager(authFile);
+	await authManager.start();
+	console.log(`[marquee] auth loaded from ${authFile}`);
+
 	// 5. Recover from any open sessions left by a previous crash
 	recoverState(db, broker);
 
@@ -78,6 +85,7 @@ async function main() {
 						clientSlug: "default",
 						role: "director",
 						threadId,
+						authManager,
 					});
 					directorThreadId = threadId;
 					console.log(
@@ -156,6 +164,7 @@ async function main() {
 	const app = await buildServer({ db, broker, dataDir, webRoot, n8nWebhookUrl });
 
 	const shutdown = async () => {
+		authManager.stop();
 		await app.close();
 		close();
 		process.exit(0);
