@@ -12,7 +12,7 @@ export const blogPostWorkflow: WorkflowDef = {
         `Végezz kulcsszókutatást blog_post deliverable-hoz.\nTéma: ${ctx.brief.contentMd.slice(0, 200)}`,
       extractOutput: (artifactContent) => {
         const match = artifactContent.match(
-          /\*\*Elsődleges kulcsszó[^:]*\*\*[:\s]+([^\n]+)/
+          /\*\*Elsődleges kulcsszó[^*]*\*\*[:\s]+([^\n]+)/
         );
         return { keywords: match?.[1]?.trim() ?? undefined };
       },
