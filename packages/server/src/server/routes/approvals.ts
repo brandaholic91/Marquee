@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { approvals, briefs, delegations, deliverables } from "../../db/schema.js";
+import { approvals, briefs, delegations, deliverables, deliverableRevisions } from "../../db/schema.js";
 
 export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.post<{
@@ -17,12 +18,36 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 		if (decision === "approved") {
 			opts.db.update(deliverables).set({ status: "shipped", updatedAt: new Date() })
 				.where(eq(deliverables.id, id)).run();
-			// Mark the originating brief as done so recovery doesn't re-queue it
 			const d = opts.db.select().from(deliverables).where(eq(deliverables.id, id)).get();
 			if (d?.delegationId) {
 				const del = opts.db.select().from(delegations).where(eq(delegations.id, d.delegationId)).get();
+				// Mark brief as done so recovery doesn't re-queue it
 				if (del?.briefId) {
 					opts.db.update(briefs).set({ status: "done" }).where(eq(briefs.id, del.briefId)).run();
+				}
+				// Re-trigger parent lead agent so it can synthesize and continue pipeline
+				if (del?.parentDelegationId) {
+					const parentDel = opts.db.select().from(delegations)
+						.where(eq(delegations.id, del.parentDelegationId)).get();
+					if (parentDel) {
+						// Read deliverable content to include in prompt
+						let contentMd = "";
+						if (d.currentRevisionId) {
+							const rev = opts.db.select().from(deliverableRevisions)
+								.where(eq(deliverableRevisions.id, d.currentRevisionId)).get();
+							if (rev?.artifactPath) {
+								try { contentMd = readFileSync(rev.artifactPath, "utf8"); } catch { /* ignore */ }
+							}
+						}
+						const resumeMessage = [
+							`## Deliverable elkészült: ${d.type}`,
+							`A specialist (${del.toAgent}) leszállította és jóváhagyták.`,
+							contentMd ? `\n### Tartalom:\n${contentMd}` : "",
+							`\nEredetei feladatod: ${(parentDel.payloadJson as { task?: string }).task ?? ""}`,
+							`\nFolytasd a feladatot: szintetizáld az eredményt és küld vissza a directornak a \`submit_to_director\` eszközzel.`,
+						].filter(Boolean).join("\n");
+						opts.router.promptWarmAgent(parentDel.toAgent, resumeMessage);
+					}
 				}
 			}
 		} else if (decision === "rejected") {
