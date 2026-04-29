@@ -115,6 +115,14 @@ export const api = {
         body: JSON.stringify(body),
       }).then(json),
   },
+  inputs: {
+    pending: () => fetch("/api/inputs/pending").then(json) as Promise<Array<{
+      id: string; threadId: string; question: string;
+      agentSlug: string; delegationId: string | null; createdAt: string;
+    }>>,
+    reply: (threadId: string, answer: string, delegationId?: string | null) =>
+      post<{ ok: boolean }>("/api/inputs/reply", { threadId, answer, delegationId }),
+  },
   onboarding: {
     start: () => post<{ threadId: string }>("/api/onboarding/start", {}),
     save: (clientProfile: string, brandGuidelines: string, threadId: string | null) =>

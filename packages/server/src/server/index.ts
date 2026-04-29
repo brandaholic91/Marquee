@@ -15,6 +15,7 @@ import { registerAgentRoutes } from "./routes/agents.js";
 import { registerSkillRoutes } from "./routes/skills.js";
 import { registerStatsRoutes } from "./routes/stats.js";
 import { registerCampaignRoutes } from "./routes/campaigns.js";
+import { registerInputRoutes } from "./routes/inputs.js";
 import { registerSseRoute } from "./sse.js";
 
 export interface ServerOpts {
@@ -62,6 +63,7 @@ export async function buildServer(opts: ServerOpts) {
 	registerSkillRoutes(app, opts);
 	registerStatsRoutes(app, opts);
 	registerCampaignRoutes(app, opts);
+	registerInputRoutes(app, opts);
 	// Cron jobs list
 	app.get("/api/crons", async () => opts.cronManager?.list() ?? []);
 	// Re-trigger a stuck delegation (admin utility)

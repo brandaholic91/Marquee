@@ -190,6 +190,67 @@ const PIPELINE_BADGE_MAP: Record<string, string> = {
   blocked: "danger-soft",
 };
 
+// ---- PendingInputsWidget ----
+
+interface PendingInput {
+  id: string; threadId: string; question: string;
+  agentSlug: string; delegationId: string | null; createdAt: string;
+}
+
+function PendingInputsWidget({ inputs, onRefresh }: { inputs: PendingInput[]; onRefresh: () => void }) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState<string | null>(null);
+
+  async function handleReply(input: PendingInput) {
+    const answer = answers[input.threadId]?.trim();
+    if (!answer) return;
+    setSending(input.threadId);
+    try {
+      await api.inputs.reply(input.threadId, answer, input.delegationId);
+      setAnswers((prev) => { const n = { ...prev }; delete n[input.threadId]; return n; });
+      onRefresh();
+    } finally {
+      setSending(null);
+    }
+  }
+
+  if (inputs.length === 0) return null;
+
+  return (
+    <Widget title={`Várakozó kérdések (${inputs.length})`}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {inputs.map((inp, i) => (
+          <div key={inp.id} style={{ padding: "14px 18px", borderBottom: i < inputs.length - 1 ? "1px solid var(--rule)" : "none" }}>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 6, fontFamily: "var(--font-mono)" }}>
+              {inp.agentSlug}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--ink-1)", marginBottom: 10, lineHeight: 1.5 }}>
+              {inp.question}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="text"
+                placeholder="Válasz…"
+                value={answers[inp.threadId] ?? ""}
+                onChange={(e) => setAnswers((prev) => ({ ...prev, [inp.threadId]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") handleReply(inp); }}
+                style={{ flex: 1, padding: "5px 8px", border: "1px solid var(--rule)", borderRadius: 4, fontSize: 13, background: "var(--parchment)" }}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => handleReply(inp)}
+                disabled={sending === inp.threadId || !answers[inp.threadId]?.trim()}
+              >
+                {sending === inp.threadId ? "…" : "Küldés"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Widget>
+  );
+}
+
 function ApprovalsWidget({
   approvals,
   onRefresh,
@@ -565,6 +626,7 @@ function ConversationsWidget({ threads, onRefresh }: { threads: Thread[]; onRefr
 export function HomeView() {
   const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [pendingInputs, setPendingInputs] = useState<PendingInput[]>([]);
   const [showBriefForm, setShowBriefForm] = useState(false);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
@@ -584,6 +646,7 @@ export function HomeView() {
     refresh();
     api.stats.usage().then(setUsageStats).catch(() => {});
     api.stats.quality().then(setQualityStats).catch(() => {});
+    api.inputs.pending().then(setPendingInputs).catch(() => {});
     agencyEvents.start();
     const unsub = agencyEvents.on("*", (ev) => {
       const typed = ev as { type?: string; agentSlug?: string };
@@ -629,6 +692,15 @@ export function HomeView() {
 
         {showBriefForm && (
           <NewBriefForm onClose={() => setShowBriefForm(false)} />
+        )}
+
+        {pendingInputs.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <PendingInputsWidget inputs={pendingInputs} onRefresh={() => {
+              api.inputs.pending().then(setPendingInputs).catch(() => {});
+              refresh();
+            }} />
+          </div>
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginTop: 24 }}>
