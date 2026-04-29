@@ -1,209 +1,104 @@
-import { eq } from "drizzle-orm";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { simpleGit } from "simple-git";
-import matter from "gray-matter";
-import type { FastifyInstance } from "fastify";
-import type { ServerOpts } from "../index.js";
-import { memoryProposals } from "../../db/schema.js";
-import { readMemoryFile } from "../../memory/read.js";
+import type { FastifyPluginAsync } from 'fastify';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq, and, desc } from 'drizzle-orm';
+import { memoryAudit } from '../../db/schema.js';
+import { MEMORY_FILES } from '../../memory/validate.js';
+import { readMemoryFile } from '../../memory/read.js';
+import { writeMemoryFile } from '../../memory/write.js';
+import { listPending, decideProposal } from '../../memory/proposals.js';
 
-export function registerMemoryRoutes(app: FastifyInstance, opts: ServerOpts) {
-	const memDir = () => join(opts.dataDir, "memory");
+type Db = ReturnType<typeof drizzle>;
 
-	// existing proposal endpoints — unchanged
-	app.get("/api/memory-proposals", async () =>
-		opts.db.select().from(memoryProposals).all(),
-	);
-
-	app.post<{ Params: { id: string }; Body: { decision: "approved" | "rejected" } }>(
-		"/api/memory-proposals/:id/approve",
-		async (req, reply) => {
-			const { id } = req.params;
-			const decision = req.body?.decision;
-			if (decision !== "approved" && decision !== "rejected") {
-				return reply.code(400).send({ error: "decision must be 'approved' or 'rejected'" });
-			}
-
-			const proposal = opts.db.select().from(memoryProposals).where(eq(memoryProposals.id, id)).get();
-			if (!proposal) return reply.code(404).send({ error: "not found" });
-
-			if (decision === "rejected") {
-				opts.db.update(memoryProposals).set({ status: "rejected" }).where(eq(memoryProposals.id, id)).run();
-				opts.broker.emit("memory_proposal_decided", { proposalId: id, decision: "rejected" });
-				return { ok: true };
-			}
-
-			const git = simpleGit(opts.dataDir);
-			const fileBasename = proposal.file.endsWith(".md") ? proposal.file : `${proposal.file}.md`;
-			const filePath = join(opts.dataDir, "memory", fileBasename);
-			const memRelPath = `memory/${fileBasename}`;
-
-			// Normalize patch paths
-			const normalizedPatch = proposal.patch
-				.replace(/^--- [^\n]+/m, `--- a/${memRelPath}`)
-				.replace(/^\+\+\+ [^\n]+/m, `+++ b/${memRelPath}`);
-
-			// Check if patch has removal lines (replacement diff) vs append-only
-			const hasRemovals = proposal.patch.split("\n")
-				.some((l) => l.startsWith("-") && !l.startsWith("---"));
-
-			const addedLines = proposal.patch
-				.split("\n")
-				.filter((l) => l.startsWith("+") && !l.startsWith("+++"))
-				.map((l) => l.slice(1))
-				.join("\n");
-
-			if (!addedLines.trim()) {
-				return reply.code(409).send({ error: "patch_conflict", detail: "Patch has no applicable content" });
-			}
-
-			try {
-				if (hasRemovals) {
-					// Replacement diff — use git apply
-					const patchPath = join(tmpdir(), `marquee-patch-${id}.diff`);
-					try {
-						writeFileSync(patchPath, normalizedPatch, "utf8");
-						await git.raw(["apply", "--ignore-whitespace", patchPath]);
-					} finally {
-						try { unlinkSync(patchPath); } catch { /* ignore */ }
-					}
-				} else {
-					// Append-only — write directly (avoids git apply context issues)
-					const existing = existsSync(filePath) ? readFileSync(filePath, "utf8").trimEnd() : "";
-					writeFileSync(filePath, existing ? `${existing}\n\n${addedLines}\n` : `${addedLines}\n`, "utf8");
-				}
-				await git.add(memRelPath);
-				await git.commit(`memory: apply agent proposal for ${proposal.file}`);
-			} catch (err) {
-				try { await git.checkout([memRelPath]); } catch { /* ignore */ }
-				return reply.code(500).send({ error: "git_apply_failed", detail: String(err) });
-			}
-
-			try { unlinkSync(patchPath); } catch { /* ignore */ }
-
-			opts.db.update(memoryProposals).set({ status: "approved" }).where(eq(memoryProposals.id, id)).run();
-			opts.broker.emit("memory_proposal_decided", { proposalId: id, decision: "approved" });
-			opts.broker.emit("memory_updated", { file: proposal.file, by: "agent" });
-			return { ok: true };
-		},
-	);
-
-	// list memory files
-	app.get("/api/memory/files", async () => {
-		const dir = memDir();
-		if (!existsSync(dir)) return [];
-		return readdirSync(dir)
-			.filter((f) => f.endsWith(".md"))
-			.map((name) => ({ name }));
-	});
-
-	// read a memory file
-	app.get<{ Params: { filename: string } }>("/api/memory/:filename", async (req, reply) => {
-		const name = req.params.filename.replace(/\.md$/, "");
-		const filePath = join(memDir(), `${name}.md`);
-		if (!existsSync(filePath)) return reply.code(404).send({ error: "not found" });
-		const file = readMemoryFile(opts.dataDir, name);
-		const git = simpleGit(opts.dataDir);
-		const isRepo = await git.checkIsRepo().catch(() => false);
-		let history: { hash: string; message: string; date: string }[] = [];
-		if (isRepo) {
-			const log = await git.log({ file: filePath }).catch(() => null);
-			history = (log?.all ?? []).map((c) => ({
-				hash: c.hash.slice(0, 7),
-				message: c.message,
-				date: c.date,
-			}));
-		}
-		return { name: `${name}.md`, ...file, history };
-	});
-
-	// write a memory file (inline editor)
-	app.put<{ Params: { filename: string }; Body: { content: string } }>(
-		"/api/memory/:filename",
-		async (req, reply) => {
-			const name = req.params.filename.replace(/\.md$/, "");
-			const { content } = req.body;
-			// require YAML frontmatter
-			const parsed = matter(content);
-			if (Object.keys(parsed.data).length === 0) {
-				return reply.code(400).send({ error: "content must have YAML frontmatter" });
-			}
-			const dir = memDir();
-			if (!existsSync(dir)) {
-				mkdirSync(dir, { recursive: true });
-			}
-			const filePath = join(dir, `${name}.md`);
-			writeFileSync(filePath, content, "utf8");
-			try {
-				const git = simpleGit(opts.dataDir);
-				const isRepo = await git.checkIsRepo().catch(() => false);
-				if (isRepo) {
-					await git.add(filePath);
-					await git.commit(`memory: update ${name}.md`, [filePath]);
-				}
-			} catch {
-				try { await simpleGit(opts.dataDir).checkout([filePath]); } catch { /* best effort */ }
-				return reply.code(500).send({ error: "git commit failed, change reverted" });
-			}
-			opts.broker.emit("memory_updated", { file: `${name}.md`, by: "human" });
-			return { ok: true };
-		},
-	);
-
-	// create new memory file
-	app.get<{ Params: { filename: string; hash: string } }>("/api/memory/:filename/at/:hash", async (req, reply) => {
-		const name = req.params.filename.replace(/\.md$/, "");
-		const filePath = join(memDir(), `${name}.md`);
-		const git = simpleGit(opts.dataDir);
-		const isRepo = await git.checkIsRepo().catch(() => false);
-		if (!isRepo) return reply.code(400).send({ error: "not a git repo" });
-		try {
-			const relPath = `memory/${name}.md`;
-			const content = await git.show([`${req.params.hash}:${relPath}`]);
-			return { content };
-		} catch {
-			return reply.code(404).send({ error: "not found at this commit" });
-		}
-	});
-
-	app.get<{ Params: { filename: string; hash: string } }>("/api/memory/:filename/diff/:hash", async (req, reply) => {
-		const name = req.params.filename.replace(/\.md$/, "");
-		const filePath = join(memDir(), `${name}.md`);
-		const git = simpleGit(opts.dataDir);
-		const isRepo = await git.checkIsRepo().catch(() => false);
-		if (!isRepo) return reply.code(400).send({ error: "not a git repo" });
-		try {
-			const relPath = `memory/${name}.md`;
-			const diff = await git.show([`${req.params.hash}`, "--", relPath]);
-			return { diff };
-		} catch {
-			return reply.code(404).send({ error: "diff not available" });
-		}
-	});
-
-	app.post<{ Body: { filename: string } }>("/api/memory", async (req, reply) => {
-		const { filename } = req.body;
-		if (!filename || filename.includes("..") || filename.includes("/")) {
-			return reply.code(400).send({ error: "invalid filename" });
-		}
-		const name = filename.endsWith(".md") ? filename : `${filename}.md`;
-		const dir = memDir();
-		if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-		const filePath = join(dir, name);
-		if (existsSync(filePath)) return reply.code(409).send({ error: "file already exists" });
-		const starter = `---\ntitle: ${name.replace(/\.md$/, "")}\n---\n`;
-		writeFileSync(filePath, starter, "utf8");
-		try {
-			const git = simpleGit(opts.dataDir);
-			const isRepo = await git.checkIsRepo().catch(() => false);
-			if (isRepo) {
-				await git.add(filePath);
-				await git.commit(`memory: create ${name}`, [filePath]);
-			}
-		} catch { /* best effort */ }
-		opts.broker.emit("memory_created", { file: name });
-		return reply.code(201).send({ ok: true, filename: name });
-	});
+export interface MemoryRoutesOpts {
+  db: Db;
+  dataDir: string;
 }
+
+export const memoryRoutes: FastifyPluginAsync<MemoryRoutesOpts> = async (app, opts) => {
+  const { db, dataDir } = opts;
+
+  // 1. GET /api/memory/clients/:slug/files
+  app.get<{ Params: { slug: string } }>('/api/memory/clients/:slug/files', async (req) => {
+    const { slug } = req.params;
+    const results = await Promise.all(
+      MEMORY_FILES.map(async (file) => {
+        const content = await readMemoryFile(dataDir, slug, file);
+        return { file, exists: content !== null };
+      })
+    );
+    return results;
+  });
+
+  // 2. GET /api/memory/clients/:slug/:file
+  app.get<{ Params: { slug: string; file: string } }>('/api/memory/clients/:slug/:file', async (req, reply) => {
+    const { slug, file } = req.params;
+    if (!MEMORY_FILES.includes(file as never)) {
+      return reply.code(400).send({ error: `unknown memory file: ${file}` });
+    }
+    const content = await readMemoryFile(dataDir, slug, file);
+    if (content === null) return reply.code(404).send({ error: 'not_found' });
+    return content;
+  });
+
+  // 3. PUT /api/memory/clients/:slug/:file
+  app.put<{ Params: { slug: string; file: string }; Body: { content: string } }>(
+    '/api/memory/clients/:slug/:file',
+    async (req, reply) => {
+      const { slug, file } = req.params;
+      if (!MEMORY_FILES.includes(file as never)) {
+        return reply.code(400).send({ error: `unknown memory file: ${file}` });
+      }
+      const { content } = req.body;
+      try {
+        await writeMemoryFile(dataDir, db, slug, file, content, 'user');
+      } catch (err) {
+        return reply.code(400).send({ error: (err as Error).message });
+      }
+      return reply.send({ ok: true });
+    }
+  );
+
+  // 4. GET /api/memory/clients/:slug/proposals?status=pending
+  app.get<{ Params: { slug: string }; Querystring: { status?: string } }>(
+    '/api/memory/clients/:slug/proposals',
+    async (req) => {
+      const { slug } = req.params;
+      return listPending(db, slug);
+    }
+  );
+
+  // 5. POST /api/memory/proposals/:id/approve
+  app.post<{ Params: { id: string } }>('/api/memory/proposals/:id/approve', async (req, reply) => {
+    try {
+      await decideProposal(db, dataDir, req.params.id, 'approved');
+      return reply.send({ ok: true });
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message });
+    }
+  });
+
+  // 6. POST /api/memory/proposals/:id/reject
+  app.post<{ Params: { id: string } }>('/api/memory/proposals/:id/reject', async (req, reply) => {
+    try {
+      await decideProposal(db, dataDir, req.params.id, 'rejected');
+      return reply.send({ ok: true });
+    } catch (err) {
+      return reply.code(400).send({ error: (err as Error).message });
+    }
+  });
+
+  // 7. GET /api/memory/clients/:slug/:file/audit
+  app.get<{ Params: { slug: string; file: string } }>(
+    '/api/memory/clients/:slug/:file/audit',
+    async (req, reply) => {
+      const { slug, file } = req.params;
+      if (!MEMORY_FILES.includes(file as never)) {
+        return reply.code(400).send({ error: `unknown memory file: ${file}` });
+      }
+      return db.select().from(memoryAudit)
+        .where(and(eq(memoryAudit.clientSlug, slug), eq(memoryAudit.file, file)))
+        .orderBy(desc(memoryAudit.ts))
+        .all();
+    }
+  );
+};

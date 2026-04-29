@@ -1,274 +1,217 @@
-import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { simpleGit } from "simple-git";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { openDb, type AgencyDb } from "../../db/index.js";
-import { memoryProposals } from "../../db/schema.js";
-import { Broker } from "../../broker/event-bus.js";
-import { buildServer } from "../index.js";
-import type { AgentRouter } from "../../broker/router.js";
+import { describe, it, expect, beforeEach } from 'vitest';
+import Fastify, { FastifyInstance } from 'fastify';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { memoryRoutes } from './memory.js';
+import * as schema from '../../db/schema.js';
+import { writeMemoryFile } from '../../memory/write.js';
+import { createProposal } from '../../memory/proposals.js';
 
-async function makeTestApp() {
-	const dir = mkdtempSync(join(tmpdir(), "agency-memory-test-"));
-	const memDir = join(dir, "memory");
-	mkdirSync(memDir, { recursive: true });
-	// initialise git repo so writeMemoryFile can commit
-	const git = simpleGit(dir);
-	await git.init();
-	await git.addConfig("user.name", "test");
-	await git.addConfig("user.email", "test@test.com");
-	const { db, close } = openDb(join(dir, "test.db"));
-	const broker = new Broker(db);
-	const router = {} as AgentRouter;
-	const app = await buildServer({ db, broker, router, dataDir: dir, webRoot: "/nonexistent" });
-	return { dir, memDir, close, app, cleanup: () => { close(); rmSync(dir, { recursive: true, force: true }); } };
-}
+const validProfile = `---
+business_description: "Foo"
+target_audience: ["a"]
+usp: "x"
+competitors: ["c"]
+---
+# Body`;
 
-describe("GET /api/memory/files", () => {
-	it("returns empty array when no memory files", async () => {
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({ method: "GET", url: "/api/memory/files" });
-		expect(res.statusCode).toBe(200);
-		expect(res.json()).toEqual([]);
-		cleanup();
-	});
+let app: FastifyInstance;
+let db: ReturnType<typeof drizzle>;
+let baseDir: string;
 
-	it("returns file names for existing .md files", async () => {
-		const { memDir, app, cleanup } = await makeTestApp();
-		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Stackly\n---\nbody");
-		const res = await app.inject({ method: "GET", url: "/api/memory/files" });
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ name: string }[]>();
-		expect(body.map((f) => f.name)).toContain("client_profile.md");
-		cleanup();
-	});
+beforeEach(async () => {
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-memory-routes-'));
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  app = Fastify();
+  await app.register(memoryRoutes, { db, dataDir: baseDir });
 });
 
-describe("GET /api/memory/:filename", () => {
-	it("returns parsed frontmatter and body", async () => {
-		const { memDir, app, cleanup } = await makeTestApp();
-		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Stackly\n---\nBody text here");
-		const res = await app.inject({ method: "GET", url: "/api/memory/client_profile.md" });
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ frontmatter: Record<string, unknown>; body: string }>();
-		expect(body.frontmatter.client_name).toBe("Stackly");
-		expect(body.body.trim()).toBe("Body text here");
-		cleanup();
-	});
+describe('GET /api/memory/clients/:slug/files', () => {
+  it('returns 3 entries with exists flags', async () => {
+    // Write one file so one exists = true
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
 
-	it("returns 404 for missing file", async () => {
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({ method: "GET", url: "/api/memory/nonexistent.md" });
-		expect(res.statusCode).toBe(404);
-		cleanup();
-	});
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/files' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ file: string; exists: boolean }[]>();
+    expect(body).toHaveLength(3);
+    const profile = body.find(f => f.file === 'profile.md');
+    expect(profile).toBeDefined();
+    expect(profile!.exists).toBe(true);
+    const other = body.filter(f => f.file !== 'profile.md');
+    expect(other.every(f => !f.exists)).toBe(true);
+  });
 });
 
-describe("PUT /api/memory/:filename", () => {
-	it("writes content and returns ok", async () => {
-		const { memDir, app, cleanup } = await makeTestApp();
-		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Old\n---\nold body");
-		const res = await app.inject({
-			method: "PUT",
-			url: "/api/memory/client_profile.md",
-			headers: { "content-type": "application/json" },
-			payload: { content: "---\nclient_name: Stackly\n---\nnew body" },
-		});
-		expect(res.statusCode).toBe(200);
-		expect(res.json()).toMatchObject({ ok: true });
-		cleanup();
-	});
+describe('GET /api/memory/clients/:slug/:file', () => {
+  it('returns parsed content for existing file', async () => {
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/profile.md' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ frontmatter: Record<string, unknown>; body: string; rawContent: string }>();
+    expect(body.frontmatter.business_description).toBe('Foo');
+    expect(body.body.trim()).toContain('# Body');
+    expect(body.rawContent).toContain('business_description');
+  });
 
-	it("returns 400 for invalid YAML frontmatter", async () => {
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({
-			method: "PUT",
-			url: "/api/memory/client_profile.md",
-			headers: { "content-type": "application/json" },
-			payload: { content: "no frontmatter here" },
-		});
-		expect(res.statusCode).toBe(400);
-		cleanup();
-	});
+  it('returns 404 for missing file', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/profile.md' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 400 for unknown filename outside MEMORY_FILES', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/random.md' });
+    expect(res.statusCode).toBe(400);
+  });
 });
 
-describe("MARQUEE_API_TOKEN auth guard", () => {
-	it("returns 401 on POST /api/briefs when token set and no Authorization header", async () => {
-		process.env.MARQUEE_API_TOKEN = "test-secret";
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: { "content-type": "application/json" },
-			payload: { contentMd: "test brief" },
-		});
-		expect(res.statusCode).toBe(401);
-		delete process.env.MARQUEE_API_TOKEN;
-		cleanup();
-	});
+describe('PUT /api/memory/clients/:slug/:file', () => {
+  it('writes file and creates audit row with source=user', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/memory/clients/default/profile.md',
+      payload: { content: validProfile },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true });
 
-	it("passes through when correct Bearer token provided", async () => {
-		process.env.MARQUEE_API_TOKEN = "test-secret";
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: {
-				"content-type": "application/json",
-				"authorization": "Bearer test-secret",
-			},
-			payload: { contentMd: "test brief" },
-		});
-		// 200 or other non-401 response means auth passed
-		expect(res.statusCode).not.toBe(401);
-		delete process.env.MARQUEE_API_TOKEN;
-		cleanup();
-	});
+    // Verify audit row
+    const audit = await db.select().from(schema.memoryAudit).all();
+    expect(audit).toHaveLength(1);
+    expect(audit[0].source).toBe('user');
+    expect(audit[0].clientSlug).toBe('default');
+    expect(audit[0].file).toBe('profile.md');
+  });
 
-	it("passes through GET requests without token", async () => {
-		process.env.MARQUEE_API_TOKEN = "test-secret";
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({ method: "GET", url: "/api/memory/files" });
-		expect(res.statusCode).toBe(200);
-		delete process.env.MARQUEE_API_TOKEN;
-		cleanup();
-	});
+  it('returns 400 on invalid frontmatter', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/memory/clients/default/profile.md',
+      payload: { content: '---\nfoo: bar\n---\nbody' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 for unknown filename outside MEMORY_FILES', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/memory/clients/default/random.md',
+      payload: { content: validProfile },
+    });
+    expect(res.statusCode).toBe(400);
+  });
 });
 
-describe("POST /api/memory (create new file)", () => {
-	let dir: string;
-	let db: AgencyDb;
-	let close: () => void;
-
-	beforeEach(() => {
-		dir = mkdtempSync(join(tmpdir(), "memory-new-test-"));
-		const handle = openDb(join(dir, "test.db"));
-		db = handle.db;
-		close = handle.close;
-		mkdirSync(join(dir, "memory"), { recursive: true });
-	});
-
-	afterEach(() => { close(); rmSync(dir, { recursive: true, force: true }); });
-
-	it("creates a new memory file with starter frontmatter", async () => {
-		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
-		const res = await app.inject({
-			method: "POST", url: "/api/memory",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ filename: "new_client.md" }),
-		});
-		expect(res.statusCode).toBe(201);
-		expect(existsSync(join(dir, "memory", "new_client.md"))).toBe(true);
-	});
-
-	it("rejects filename with path traversal", async () => {
-		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
-		const res = await app.inject({
-			method: "POST", url: "/api/memory",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ filename: "../evil.md" }),
-		});
-		expect(res.statusCode).toBe(400);
-	});
-
-	it("rejects filename containing slash", async () => {
-		const app = await buildServer({ db, broker: new Broker(db), router: {} as never, dataDir: dir, webRoot: "/nonexistent" });
-		const res = await app.inject({
-			method: "POST", url: "/api/memory",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ filename: "sub/path.md" }),
-		});
-		expect(res.statusCode).toBe(400);
-	});
+describe('GET /api/memory/clients/:slug/proposals', () => {
+  it('returns only pending proposals', async () => {
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    // Insert a pending proposal and an approved one
+    await createProposal(db, {
+      clientSlug: 'default',
+      file: 'profile.md',
+      newContent: validProfile,
+      reason: 'test',
+      agentSessionId: null,
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/proposals?status=pending' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ status: string }[]>();
+    expect(body.length).toBeGreaterThanOrEqual(1);
+    expect(body.every(p => p.status === 'pending')).toBe(true);
+  });
 });
 
-describe("POST /api/memory-proposals/:id/approve", () => {
-	it("returns 404 when proposal not found", async () => {
-		const { app, cleanup } = await makeTestApp();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/memory-proposals/nonexistent/approve",
-			headers: { "content-type": "application/json" },
-			payload: { decision: "approved" },
-		});
-		expect(res.statusCode).toBe(404);
-		cleanup();
-	});
+describe('POST /api/memory/proposals/:id/approve', () => {
+  it('writes file (audit row source=agent:director) and marks approved', async () => {
+    const proposalId = await createProposal(db, {
+      clientSlug: 'default',
+      file: 'profile.md',
+      newContent: validProfile,
+      reason: 'agent wants to update',
+      agentSessionId: null,
+    });
 
-	it("applies a valid unified diff and marks proposal approved", async () => {
-		const { dir, memDir, app, cleanup } = await makeTestApp();
-		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Old\n---\nbody");
-		const git = simpleGit(dir);
-		await git.add(join(memDir, "client_profile.md"));
-		await git.commit("initial", [join(memDir, "client_profile.md")]);
-		const patch = [
-			`--- a/memory/client_profile.md`,
-			`+++ b/memory/client_profile.md`,
-			`@@ -1,3 +1,3 @@`,
-			` ---`,
-			`-client_name: Old`,
-			`+client_name: New`,
-			` ---`,
-		].join("\n") + "\n";
-		const { db, close: closeDb } = openDb(join(dir, "test.db"));
-		db.insert(memoryProposals).values({
-			id: "prop-1", file: "client_profile.md", patch, status: "pending",
-		}).run();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/memory-proposals/prop-1/approve",
-			headers: { "content-type": "application/json" },
-			payload: { decision: "approved" },
-		});
-		expect(res.statusCode).toBe(200);
-		expect(res.json()).toMatchObject({ ok: true });
-		const updated = db.select().from(memoryProposals).all();
-		expect(updated[0]?.status).toBe("approved");
-		closeDb();
-		cleanup();
-	});
+    const res = await app.inject({ method: 'POST', url: `/api/memory/proposals/${proposalId}/approve` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true });
 
-	it("returns 409 when patch does not apply cleanly", async () => {
-		const { dir, memDir, app, cleanup } = await makeTestApp();
-		writeFileSync(join(memDir, "client_profile.md"), "---\nclient_name: Something\n---\n");
-		const git = simpleGit(dir);
-		await git.add(join(memDir, "client_profile.md"));
-		await git.commit("initial", [join(memDir, "client_profile.md")]);
-		const { db, close: closeDb } = openDb(join(dir, "test.db"));
-		db.insert(memoryProposals).values({
-			id: "prop-bad", file: "client_profile.md",
-			patch: "not a valid diff at all\n", status: "pending",
-		}).run();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/memory-proposals/prop-bad/approve",
-			headers: { "content-type": "application/json" },
-			payload: { decision: "approved" },
-		});
-		expect(res.statusCode).toBe(409);
-		const row = db.select().from(memoryProposals).all();
-		expect(row[0]?.status).toBe("pending");
-		closeDb();
-		cleanup();
-	});
+    // Proposal should be approved
+    const proposals = await db.select().from(schema.memoryProposals).all();
+    expect(proposals[0].status).toBe('approved');
 
-	it("marks proposal rejected without touching git", async () => {
-		const { dir, app, cleanup } = await makeTestApp();
-		const { db } = openDb(join(dir, "test.db"));
-		db.insert(memoryProposals).values({
-			id: "prop-rej", file: "client_profile.md", patch: "any", status: "pending",
-		}).run();
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/memory-proposals/prop-rej/approve",
-			headers: { "content-type": "application/json" },
-			payload: { decision: "rejected" },
-		});
-		expect(res.statusCode).toBe(200);
-		const row = db.select().from(memoryProposals).all();
-		expect(row[0]?.status).toBe("rejected");
-		cleanup();
-	});
+    // Audit row should exist with source='agent:director'
+    const audit = await db.select().from(schema.memoryAudit).all();
+    expect(audit).toHaveLength(1);
+    expect(audit[0].source).toBe('agent:director');
+  });
+
+  it('returns 400 if proposal already decided', async () => {
+    const proposalId = await createProposal(db, {
+      clientSlug: 'default',
+      file: 'profile.md',
+      newContent: validProfile,
+      reason: 'test',
+      agentSessionId: null,
+    });
+    // First approval
+    await app.inject({ method: 'POST', url: `/api/memory/proposals/${proposalId}/approve` });
+    // Second attempt should fail
+    const res = await app.inject({ method: 'POST', url: `/api/memory/proposals/${proposalId}/approve` });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('POST /api/memory/proposals/:id/reject', () => {
+  it('marks rejected without writing the file', async () => {
+    const proposalId = await createProposal(db, {
+      clientSlug: 'default',
+      file: 'profile.md',
+      newContent: validProfile,
+      reason: 'agent wants to update',
+      agentSessionId: null,
+    });
+
+    const res = await app.inject({ method: 'POST', url: `/api/memory/proposals/${proposalId}/reject` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true });
+
+    // Proposal should be rejected
+    const proposals = await db.select().from(schema.memoryProposals).all();
+    expect(proposals[0].status).toBe('rejected');
+
+    // No audit row (file was NOT written)
+    const audit = await db.select().from(schema.memoryAudit).all();
+    expect(audit).toHaveLength(0);
+  });
+});
+
+describe('GET /api/memory/clients/:slug/:file/audit', () => {
+  it('returns audit rows ordered by ts DESC', async () => {
+    // Write file twice to create 2 audit rows
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    // Small delay to get distinct timestamps
+    await new Promise(r => setTimeout(r, 5));
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile + '\nUpdated', 'agent:director');
+
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/profile.md/audit' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ source: string; ts: number }[]>();
+    expect(body).toHaveLength(2);
+    // Most recent first
+    expect(body[0].ts).toBeGreaterThanOrEqual(body[1].ts);
+    expect(body[0].source).toBe('agent:director');
+    expect(body[1].source).toBe('user');
+  });
+
+  it('returns 400 for unknown filename outside MEMORY_FILES', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/random.md/audit' });
+    expect(res.statusCode).toBe(400);
+  });
 });
