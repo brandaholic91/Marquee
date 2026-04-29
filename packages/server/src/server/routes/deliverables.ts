@@ -1,9 +1,9 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { deliverableRevisions, deliverables, evals, delegations } from "../../db/schema.js";
+import { deliverableRevisions, deliverables, evals, delegations, approvals } from "../../db/schema.js";
 
 export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.get<{ Querystring: { campaignId?: string } }>("/api/deliverables", async (req) => {
@@ -104,24 +104,53 @@ export function registerDeliverableRoutes(app: FastifyInstance, opts: ServerOpts
 		const d = opts.db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).get();
 		if (!d) return reply.code(404).send({ error: "not found" });
 
-		// Walk up the delegation chain from the deliverable's delegation
-		const steps: Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: Date | null }> = [];
-		let currentId: string | null | undefined = d.delegationId;
-		while (currentId) {
-			const del = opts.db.select().from(delegations).where(eq(delegations.id, currentId)).get();
-			if (!del) break;
-			const payload = del.payloadJson as { task?: string };
-			steps.unshift({
-				id: del.id,
-				fromAgent: del.fromAgent,
-				toAgent: del.toAgent,
-				task: payload.task ?? "",
-				status: del.status,
-				requestedAt: del.requestedAt,
-			});
-			currentId = del.parentDelegationId;
+		type ThreadStep = { id: string; kind: "delegation" | "approval"; fromAgent: string; toAgent?: string; task?: string; note?: string; decision?: string; status?: string; requestedAt: Date | null };
+		const allSteps: ThreadStep[] = [];
+		const seenIds = new Set<string>();
+
+		// Walk a delegation chain upward, collect steps
+		function walkChain(startId: string | null | undefined) {
+			const chain: ThreadStep[] = [];
+			let currentId = startId;
+			while (currentId && !seenIds.has(currentId)) {
+				const del = opts.db.select().from(delegations).where(eq(delegations.id, currentId)).get();
+				if (!del) break;
+				seenIds.add(del.id);
+				const payload = del.payloadJson as { task?: string };
+				chain.unshift({ id: del.id, kind: "delegation", fromAgent: del.fromAgent, toAgent: del.toAgent, task: payload.task ?? "", status: del.status, requestedAt: del.requestedAt });
+				currentId = del.parentDelegationId;
+			}
+			return chain;
 		}
-		return { steps };
+
+		// 1. Original delegation chain
+		allSteps.push(...walkChain(d.delegationId));
+
+		// 2. Approvals for this deliverable
+		const deliverableApprovals = opts.db.select().from(approvals)
+			.where(eq(approvals.deliverableId, req.params.id)).all();
+		for (const a of deliverableApprovals) {
+			allSteps.push({ id: a.id, kind: "approval", fromAgent: "human", decision: a.decision, note: a.note ?? undefined, requestedAt: a.createdAt ?? null });
+		}
+
+		// 3. Re-delegations: find delegations whose parentDelegationId is in our seen set (review cycles)
+		if (seenIds.size > 0) {
+			const allDels = opts.db.select().from(delegations).where(inArray(delegations.parentDelegationId, [...seenIds])).all();
+			for (const del of allDels) {
+				if (!seenIds.has(del.id)) {
+					allSteps.push(...walkChain(del.id));
+				}
+			}
+		}
+
+		// Sort by requestedAt
+		allSteps.sort((a, b) => {
+			const ta = a.requestedAt ? new Date(a.requestedAt).getTime() : 0;
+			const tb = b.requestedAt ? new Date(b.requestedAt).getTime() : 0;
+			return ta - tb;
+		});
+
+		return { steps: allSteps };
 	});
 
 	const VALID_TRANSITIONS: Record<string, string[]> = {

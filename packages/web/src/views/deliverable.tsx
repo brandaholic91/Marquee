@@ -550,8 +550,21 @@ function SysLine({ children }: { children: React.ReactNode }) {
   );
 }
 
+type ThreadStep = { id: string; kind: "delegation" | "approval"; fromAgent: string; toAgent?: string; task?: string; note?: string; decision?: string; status?: string; requestedAt: string | null };
+
+const DECISION_LABEL: Record<string, string> = {
+  approved: "Jóváhagyva",
+  rejected: "Elutasítva",
+  requested_changes: "Változtatás kérve",
+};
+const DECISION_COLOR: Record<string, string> = {
+  approved: "var(--success, #2d7a4f)",
+  rejected: "#c0392b",
+  requested_changes: "var(--warning-deep, #b45309)",
+};
+
 function ThreadTab({ deliverableId }: { deliverableId: string }) {
-  const [steps, setSteps] = useState<Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: string | null }>>([]);
+  const [steps, setSteps] = useState<ThreadStep[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -566,36 +579,55 @@ function ThreadTab({ deliverableId }: { deliverableId: string }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {steps.map((step, i) => (
-        <div key={step.id} style={{ display: "flex", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <Avatar who={safeAvatarWho(step.toAgent)} size="sm" />
-            {i < steps.length - 1 && <div style={{ width: 1, flex: 1, background: "var(--rule)", minHeight: 16 }} />}
-          </div>
-          <div style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 8 : 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <AgentBadge slug={step.toAgent} active={step.status === "in_progress"} />
-              <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                {step.fromAgent} → {step.toAgent}
-              </span>
-              {step.requestedAt && (
-                <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto" }}>
-                  {new Date(step.requestedAt).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })}
-                </span>
+      {steps.map((step, i) => {
+        const isApproval = step.kind === "approval";
+        const timeLabel = step.requestedAt
+          ? new Date(step.requestedAt).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })
+          : null;
+
+        return (
+          <div key={step.id} style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              {isApproval
+                ? <div style={{ width: 28, height: 28, borderRadius: "50%", background: DECISION_COLOR[step.decision ?? ""] ?? "var(--ink-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#fff", flexShrink: 0 }}>H</div>
+                : <Avatar who={safeAvatarWho(step.toAgent ?? "")} size="sm" />
+              }
+              {i < steps.length - 1 && <div style={{ width: 1, flex: 1, background: "var(--rule)", minHeight: 16 }} />}
+            </div>
+            <div style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 8 : 0 }}>
+              {isApproval ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: DECISION_COLOR[step.decision ?? ""] ?? "var(--ink-2)" }}>
+                      {DECISION_LABEL[step.decision ?? ""] ?? step.decision}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--ink-3)" }}>human</span>
+                    {timeLabel && <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto" }}>{timeLabel}</span>}
+                  </div>
+                  {step.note && (
+                    <div style={{ padding: "8px 12px", background: "var(--secondary-soft)", borderRadius: 6, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, borderLeft: `3px solid ${DECISION_COLOR[step.decision ?? ""] ?? "var(--rule)"}` }}>
+                      {step.note}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <AgentBadge slug={step.toAgent ?? ""} active={step.status === "in_progress"} />
+                    <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{step.fromAgent} → {step.toAgent}</span>
+                    {timeLabel && <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto" }}>{timeLabel}</span>}
+                  </div>
+                  {step.task && (
+                    <div style={{ padding: "10px 12px", background: "var(--surface)", borderRadius: 6, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto" }}>
+                      {step.task.slice(0, 400)}{(step.task.length ?? 0) > 400 ? "…" : ""}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-            {step.task && (
-              <div style={{
-                padding: "10px 12px", background: "var(--surface)", borderRadius: 6,
-                fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5,
-                whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto",
-              }}>
-                {step.task.slice(0, 400)}{step.task.length > 400 ? "…" : ""}
-              </div>
-            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -92,7 +92,7 @@ export const api = {
       post<{ id: string; ok: boolean }>(`/api/deliverables/${id}/revisions`, { contentMd }),
     thread: (id: string) =>
       fetch(`/api/deliverables/${id}/thread`).then(json) as Promise<{
-        steps: Array<{ id: string; fromAgent: string; toAgent: string; task: string; status: string; requestedAt: string | null }>;
+        steps: Array<{ id: string; kind: "delegation" | "approval"; fromAgent: string; toAgent?: string; task?: string; note?: string; decision?: string; status?: string; requestedAt: string | null }>;
       }>,
     patchStatus: (id: string, status: string) =>
       fetch(`/api/deliverables/${id}/status`, {
