@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 
 interface Props {
   content: string;
@@ -14,7 +15,7 @@ export function MarkdownView({ content, className }: Props) {
       prose-a:text-primary-hover
       ${className ?? ''}`}
     >
-      <ReactMarkdown>{content}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{content}</ReactMarkdown>
     </div>
   );
 }
