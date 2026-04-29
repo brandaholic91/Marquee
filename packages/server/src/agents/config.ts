@@ -1,36 +1,42 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import matter from "gray-matter";
+export type RoleSlug = 'director' | 'copywriter' | 'social-manager' | 'paid-specialist';
+export type Lifecycle = 'warm' | 'transient';
 
-export function loadAgentIdentity(dataDir: string, role: string): string | null {
-  const path = join(dataDir, "agents", role, "identity.md");
-  if (!existsSync(path)) return null;
-  return readFileSync(path, "utf8").trim();
+export interface RoleConfig {
+  slug: RoleSlug;
+  lifecycle: Lifecycle;
+  tools: string[];
+  produces: string[];
 }
 
-export interface AgentConfig {
-  style?: "terse" | "verbose" | "balanced";
-  tone?: "authoritative" | "friendly" | "neutral";
-  response_length?: "concise" | "detailed";
-  language?: string;
-  model?: string;
-  thinking_level?: "off" | "minimal" | "low" | "medium" | "high";
-}
+export const ROLE_CONFIGS: Record<RoleSlug, RoleConfig> = {
+  director: {
+    slug: 'director',
+    lifecycle: 'warm',
+    tools: ['propose_brief', 'propose_memory_update', 'read_memory'],
+    produces: [],
+  },
+  copywriter: {
+    slug: 'copywriter',
+    lifecycle: 'transient',
+    tools: ['read_memory', 'submit_deliverable'],
+    produces: ['email', 'blog_post'],
+  },
+  'social-manager': {
+    slug: 'social-manager',
+    lifecycle: 'transient',
+    tools: ['read_memory', 'submit_deliverable'],
+    produces: ['social_post'],
+  },
+  'paid-specialist': {
+    slug: 'paid-specialist',
+    lifecycle: 'transient',
+    tools: ['read_memory', 'submit_deliverable'],
+    produces: ['ad_copy'],
+  },
+};
 
-export function loadAgentConfig(dataDir: string, role: string): AgentConfig | null {
-  const path = join(dataDir, "agents", role, "config.md");
-  if (!existsSync(path)) return null;
-  const parsed = matter(readFileSync(path, "utf8"));
-  return parsed.data as AgentConfig;
-}
-
-export function buildBehaviorBlock(config: AgentConfig): string {
-  const lines = [
-    config.style && `Style: ${config.style}`,
-    config.tone && `Tone: ${config.tone}`,
-    config.response_length && `Response length: ${config.response_length}`,
-    config.language && `Language: ${config.language}`,
-  ].filter(Boolean) as string[];
-
-  return lines.length > 0 ? `## Behavior\n${lines.join(" | ")}\n` : "";
+export function getRoleConfig(slug: RoleSlug): RoleConfig {
+  const c = ROLE_CONFIGS[slug];
+  if (!c) throw new Error(`unknown role: ${slug}`);
+  return c;
 }
