@@ -97,6 +97,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
         client_slug: ctx.clientSlug,
         thread_id: ctx.threadId,
         title: input.title,
+        content_md: input.content_md,
         deliverable_type: input.deliverable_type,
         target_specialist: input.target_specialist,
         platform: input.platform ?? null,

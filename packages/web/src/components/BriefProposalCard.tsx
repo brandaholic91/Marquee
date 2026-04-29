@@ -4,17 +4,20 @@ import { useMarqueeStore } from '../store/useMarqueeStore.js';
 export function BriefProposalCard({
   briefId,
   title,
+  contentMd,
   deliverableType,
   targetSpecialist,
   platform,
 }: {
   briefId: string;
   title: string;
+  contentMd: string;
   deliverableType: string;
   targetSpecialist: string;
   platform?: string | null;
 }) {
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const dispatchBrief = useMarqueeStore((s) => s.dispatchBrief);
   const discardBrief = useMarqueeStore((s) => s.discardBrief);
 
@@ -27,6 +30,23 @@ export function BriefProposalCard({
         <br />
         Specialista: <strong>{targetSpecialist}</strong>
       </div>
+
+      {contentMd && (
+        <div className="mt-3">
+          <button
+            className="text-xs text-primary-hover hover:underline"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? '▲ Brief elrejtése' : '▼ Brief megtekintése'}
+          </button>
+          {expanded && (
+            <pre className="mt-2 text-sm text-ink-1 bg-cream border border-rule rounded p-3 whitespace-pre-wrap font-sans max-h-64 overflow-y-auto">
+              {contentMd}
+            </pre>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-2 mt-4">
         <button
           className="bg-primary text-white px-4 py-2 rounded-md disabled:opacity-50 hover:bg-primary-hover"

@@ -76,6 +76,7 @@ export function ChatThread() {
               key={msg.id}
               briefId={brief.briefId}
               title={brief.title}
+              contentMd={brief.contentMd}
               deliverableType={brief.deliverableType}
               targetSpecialist={brief.targetSpecialist}
               platform={brief.platform}

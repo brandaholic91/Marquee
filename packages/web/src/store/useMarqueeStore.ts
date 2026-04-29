@@ -15,6 +15,7 @@ export interface Message {
 export interface ProposedBrief {
   briefId: string;
   title: string;
+  contentMd: string;
   deliverableType: string;
   targetSpecialist: string;
   platform: string | null;
@@ -187,6 +188,8 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       brief_id?: string;
       briefId?: string;
       title?: string;
+      content_md?: string;
+      contentMd?: string;
       deliverable_type?: string;
       deliverableType?: string;
       target_specialist?: string;
@@ -195,11 +198,12 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
     }>('brief_proposed', (payload) => {
       const briefId = payload.brief_id ?? payload.briefId ?? '';
       const title = payload.title ?? '';
+      const contentMd = payload.content_md ?? payload.contentMd ?? '';
       const deliverableType = payload.deliverable_type ?? payload.deliverableType ?? '';
       const targetSpecialist = payload.target_specialist ?? payload.targetSpecialist ?? '';
       const platform = payload.platform ?? null;
 
-      const brief: ProposedBrief = { briefId, title, deliverableType, targetSpecialist, platform };
+      const brief: ProposedBrief = { briefId, title, contentMd, deliverableType, targetSpecialist, platform };
 
       const cardMsg: Message = {
         id: `brief_card_${briefId}`,
