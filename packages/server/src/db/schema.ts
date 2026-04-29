@@ -1,3 +1,5 @@
+// FK policy: no cascades. Lifecycle is via status fields (deliverables.status='archived',
+// briefs.status='done', etc.). Hard-deletes are not part of the v1 design.
 import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
 export const clients = sqliteTable('clients', {
@@ -16,6 +18,7 @@ export const chatThreads = sqliteTable('chat_threads', {
 export const messages = sqliteTable('messages', {
   id: text('id').primaryKey(),
   threadId: text('thread_id').references(() => chatThreads.id),
+  // No FK: chat threads outlive specialist sessions; human-side messages have no session row.
   agentSessionId: text('agent_session_id'),
   sender: text('sender').notNull(),
   type: text('type', { enum: ['chat', 'brief_proposal', 'memory_proposal', 'tool_call', 'tool_result', 'system'] }).notNull(),
