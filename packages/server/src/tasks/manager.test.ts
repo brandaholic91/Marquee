@@ -97,7 +97,7 @@ describe("TaskManager", () => {
     const delegationId = randomUUID();
     db.insert(delegations).values({
       id: delegationId, fromAgent: "director", toAgent: "copywriter", status: "requested",
-      payloadJson: { task: "A".repeat(100) } as never,
+      payloadJson: { task: "A".repeat(400) } as never,
     }).run();
     broker.emit("delegation_created", { delegationId, from: "director", to: "copywriter" });
 
