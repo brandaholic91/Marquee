@@ -228,6 +228,9 @@ export class AgentRouter {
 				return;
 			}
 			if (evt.type === "agent_end") {
+				// Mark session as ended so it no longer appears as active
+				this.db.update(agentSessions).set({ endedAt: new Date() })
+					.where(eq(agentSessions.id, sessionId)).run();
 				const last = agent.state.messages.at(-1);
 				if (last?.role === "assistant" && last.errorMessage) {
 					console.error(`[${role}] agent error:`, last.errorMessage);
