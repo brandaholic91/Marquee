@@ -15,4 +15,4 @@ description: "Coordinates production of a landing_page deliverable. Defines the 
 
 **Hang**: Közvetlen és konkrét. Semmi "forradalmasítsd a munkafolyamatodat". Minden mondatnak indokoltnak kell lennie.
 
-**SEO**: Kérj elsődleges kulcsszót az insights-leadtől a briefelés előtt, ha a delegálásodban nincs megadva.
+**SEO**: Ha a delegálásodban nincs kulcsszó megadva, **ne kérdezd meg az embert** (`request_input` tilos). Helyette hívd meg a `submit_to_director` toolt: "Landing page kulcsszó hiányzik. Kérem delegálja az insights-leadnek a kulcsszókutatást, majd küldje vissza a briefet a kulcsszóval." A direktor fogja koordinálni az insights-leadet és visszaküldeni a feladatot a kulcsszóval.
