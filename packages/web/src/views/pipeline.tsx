@@ -28,7 +28,6 @@ const COLUMNS = [
   { status: "awaiting_eval", label: "Értékelésre vár" },
   { status: "awaiting_approval", label: "Jóváhagyásra vár" },
   { status: "shipped", label: "Kiszállítva" },
-  { status: "archived", label: "Archivált" },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -42,9 +41,11 @@ const STATUS_COLOR: Record<string, string> = {
 function DeliverableCard({
   d,
   onClick,
+  onArchive,
 }: {
   d: Deliverable;
   onClick: () => void;
+  onArchive: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
   return (
@@ -61,10 +62,22 @@ function DeliverableCard({
         cursor: isDragging ? "grabbing" : "pointer",
         opacity: isDragging ? 0.4 : 1,
         touchAction: "none",
+        position: "relative",
       }}
     >
-      <div className="body-sm" style={{ fontWeight: 500, marginBottom: 4 }}>{d.title}</div>
+      <div className="body-sm" style={{ fontWeight: 500, marginBottom: 4, paddingRight: 16 }}>{d.title}</div>
       <div className="caption" style={{ opacity: 0.6 }}>{d.type.replace(/_/g, " ")}</div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onArchive(); }}
+        title="Archiválás"
+        style={{
+          position: "absolute", top: 6, right: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "var(--ink-3)", fontSize: 14, lineHeight: 1, padding: 2,
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -74,11 +87,13 @@ function Column({
   label,
   cards,
   onCardClick,
+  onArchive,
 }: {
   status: string;
   label: string;
   cards: Deliverable[];
   onCardClick: (id: string) => void;
+  onArchive: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
@@ -110,7 +125,7 @@ function Column({
         <span className="caption" style={{ marginLeft: "auto", opacity: 0.5 }}>{cards.length}</span>
       </div>
       {cards.map((d) => (
-        <DeliverableCard key={d.id} d={d} onClick={() => onCardClick(d.id)} />
+        <DeliverableCard key={d.id} d={d} onClick={() => onCardClick(d.id)} onArchive={() => onArchive(d.id)} />
       ))}
       {cards.length === 0 && (
         <div className="caption" style={{ opacity: 0.35, padding: "8px 2px" }}>Üres</div>
@@ -139,8 +154,15 @@ export function PipelineView() {
     api.campaigns.list().then(setCampaigns).catch(() => {});
   }, []);
 
+  async function handleArchive(id: string) {
+    setDeliverables((prev) => prev.map((d) => d.id === id ? { ...d, status: "archived" } : d));
+    await api.deliverables.patchStatus(id, "archived").catch(() => {});
+  }
+
   const activeCampaignIds = new Set(campaigns.filter((c) => c.status !== "archived").map((c) => c.id));
-  const visibleDeliverables = deliverables.filter((d) => !d.campaignId || activeCampaignIds.has(d.campaignId));
+  const visibleDeliverables = deliverables.filter((d) =>
+    d.status !== "archived" && (!d.campaignId || activeCampaignIds.has(d.campaignId))
+  );
   const filtered = campaignFilter
     ? visibleDeliverables.filter((d) => d.campaignId === campaignFilter)
     : visibleDeliverables;
@@ -209,6 +231,7 @@ export function PipelineView() {
                 label={label}
                 cards={byStatus(status)}
                 onCardClick={(id) => setSelectedDeliverable(id)}
+                onArchive={handleArchive}
               />
             ))}
           </div>

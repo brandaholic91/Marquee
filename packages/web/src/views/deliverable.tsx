@@ -343,7 +343,9 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           {deliverable.title}
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <span className="badge badge-primary-soft">{deliverable.status}</span>
+          <span className="badge badge-primary-soft">
+            {deliverable.status === "archived" ? "elutasítva" : deliverable.status}
+          </span>
           {deliverable.type && (
             <span className="badge badge-cream" style={{ fontFamily: "var(--font-mono)" }}>
               {deliverable.type}
