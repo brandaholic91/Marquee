@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { briefs, delegations } from '../db/schema.js';
 import { spawnAgent } from '../agents/factory.js';
+import { AuthManager } from '../providers/auth.js';
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker { emit: (e: Record<string, unknown>) => void; }
@@ -12,6 +13,7 @@ export interface DispatchInput {
   broker: Broker;
   dataDir: string;
   briefId: string;
+  authManager: AuthManager;
 }
 
 interface BriefPayload {
@@ -56,6 +58,7 @@ export async function dispatchBrief(input: DispatchInput): Promise<void> {
     role: payload.target_specialist,
     delegationId,
     deliverableType: payload.deliverable_type,
+    authManager: input.authManager,
   });
 
   input.broker.emit({

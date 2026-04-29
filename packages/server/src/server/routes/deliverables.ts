@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and, asc, desc, inArray } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { readFile } from 'node:fs/promises';
 import { deliverables, deliverableRevisions, approvals, delegations, briefs } from '../../db/schema.js';
 import { spawnAgent } from '../../agents/factory.js';
 import { fireDeliverableShipped } from '../../webhooks/n8n-outbound.js';
@@ -33,6 +34,22 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
       .where(eq(deliverableRevisions.deliverableId, req.params.id))
       .orderBy(asc(deliverableRevisions.revisionNo)).all();
     return { deliverable: ds[0], revisions: revs };
+  });
+
+  app.get<{ Params: { id: string; revisionId: string } }>('/api/deliverables/:id/revisions/:revisionId/content', async (req, reply) => {
+    const rev = await db.select().from(deliverableRevisions)
+      .where(and(eq(deliverableRevisions.deliverableId, req.params.id), eq(deliverableRevisions.id, req.params.revisionId)))
+      .all();
+    if (rev.length === 0) return reply.code(404).send({ error: 'not_found' });
+    const artifactPath = rev[0].artifactPath;
+    if (!artifactPath) return reply.code(404).send({ error: 'no_artifact' });
+    try {
+      const content = await readFile(artifactPath, 'utf-8');
+      return { content };
+    } catch (err) {
+      console.error(`failed to read artifact ${artifactPath}:`, err);
+      return reply.code(500).send({ error: 'read_failed' });
+    }
   });
 
   app.post<{ Params: { id: string } }>('/api/deliverables/:id/approve', async (req, reply) => {

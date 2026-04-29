@@ -4,6 +4,7 @@ import { eq, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { briefs } from '../../db/schema.js';
 import { dispatchBrief } from '../../broker/router.js';
+import { AuthManager } from '../../providers/auth.js';
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker { emit: (e: Record<string, unknown>) => void; }
@@ -12,10 +13,11 @@ export interface BriefsRoutesOpts {
   db: Db;
   broker: Broker;
   dataDir: string;
+  authManager: AuthManager;
 }
 
 export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, opts) => {
-  const { db, broker, dataDir } = opts;
+  const { db, broker, dataDir, authManager } = opts;
 
   app.post<{ Body: Record<string, unknown> }>('/api/briefs', async (req, reply) => {
     const b = req.body as Record<string, unknown>;
@@ -45,10 +47,12 @@ export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, op
 
   app.post<{ Params: { id: string } }>('/api/briefs/:id/dispatch', async (req, reply) => {
     try {
-      await dispatchBrief({ db, broker, dataDir, briefId: req.params.id });
+      await dispatchBrief({ db, broker, dataDir, authManager, briefId: req.params.id });
       return reply.send({ ok: true });
     } catch (err) {
-      return reply.code(400).send({ error: String((err as Error).message) });
+      const msg = String((err as Error).message);
+      console.error(`[dispatchBrief error] ${req.params.id}:`, msg);
+      return reply.code(400).send({ error: msg });
     }
   });
 };

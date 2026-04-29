@@ -1,10 +1,16 @@
 const json = (r: Response) => r.json();
 
 function post<T>(path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = {};
+  let fetchBody: string | undefined;
+  if (body !== undefined) {
+    headers['content-type'] = 'application/json';
+    fetchBody = JSON.stringify(body);
+  }
   return fetch(path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers,
+    body: fetchBody,
   }).then(json);
 }
 

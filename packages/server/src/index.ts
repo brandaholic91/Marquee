@@ -161,7 +161,7 @@ async function main() {
 
 	// 7. Build + start the server
 	const webRoot = process.env.WEB_ROOT ?? join(here, "..", "..", "web", "dist");
-	const app = await buildServer({ db, broker, dataDir, webRoot, n8nWebhookUrl });
+	const app = await buildServer({ db, broker, dataDir, webRoot, n8nWebhookUrl, authManager });
 
 	const shutdown = async () => {
 		authManager.stop();

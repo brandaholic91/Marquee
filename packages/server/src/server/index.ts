@@ -8,6 +8,7 @@ import { deliverablesRoutes } from "./routes/deliverables.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { authMiddleware } from "./auth-middleware.js";
 import { registerSseRoute } from "./sse.js";
+import { AuthManager } from "../providers/auth.js";
 
 export interface ServerOpts {
 	db: AgencyDb;
@@ -15,6 +16,7 @@ export interface ServerOpts {
 	dataDir: string;
 	webRoot: string;
 	n8nWebhookUrl: string | null;
+	authManager: AuthManager;
 }
 
 /**
@@ -54,7 +56,7 @@ export async function buildServer(opts: ServerOpts) {
 	const db = opts.db as unknown as ReturnType<typeof import("drizzle-orm/better-sqlite3").drizzle>;
 
 	// API plugins
-	await app.register(briefsRoutes, { db, broker: flatBroker, dataDir: opts.dataDir });
+	await app.register(briefsRoutes, { db, broker: flatBroker, dataDir: opts.dataDir, authManager: opts.authManager });
 	await app.register(messagesRoutes, { db, broker: flatBroker });
 	await app.register(threadsRoutes, { db });
 	await app.register(deliverablesRoutes, {

@@ -21,6 +21,8 @@ export function DeliverableDetail() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<DetailData | null>(null);
   const [selectedRev, setSelectedRev] = useState<string | null>(null);
+  const [content, setContent] = useState<string | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -34,6 +36,21 @@ export function DeliverableDetail() {
       setSelectedRev(d.deliverable.currentRevisionId ?? (d.revisions[d.revisions.length - 1]?.id ?? null));
     }).catch(() => setData(null));
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !selectedRev) return;
+    setLoadingContent(true);
+    fetch(`/api/deliverables/${id}/revisions/${selectedRev}/content`)
+      .then(r => r.json())
+      .then((res: { content?: string; error?: string }) => {
+        setContent(res.content ?? null);
+        setLoadingContent(false);
+      })
+      .catch(() => {
+        setContent(null);
+        setLoadingContent(false);
+      });
+  }, [id, selectedRev]);
 
   if (!data) return <div className="text-ink-2">Betöltés…</div>;
 
@@ -59,9 +76,19 @@ export function DeliverableDetail() {
 
       <div className="border border-rule bg-off-white rounded-lg p-6 mt-3">
         {current ? (
-          <div className="text-ink-2 italic">
-            Verzió {current.revisionNo} fájl:{' '}
-            <code className="font-mono">{current.artifactPath ?? '—'}</code>
+          <div>
+            <div className="text-ink-2 text-sm mb-3 italic">
+              Verzió {current.revisionNo}
+            </div>
+            {loadingContent ? (
+              <div className="text-ink-2 italic">Betöltés…</div>
+            ) : content ? (
+              <div className="prose prose-sm max-w-none text-ink-1 whitespace-pre-wrap font-sans">
+                {content}
+              </div>
+            ) : (
+              <div className="text-ink-2 italic">Nincs tartalom elérhető.</div>
+            )}
           </div>
         ) : (
           <div className="text-ink-2 italic">Még nincs revízió.</div>
