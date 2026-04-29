@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadSkill, loadSkillBody, loadSkillsForRole, listSkillsForRole } from "./loader.js";
+import { loadSkill, loadSkillBody, loadSkillsForRole, listSkillsForRole, loadSkillRecipes } from "./loader.js";
 
 describe("skills loader", () => {
 	let dir: string;
@@ -52,5 +52,30 @@ describe("skills loader", () => {
 
 	it("loadSkillBody returns null for unknown skill", () => {
 		expect(loadSkillBody(dir, "copywriter", "nonexistent")).toBeNull();
+	});
+});
+
+describe("loadSkillRecipes", () => {
+	let dir: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "marquee-recipes-"));
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	it("returns concatenated markdown for a role, sorted by filename", async () => {
+		mkdirSync(join(dir, "skills/director"), { recursive: true });
+		writeFileSync(join(dir, "skills/director/b_second.md"), "# Second\nbody2");
+		writeFileSync(join(dir, "skills/director/a_first.md"), "# First\nbody1");
+		const out = await loadSkillRecipes(dir, "director");
+		const idx1 = out.indexOf("First");
+		const idx2 = out.indexOf("Second");
+		expect(idx1).toBeGreaterThanOrEqual(0);
+		expect(idx2).toBeGreaterThan(idx1);
+		expect(out).toContain("---");
+	});
+
+	it("returns empty string when role directory missing", async () => {
+		const out = await loadSkillRecipes(dir, "ghost-role");
+		expect(out).toBe("");
 	});
 });

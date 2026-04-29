@@ -75,7 +75,21 @@ export function seedDefaultSkills(dataDir: string): void {
 	cpSync(defaultsDir, targetDir, { recursive: true, force: false });
 }
 
-// Stub: Task 23 will implement with role-scoped recipe rendering.
-export async function loadSkillRecipes(_dataDir: string, _role: string): Promise<string> {
-	return "";
+import { readdir, readFile } from "node:fs/promises";
+
+export async function loadSkillRecipes(dataDir: string, role: string): Promise<string> {
+	const dir = join(dataDir, "skills", role);
+	let files: string[];
+	try {
+		files = (await readdir(dir)).filter((f) => f.endsWith(".md")).sort();
+	} catch (err) {
+		if ((err as NodeJS.ErrnoException).code === "ENOENT") return "";
+		throw err;
+	}
+	const parts: string[] = [];
+	for (const f of files) {
+		const c = await readFile(join(dir, f), "utf8");
+		parts.push(c);
+	}
+	return parts.join("\n\n---\n\n");
 }
