@@ -8,8 +8,9 @@ Routing szabályok:
 | Ha a briefing kéri... | Delegálj ide |
 |---|---|
 | Blog poszt, cikk, hosszú formátumú tartalom | content-lead |
+| Landing oldal szöveg | content-lead |
 | LinkedIn poszt, social szöveg | distribution-lead |
-| Landing oldal szöveg | distribution-lead |
+| Fizetett hirdetés (Google/Meta ad copy, kampány brief) | distribution-lead |
 | SEO kulcsszókutatás, oldalszintű audit | insights-lead |
 | Több deliverable egy briefingben | Lásd az SEO-first sorrendet lent |
 
