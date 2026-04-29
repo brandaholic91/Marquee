@@ -35,13 +35,38 @@ export function makeSubmitDeliverable(dataDir: string): AgentToolDef<
 			if (!ctx.delegationId) throw new Error("submit_deliverable requires an active delegation context");
 			const delegation = ctx.db.select().from(delegations).where(eq(delegations.id, ctx.delegationId)).get();
 			const campaignId = delegation?.campaignId ?? null;
-			const deliverableId = randomUUID();
+			const payload = (delegation?.payloadJson ?? {}) as { existingDeliverableId?: string };
+
 			const revisionId = randomUUID();
+
+			if (payload.existingDeliverableId) {
+				// Revision request: add new revision to existing deliverable
+				const existingId = payload.existingDeliverableId;
+				const existing = ctx.db.select().from(deliverables).where(eq(deliverables.id, existingId)).get();
+				const revCount = ctx.db.select().from(deliverableRevisions).where(eq(deliverableRevisions.deliverableId, existingId)).all().length;
+				const revNum = String(revCount + 1).padStart(3, "0");
+				const artifactDir = join(dataDir, "artifacts", existingId);
+				mkdirSync(artifactDir, { recursive: true });
+				const artifactPath = join(artifactDir, `rev_${revNum}.md`);
+				writeFileSync(artifactPath, input.contentMd);
+				ctx.db.insert(deliverableRevisions).values({
+					id: revisionId, deliverableId: existingId, artifactPath, createdByAgent: ctx.agentSlug,
+				}).run();
+				ctx.db.update(deliverables).set({
+					currentRevisionId: revisionId, status: "awaiting_eval",
+					title: input.title ?? existing?.title,
+					updatedAt: new Date(),
+				}).where(eq(deliverables.id, existingId)).run();
+				ctx.emit("deliverable_submitted", { deliverableId: existingId, revisionId });
+				return { deliverableId: existingId, revisionId };
+			}
+
+			// New deliverable
+			const deliverableId = randomUUID();
 			const artifactDir = join(dataDir, "artifacts", deliverableId);
 			mkdirSync(artifactDir, { recursive: true });
 			const artifactPath = join(artifactDir, "rev_001.md");
 			writeFileSync(artifactPath, input.contentMd);
-
 			ctx.db.insert(deliverables).values({
 				id: deliverableId, delegationId: ctx.delegationId,
 				type: input.type, title: input.title, status: "awaiting_eval",

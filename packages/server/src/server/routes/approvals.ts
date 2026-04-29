@@ -45,7 +45,7 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 				const newDelId = randomUUID();
 				opts.db.insert(delegations).values({
 					id: newDelId, fromAgent: "review", toAgent: targetAgent,
-					status: "requested", payloadJson: { task: feedbackTask } as never,
+					status: "requested", payloadJson: { task: feedbackTask, existingDeliverableId: id } as never,
 					parentDelegationId: leadDelId ?? d.delegationId,
 					campaignId: d.campaignId,
 				}).run();

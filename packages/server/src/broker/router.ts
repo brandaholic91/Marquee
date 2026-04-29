@@ -109,7 +109,11 @@ export class AgentRouter {
 
 		if (this.warmAgents.has(to)) {
 			const agent = this.warmAgents.get(to)!;
-			agent.prompt(userMessage).catch(console.error);
+			this.db.update(delegations).set({ status: "in_progress" })
+				.where(eq(delegations.id, delegationId)).run();
+			void agent.waitForIdle().then(() =>
+				agent.prompt(userMessage).catch((e) => console.error(`[${to}] prompt error:`, e))
+			);
 		} else {
 			this.spawnAndPrompt(to, delegationId, userMessage);
 		}

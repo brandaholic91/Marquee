@@ -76,14 +76,18 @@ export const delegateToSpecialist: AgentToolDef<z.infer<typeof delegateToSpecial
 		if (!allowed.has(input.specialist))
 			throw new Error(`${ctx.agentSlug} cannot delegate to "${input.specialist}". Allowed: ${[...allowed].join(", ")}`);
 		let campaignId: string | null = null;
+		let existingDeliverableId: string | undefined;
 		if (ctx.delegationId) {
 			const parent = ctx.db.select().from(delegations).where(eq(delegations.id, ctx.delegationId)).get();
 			campaignId = parent?.campaignId ?? null;
+			existingDeliverableId = (parent?.payloadJson as { existingDeliverableId?: string })?.existingDeliverableId;
 		}
 		const id = randomUUID();
+		const payload: Record<string, unknown> = { task: input.task, context: input.context };
+		if (existingDeliverableId) payload.existingDeliverableId = existingDeliverableId;
 		ctx.db.insert(delegations).values({
 			id, parentDelegationId: ctx.delegationId, campaignId, fromAgent: ctx.agentSlug, toAgent: input.specialist,
-			status: "requested", payloadJson: { task: input.task, context: input.context } as never,
+			status: "requested", payloadJson: payload as never,
 		}).run();
 		ctx.emit("delegation_created", { delegationId: id, from: ctx.agentSlug, to: input.specialist });
 		return { delegationId: id };
