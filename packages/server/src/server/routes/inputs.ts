@@ -35,6 +35,10 @@ export function registerInputRoutes(app: FastifyInstance, opts: ServerOpts) {
 					.where(eq(agentSessions.id, msg.agentSessionId)).get()
 				: null;
 
+			// Only show questions from pipeline agents (have parentDelegationId)
+			// Chat director questions belong in the chat UI, not the dashboard widget
+			if (!session?.parentDelegationId) continue;
+
 			pending.push({
 				id: msg.id,
 				threadId,
