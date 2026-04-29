@@ -1,32 +1,37 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readMemoryFile } from "./read.js";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { readMemoryFile } from './read.js';
 
-describe("readMemoryFile", () => {
-	let dir: string;
-	beforeEach(() => {
-		dir = mkdtempSync(join(tmpdir(), "agency-mem-"));
-		mkdirSync(join(dir, "memory"));
-	});
-	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+let baseDir: string;
 
-	it("parses YAML frontmatter and body", () => {
-		writeFileSync(
-			join(dir, "memory/client_profile.md"),
-			`---\nclient_name: Stackly\nicp: PLG SaaS\n---\n\n# Stackly\n\nbody here\n`,
-		);
-		const m = readMemoryFile(dir, "client_profile");
-		expect(m.frontmatter.client_name).toBe("Stackly");
-		expect(m.frontmatter.icp).toBe("PLG SaaS");
-		expect(m.body.trim()).toContain("body here");
-	});
+beforeEach(() => {
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-mem-'));
+  const target = join(baseDir, 'memory', 'clients', 'default');
+  mkdirSync(target, { recursive: true });
+  writeFileSync(
+    join(target, 'profile.md'),
+    `---\nbusiness_description: "Foo Bar"\ntarget_audience: ["a"]\nusp: "x"\ncompetitors: ["c1"]\n---\n# Profile body\nHello.`,
+    'utf8'
+  );
+});
 
-	it("returns empty frontmatter for files without YAML", () => {
-		writeFileSync(join(dir, "memory/notes.md"), "just text");
-		const m = readMemoryFile(dir, "notes");
-		expect(m.frontmatter).toEqual({});
-		expect(m.body).toBe("just text");
-	});
+describe('readMemoryFile', () => {
+  it('parses frontmatter and body for default client', async () => {
+    const r = await readMemoryFile(baseDir, 'default', 'profile.md');
+    expect(r!.frontmatter.business_description).toBe('Foo Bar');
+    expect(r!.frontmatter.target_audience).toEqual(['a']);
+    expect(r!.body.trim()).toContain('Profile body');
+  });
+
+  it('returns null for missing file', async () => {
+    const r = await readMemoryFile(baseDir, 'default', 'brand_voice.md');
+    expect(r).toBeNull();
+  });
+
+  it('returns null for missing client', async () => {
+    const r = await readMemoryFile(baseDir, 'other', 'profile.md');
+    expect(r).toBeNull();
+  });
 });
