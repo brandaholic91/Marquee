@@ -64,6 +64,15 @@ export async function buildServer(opts: ServerOpts) {
 	registerCampaignRoutes(app, opts);
 	// Cron jobs list
 	app.get("/api/crons", async () => opts.cronManager?.list() ?? []);
+	// Re-trigger a stuck delegation (admin utility)
+	app.post<{ Body: { delegationId: string } }>("/api/admin/retrigger-delegation", async (req, reply) => {
+		const { eq } = await import("drizzle-orm");
+		const { delegations } = await import("../db/schema.js");
+		const del = opts.db.select().from(delegations).where(eq(delegations.id, req.body.delegationId)).get();
+		if (!del) return reply.code(404).send({ error: "delegation not found" });
+		opts.broker.emit("delegation_created", { delegationId: del.id, from: del.fromAgent, to: del.toAgent });
+		return { ok: true, to: del.toAgent };
+	});
 	registerSseRoute(app, opts);
 	return app;
 }
