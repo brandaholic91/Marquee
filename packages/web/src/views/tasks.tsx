@@ -136,7 +136,10 @@ export function TasksView() {
     }
   }
 
-  const visibleTasks = tasks.filter((t) => t.status !== "archived");
+  const activeCampaignIds = new Set(campaigns.filter((c) => c.status !== "archived").map((c) => c.id));
+  const visibleTasks = tasks.filter((t) =>
+    t.status !== "archived" && (!t.campaignId || activeCampaignIds.has(t.campaignId))
+  );
   const filteredTasks = campaignFilter
     ? visibleTasks.filter((t) => t.campaignId === campaignFilter)
     : visibleTasks;
@@ -161,7 +164,7 @@ export function TasksView() {
             }}
           >
             <option value="">Összes kampány</option>
-            {campaigns.map((c) => (
+            {campaigns.filter((c) => c.status !== "archived").map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}
           </select>

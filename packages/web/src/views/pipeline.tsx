@@ -139,9 +139,11 @@ export function PipelineView() {
     api.campaigns.list().then(setCampaigns).catch(() => {});
   }, []);
 
+  const activeCampaignIds = new Set(campaigns.filter((c) => c.status !== "archived").map((c) => c.id));
+  const visibleDeliverables = deliverables.filter((d) => !d.campaignId || activeCampaignIds.has(d.campaignId));
   const filtered = campaignFilter
-    ? deliverables.filter((d) => d.campaignId === campaignFilter)
-    : deliverables;
+    ? visibleDeliverables.filter((d) => d.campaignId === campaignFilter)
+    : visibleDeliverables;
 
   const byStatus = (status: string) => filtered.filter((d) => d.status === status);
 
@@ -192,7 +194,7 @@ export function PipelineView() {
               }}
             >
               <option value="">Összes kampány</option>
-              {campaigns.map((c) => (
+              {campaigns.filter((c) => c.status !== "archived").map((c) => (
                 <option key={c.id} value={c.id}>{c.title}</option>
               ))}
             </select>
