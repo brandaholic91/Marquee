@@ -61,11 +61,11 @@ export function DeliverableDetail() {
   return (
     <div>
       <header className="flex items-center gap-3 mb-4">
-        <h1 className="font-serif text-2xl">
-          Deliverable {deliverable.id.slice(0, 12)}…
-        </h1>
         <TypeBadge type={deliverable.type} />
         <StatusBadge status={deliverable.status} />
+        <span className="text-xs text-ink-2 ml-auto">
+          {new Date(deliverable.createdAt).toLocaleDateString('hu-HU')}
+        </span>
       </header>
 
       <RevisionTabs

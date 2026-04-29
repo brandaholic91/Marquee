@@ -6,9 +6,11 @@ interface Props {
   className?: string;
 }
 
-function normalizeBreaks(text: string): string {
+function prepareContent(text: string): string {
+  // Strip structured_data HTML comment block (not rendered by react-markdown v10)
+  const stripped = text.replace(/<!--\s*structured_data[\s\S]*?-->/g, '').trim();
   // Ensure bold labels on their own line become separate paragraphs
-  return text.replace(/\n(\*\*[^*]+\*\*[:\s])/g, '\n\n$1');
+  return stripped.replace(/\n(\*\*[^*]+\*\*[:\s])/g, '\n\n$1');
 }
 
 export function MarkdownView({ content, className }: Props) {
@@ -20,7 +22,7 @@ export function MarkdownView({ content, className }: Props) {
       prose-a:text-primary-hover
       ${className ?? ''}`}
     >
-      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{normalizeBreaks(content)}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{prepareContent(content)}</ReactMarkdown>
     </div>
   );
 }
