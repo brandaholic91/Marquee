@@ -101,3 +101,8 @@ export function makeTransformContext(opts: TransformContextOptions) {
     return [head, ...collapseToolPairs(old), ...recent];
   };
 }
+
+// Stub: Task 24 will implement with mustache-rendered client memory.
+export async function renderMemoryContext(_dataDir: string, _clientSlug: string, _role: string): Promise<string> {
+  return "";
+}

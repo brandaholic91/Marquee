@@ -74,3 +74,8 @@ export function seedDefaultSkills(dataDir: string): void {
 	if (!fsExists(targetDir)) fsMkdir(targetDir, { recursive: true });
 	cpSync(defaultsDir, targetDir, { recursive: true, force: false });
 }
+
+// Stub: Task 23 will implement with role-scoped recipe rendering.
+export async function loadSkillRecipes(_dataDir: string, _role: string): Promise<string> {
+	return "";
+}
