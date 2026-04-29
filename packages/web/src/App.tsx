@@ -1,48 +1,23 @@
-import { useEffect } from "react";
-import { useAgencyStore } from "./store/useAgencyStore";
-import { HomeView } from "./views/home";
-import { OnboardingView } from "./views/onboarding";
-import { DeliverableView } from "./views/deliverable";
-import { MemoryView } from "./views/memory";
-import { ChatFullView } from "./views/chat-full";
-import { PipelineView } from "./views/pipeline";
-import { TasksView } from "./views/tasks";
-import { AgentsView } from "./views/agents";
-import { SkillsView } from "./views/skills";
-import { CalendarView } from "./views/calendar";
-import { CampaignsView } from "./views/campaigns";
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { TopNav } from './components/TopNav.js';
+import { Workshop } from './views/Workshop.js';
+import { Approvals } from './views/Approvals.js';
+import { DeliverableDetail } from './views/DeliverableDetail.js';
+import { Memory } from './views/Memory.js';
 
 export function App() {
-  const currentView = useAgencyStore((s) => s.currentView);
-  const setView = useAgencyStore((s) => s.setView);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/memory/files")
-      .then((r) => r.json())
-      .then((files: Array<{ name: string }>) => {
-        if (cancelled) return;
-        const hasProfile = files.some((f) => f.name === "client_profile.md");
-        if (!hasProfile) setView("onboarding");
-      })
-      .catch(() => {}); // fail silently — show home on error
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount; setView is a stable Zustand setter
-
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {currentView === "home" && <HomeView />}
-      {currentView === "onboarding" && <OnboardingView />}
-      {currentView === "deliverable" && <DeliverableView />}
-      {currentView === "memory" && <MemoryView />}
-      {currentView === "chat" && <ChatFullView />}
-      {currentView === "pipeline" && <PipelineView />}
-      {currentView === "tasks" && <TasksView />}
-      {currentView === "agents" && <AgentsView />}
-      {currentView === "skills" && <SkillsView />}
-      {currentView === "calendar" && <CalendarView />}
-      {currentView === "campaigns" && <CampaignsView />}
+    <div className="min-h-screen bg-cream text-ink-1">
+      <TopNav />
+      <main className="max-w-screen-xl mx-auto px-8 py-6">
+        <Routes>
+          <Route path="/" element={<Workshop />} />
+          <Route path="/jovahagyas" element={<Approvals />} />
+          <Route path="/jovahagyas/:id" element={<DeliverableDetail />} />
+          <Route path="/memoria" element={<Memory />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
     </div>
   );
 }
