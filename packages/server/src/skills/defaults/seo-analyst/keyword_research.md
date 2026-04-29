@@ -21,13 +21,18 @@ Ha mindhárom stub, vezess le a memóriából. Jelezd expliciten az adathiányt.
 
 ## Keresési szándék klasszifikáció
 
-Minden kulcsszóhoz határozd meg a domináns szándékot:
+Minden kulcsszóhoz határozd meg a domináns szándékot. Az intent határozza meg az optimális tartalom formátumot:
 
-- **Informational** (tudáskeresés) → blog poszt, útmutató, cikk
-- **Commercial investigation** (összehasonlítás, döntés előtt) → összehasonlító cikk, "miért mi" oldal
-- **Transactional** (cselekvésre kész) → landing page, foglalási oldal, termékoldal
+| Szándék | Leírás | Ajánlott formátumok |
+|---|---|---|
+| **Informational** | Tudáskeresés, "hogyan", "mi az" | blog poszt, útmutató, cikk, video script, newsletter |
+| **Commercial investigation** | Összehasonlítás, döntés előtt | összehasonlító cikk, case study, LinkedIn poszt, "miért mi" landing page |
+| **Transactional** | Cselekvésre kész, vásárlás/foglalás | landing page, termékoldal, ad copy, email kampány |
+| **Navigational** | Konkrét márkát/oldalt keres | brand keyword, homepage copy |
 
-**Fontos**: Kérdésalapú lekérdezések nem automatikusan informational intent — "hol találok [termék/szolgáltatás] [helyszín]-en" = commercial investigation. Ellenőrizd a SERP formátumát a szándék megerősítéséhez.
+**Fontos**: A kért deliverable típusa (blog_post, landing_page, linkedin_post stb.) határozza meg melyik intent-re fókuszálj. Ha landing page-et kértek, a transactional és commercial kulcsszavak a relevánsak. Ha blog posztot, az informational és commercial investigation.
+
+**Megjegyzés social media deliverable-öknél**: LinkedIn, Twitter, Instagram esetén a "kulcsszó" inkább a téma szöge és az a kérdés amit a poszt megválaszol — nem feltétlenül exact-match ranking, hanem a célközönség fájdalompontja.
 
 ## Prioritizálási framework
 
@@ -47,7 +52,7 @@ Minden kulcsszóhoz becsüld meg kvalitatívan (1-5):
 ## Output: strukturált seo_report
 
 ### Executive summary
-2-3 mondat: mi a fő megállapítás, melyik szándék domináns, mi a javasolt tartalom típus.
+2-3 mondat: mi a fő megállapítás, melyik szándék domináns a témában, és hogyan illeszkedik ez a kért deliverable típushoz.
 
 ### Ügyfél pozicionálása
 Egy sor: mire épülnek a kulcsszavak (az USP-ből és ICP-ből).
@@ -66,7 +71,7 @@ Egy sor: mire épülnek a kulcsszavak (az USP-ből és ICP-ből).
 ### Topic cluster javaslat
 - **Pillar kulcsszó**: [a legerősebb primary keyword]
 - **Cluster kulcsszavak**: [3-5 supporting keyword ami a pillar köré épül]
-- **Javasolt tartalom struktúra**: pillar cikk témája + 2-3 supporting cikk ötlet
+- **Javasolt tartalom struktúra**: melyik kulcsszó melyik deliverable típushoz illik legjobban (blog, landing page, social poszt, ad copy, email)
 
 ### Közösségi fájdalompont
 1 konkrét idézet vagy parafrázis valódi keresési/fórum forrásból (ha stub, jelezd).
