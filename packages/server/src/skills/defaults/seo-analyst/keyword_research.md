@@ -27,7 +27,7 @@ Minden kulcsszóhoz határozd meg a domináns szándékot:
 - **Commercial investigation** (összehasonlítás, döntés előtt) → összehasonlító cikk, "miért mi" oldal
 - **Transactional** (cselekvésre kész) → landing page, foglalási oldal, termékoldal
 
-**Fontos**: "hol érdemes enni Pécsen" = commercial investigation, nem informational. Ellenőrizd a SERP formátumát a szándék megerősítéséhez.
+**Fontos**: Kérdésalapú lekérdezések nem automatikusan informational intent — "hol találok [termék/szolgáltatás] [helyszín]-en" = commercial investigation. Ellenőrizd a SERP formátumát a szándék megerősítéséhez.
 
 ## Prioritizálási framework
 
@@ -42,7 +42,7 @@ Minden kulcsszóhoz becsüld meg kvalitatívan (1-5):
 
 - Soha ne állítsd bizonyítottnak azt, ami stub adatból "levezetett" — jelezd az adathiányt.
 - A kulcsszavaknak specifikusaknak kell lenniük: a kliens USP elemeit tartalmazzák.
-- Ne legyen generikus: "étterem Pécs" rossz, "hagyományos pécsi étterem helyi alapanyagokból" jó.
+- Ne legyen generikus: "[iparág] [helyszín]" rossz, "[kliens USP eleme] + [iparág] + [helyszín]" jó — a differenciátor legyen benne.
 
 ## Output: strukturált seo_report
 
