@@ -1,155 +1,70 @@
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { randomUUID } from "node:crypto";
-import { describe, it, expect } from "vitest";
-import { openDb } from "../../db/index.js";
-import { Broker } from "../../broker/event-bus.js";
-import { buildServer } from "../index.js";
-import { briefs, campaigns } from "../../db/schema.js";
-import type { AgentRouter } from "../../broker/router.js";
+import { describe, it, expect, beforeEach } from 'vitest';
+import Fastify, { FastifyInstance } from 'fastify';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { briefsRoutes } from './briefs.js';
+import * as schema from '../../db/schema.js';
 
-function makeApp() {
-	const dir = mkdtempSync(join(tmpdir(), "briefs-test-"));
-	mkdirSync(join(dir, "memory"), { recursive: true });
-	const { db, close } = openDb(join(dir, "test.db"));
-	const broker = new Broker(db);
-	const router = { queueBrief: () => {} } as unknown as AgentRouter;
-	return {
-		db,
-		broker,
-		dir,
-		router,
-		close,
-		cleanup: () => {
-			close();
-			rmSync(dir, { recursive: true, force: true });
-		},
-	};
-}
+let app: FastifyInstance;
+let db: ReturnType<typeof drizzle>;
+let baseDir: string;
+const broker = { emit: () => {} };
 
-describe("POST /api/briefs", () => {
-	it("creates a campaign from the first line of contentMd", async () => {
-		const { db, broker, dir, router, cleanup } = makeApp();
-		const app = await buildServer({
-			db,
-			broker,
-			router,
-			dataDir: dir,
-			webRoot: "/nonexistent",
-		});
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({
-				contentMd: "# Q2 LinkedIn Series\n\nWrite 5 posts about product features.",
-			}),
-		});
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string; ok: boolean }>();
-		const brief = db
-			.select()
-			.from(briefs)
-			.all()
-			.find((b) => b.id === body.id)!;
-		expect(brief.campaignId).toBeDefined();
-		const campaign = db
-			.select()
-			.from(campaigns)
-			.all()
-			.find((c) => c.id === brief.campaignId);
-		expect(campaign?.title).toBe("Q2 LinkedIn Series");
-		expect(campaign?.status).toBe("active");
-		cleanup();
-	});
+beforeEach(async () => {
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-routes-'));
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  app = Fastify();
+  await app.register(briefsRoutes, { db, broker, dataDir: baseDir });
+});
 
-	it("uses date fallback when contentMd has no header line", async () => {
-		const { db, broker, dir, router, cleanup } = makeApp();
-		const app = await buildServer({
-			db,
-			broker,
-			router,
-			dataDir: dir,
-			webRoot: "/nonexistent",
-		});
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ contentMd: "Write some content." }),
-		});
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string }>();
-		const brief = db
-			.select()
-			.from(briefs)
-			.all()
-			.find((b) => b.id === body.id)!;
-		const campaign = db
-			.select()
-			.from(campaigns)
-			.all()
-			.find((c) => c.id === brief.campaignId);
-		expect(campaign?.title).toMatch(/^Brief \d{4}-\d{2}-\d{2}$/);
-		cleanup();
-	});
+describe('briefs routes', () => {
+  it('POST /api/briefs — creates brief (n8n-driven)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/briefs',
+      payload: {
+        title: 't',
+        content_md: 'b',
+        deliverable_type: 'social_post',
+        target_specialist: 'social-manager',
+        platform: 'instagram',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const body = res.json();
+    expect(body.brief_id).toMatch(/^[a-z0-9]+$/);
+    const briefs = await db.select().from(schema.briefs).all();
+    expect(briefs).toHaveLength(1);
+    expect(briefs[0].status).toBe('draft');
+  });
 
-	it("uses existing campaign when campaignId provided in body", async () => {
-		const { db, broker, dir, router, cleanup } = makeApp();
-		const campaignId = randomUUID();
-		db.insert(campaigns)
-			.values({ id: campaignId, title: "Existing", status: "active" })
-			.run();
+  it('GET /api/briefs — lists briefs for default client', async () => {
+    await db.insert(schema.briefs).values({
+      id: 'br_1', clientSlug: 'default', sourceThreadId: null,
+      contentMd: '{"title":"x","body":"y","deliverable_type":"email","target_specialist":"copywriter"}',
+      status: 'draft', createdAt: Date.now(), dispatchedAt: null,
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/briefs' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toHaveLength(1);
+  });
 
-		const app = await buildServer({
-			db,
-			broker,
-			router,
-			dataDir: dir,
-			webRoot: "/nonexistent",
-		});
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({
-				contentMd: "Write a post.",
-				campaignId,
-			}),
-		});
-		expect(res.statusCode).toBe(200);
-		const body = res.json<{ id: string }>();
-		const brief = db
-			.select()
-			.from(briefs)
-			.all()
-			.find((b) => b.id === body.id)!;
-		expect(brief.campaignId).toBe(campaignId);
-		// no new campaign created
-		expect(db.select().from(campaigns).all()).toHaveLength(1);
-		cleanup();
-	});
-
-	it("returns 400 when provided campaignId does not exist", async () => {
-		const { db, broker, dir, router, cleanup } = makeApp();
-		const app = await buildServer({
-			db,
-			broker,
-			router,
-			dataDir: dir,
-			webRoot: "/nonexistent",
-		});
-		const res = await app.inject({
-			method: "POST",
-			url: "/api/briefs",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({
-				contentMd: "Write a post.",
-				campaignId: "nonexistent",
-			}),
-		});
-		expect(res.statusCode).toBe(400);
-		cleanup();
-	});
+  it('POST /api/briefs/:id/dispatch — dispatches the brief', async () => {
+    const create = await app.inject({
+      method: 'POST', url: '/api/briefs',
+      payload: { title: 't', content_md: 'b', deliverable_type: 'social_post', target_specialist: 'social-manager' },
+    });
+    const briefId = create.json().brief_id;
+    const res = await app.inject({ method: 'POST', url: `/api/briefs/${briefId}/dispatch` });
+    expect(res.statusCode).toBe(200);
+    const briefs = await db.select().from(schema.briefs).all();
+    expect(briefs[0].status).toBe('dispatched');
+  });
 });
