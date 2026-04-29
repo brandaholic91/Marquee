@@ -10,15 +10,17 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 - **`master`** — `v0.2-final` tag-gel lefagyasztva. Régi v0.2 kód (8 role, lead-tier orchestration). **Itt nem fejlesztünk.**
 - **`mvp-redesign`** — aktív fejlesztési branch. **Worktree:** `.worktrees/mvp-redesign/`. Itt minden új munka.
 
-A v0.3-mvp redesign Phase 1–8 + smoke kész + index.ts entrypoint wireup + warm Director chat loop + chat-rendering bug fixek. **Lokálisan a Director chat működik** (gpt-5.4 OAuth-on át válaszol). Phase 9 (deploy + 7-day acceptance) hátra.
+A v0.3-mvp redesign Phase 1–8 + smoke kész + index.ts entrypoint wireup + warm Director chat loop + chat-rendering bug fixek + **Phase 9 Task 1-2 kész** (specialist agent flow: brief approval → specialist spawn → deliverable submission). **Lokálisan a teljes brief→specialist→deliverable flow működik** (gpt-5.4 OAuth-on át). 
 
-## Lokális dev állapota (2026-04-29 vége)
+## Lokális dev állapota (2026-04-29 éjszaka)
 
 ✅ Backend boot tisztán (auth.json beolvasva, default client beszúrva, fresh DB, seed másolva).
 ✅ Frontend bootol, Workshop nézet renderel, chat composer + bubble-ek helyesek.
 ✅ User üzenet → POST /api/messages → broker subscribe → warm Director lazy spawn → agent.prompt() → GPT-5.4 válaszol → DB persist → SSE → bubble megjelenik.
 ✅ Local OAuth setup kész: `~/.pi/agent/auth.json` (openai-codex credentials).
-⚠️ **Specialist authManager wireup pending** — Director chat OK, de amint operátor approve-ol egy briefet és specialist agent spawn-olódik (`dispatchBrief` → `spawnAgent` ágon), az LLM hívás failelni fog: a `dispatchBrief` még nem kapja meg az authManager-t. Fix kb. 5 sor: passing through `dispatchInput` → `spawnAgent`. Több mint indokolt mielőtt valódi brief flow-t tesztelünk.
+✅ **Specialist authManager wireup** — operátor approve-ol egy briefet → dispatchBrief authManager-rel fut → specialist agent spawn-olódik → LLM hívás OK → submit_deliverable → artifact fájl + DB.
+✅ **POST empty body fix** — Fastify "Body cannot be empty" error megoldva (header csak akkor, ha van body).
+✅ **Artifact content API** — `/api/deliverables/:id/revisions/:revisionId/content` beolvassa + servál a fájlt.
 ⚠️ **VM 260 OAuth még nincs** — a takarítás lefutott (régi state.db + .env + WUPHF leftover törölve), de auth.json-t a serveren még nem hoztuk létre. Első deploy előtt kell.
 
 A v0.3-mvp tervben nem volt explicit task ezekhez (warm Director loop, factory hibajavítás, frontend chat-rendering bugok) — ezek mind plan-deviations a chat-funkció megalkotásához. Listázva a "Frissítési napló" alatt.
@@ -27,6 +29,7 @@ A v0.3-mvp tervben nem volt explicit task ezekhez (warm Director loop, factory h
 
 | Commit | Típus | Mit |
 |---|---|---|
+| `4d58f54` | feat | **Phase 9 Task 1-2**: authManager wireup (index.ts → buildServer → briefs → dispatchBrief → spawnAgent). POST empty body fix (header csak body-val). Artifact content API endpoint. DeliverableDetail artifact display. |
 | `2f605bc` | gap-fix | `index.ts` + `server/index.ts` + `db/queries.ts` + `server/sse.ts` rewireolva (régi `AgentRouter` osztály eltávolítva, új plugin-alapú route mount). Tervben implicit volt, explicit task nem létezett. |
 | `b9611f0` | task | Task 31: smoke.ts rewrite (terv szerint). |
 | `d86b711` | gap-fix | Warm Director chat loop az `index.ts`-ben (lazy spawn első user chat_message-en, serial promise chain a concurrent prompt megelőzésére). |
