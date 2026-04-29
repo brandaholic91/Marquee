@@ -20,6 +20,7 @@
     "@mariozechner/pi-ai": "^0.70.2",
     "@paralleldrive/cuid2": "^3.3.0",
     "better-sqlite3": "^11.5.0",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.36.0",
     "fastify": "^5.0.0",
     "fastify-plugin": "^5.0.0",
