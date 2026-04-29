@@ -128,15 +128,19 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="card" style={{ width: "100%", maxWidth: 520, padding: "20px 22px", background: "var(--white)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+      <div className="card" style={{ width: "100%", maxWidth: 600, padding: "20px 22px", background: "var(--white)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Új brief</div>
         <textarea
           autoFocus
           className="textarea-chat"
-          style={{ width: "100%", minHeight: 100, border: "1px solid var(--rule-strong)", borderRadius: 4, padding: 8, resize: "vertical", boxSizing: "border-box" }}
+          style={{ width: "100%", minHeight: 160, border: "1px solid var(--rule-strong)", borderRadius: 4, padding: 10, resize: "none", boxSizing: "border-box", overflow: "hidden" }}
           placeholder="Írd le, mire van szükséged…"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            e.target.style.height = "auto";
+            e.target.style.height = e.target.scrollHeight + "px";
+          }}
           onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
         />
         {activeCampaigns.length > 0 && (
