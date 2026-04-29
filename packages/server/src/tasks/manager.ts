@@ -59,7 +59,7 @@ export class TaskManager {
       .where(eq(delegations.id, delegationId)).get();
     if (!delegation) return;
     const payload = delegation.payloadJson as { task?: string };
-    const title = (payload.task ?? "Untitled task").slice(0, 80);
+    const title = (payload.task ?? "Untitled task").slice(0, 300);
     this.db.insert(tasks).values({
       id: randomUUID(), delegationId, title,
       status: "in_progress", assignedTo: delegation.toAgent,

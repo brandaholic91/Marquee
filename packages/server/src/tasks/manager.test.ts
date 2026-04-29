@@ -89,7 +89,7 @@ describe("TaskManager", () => {
     expect(rows[0].status).toBe("in_progress");
   });
 
-  it("truncates task title to 80 chars", () => {
+  it("truncates task title to 300 chars", () => {
     const router = makeRouter();
     const manager = new TaskManager(db, broker, router);
     manager.boot();

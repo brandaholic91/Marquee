@@ -27,7 +27,7 @@ function TaskCard({ task, isDragging = false, onArchive }: { task: Task; isDragg
       cursor: "grab",
       position: "relative",
     }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 4, paddingRight: 18 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)", marginBottom: 4, paddingRight: 18, lineHeight: 1.4 }}>
         {task.title}
       </div>
       <div className="caption" style={{ color: "var(--ink-3)" }}>
