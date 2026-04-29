@@ -121,6 +121,8 @@ export function CampaignsView() {
   const [selected, setSelected] = useState<CampaignDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"list" | "detail">("list");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   const { isMobile } = useBreakpoint();
 
   function loadCampaigns() {
@@ -128,6 +130,14 @@ export function CampaignsView() {
   }
 
   useEffect(() => { loadCampaigns(); }, []);
+
+  async function handleTitleSave() {
+    if (!selected || !titleDraft.trim()) { setEditingTitle(false); return; }
+    await api.campaigns.patch(selected.id, { title: titleDraft.trim() }).catch(() => {});
+    setSelected({ ...selected, title: titleDraft.trim() });
+    loadCampaigns();
+    setEditingTitle(false);
+  }
 
   async function handleStatusChange(id: string, status: string) {
     await api.campaigns.patch(id, { status }).catch(() => {});
@@ -206,9 +216,30 @@ export function CampaignsView() {
           ← Kampányok
         </button>
       )}
-      <h2 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 16, fontSize: 18 }}>
-        {loading ? "…" : selected.title}
-      </h2>
+      <div style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 16 }}>
+        {loading ? (
+          <h2 className="heading" style={{ fontSize: 18, margin: 0 }}>…</h2>
+        ) : editingTitle ? (
+          <input
+            autoFocus
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={handleTitleSave}
+            onKeyDown={(e) => { if (e.key === "Enter") handleTitleSave(); if (e.key === "Escape") setEditingTitle(false); }}
+            style={{ fontSize: 18, fontWeight: 700, width: "100%", border: "none", borderBottom: "2px solid var(--primary)", background: "transparent", outline: "none", padding: "2px 0" }}
+          />
+        ) : (
+          <h2
+            className="heading"
+            style={{ fontSize: 18, margin: 0, cursor: "pointer" }}
+            title="Kattints a szerkesztéshez"
+            onClick={() => { setTitleDraft(selected.title); setEditingTitle(true); }}
+          >
+            {selected.title}
+            <span style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 400, marginLeft: 8 }}>✎</span>
+          </h2>
+        )}
+      </div>
       {!loading && <CampaignDetailPanel campaign={selected} isMobile={isMobile} onStatusChange={handleStatusChange} />}
     </div>
   ) : (
