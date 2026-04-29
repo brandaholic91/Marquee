@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
+import { MarkdownView } from './MarkdownView.js';
+import { MarkdownEditor } from './MarkdownEditor.js';
 
 export function BriefProposalCard({
   briefId,
@@ -45,12 +47,9 @@ export function BriefProposalCard({
 
           <div>
             <label className="text-xs font-medium text-ink-2 uppercase tracking-wide">Tartalom</label>
-            <textarea
-              className="mt-1 w-full border border-rule rounded-md px-3 py-2 text-sm bg-off-white focus:outline-none focus:border-primary resize-none"
-              rows={10}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-            />
+            <div className="mt-1">
+              <MarkdownEditor value={editContent} onChange={setEditContent} minHeight="220px" />
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end">
@@ -94,9 +93,9 @@ export function BriefProposalCard({
             {expanded ? '▲ Brief elrejtése' : '▼ Brief megtekintése'}
           </button>
           {expanded && (
-            <pre className="mt-2 text-sm text-ink-1 bg-cream border border-rule rounded p-3 whitespace-pre-wrap font-sans max-h-64 overflow-y-auto">
-              {contentMd}
-            </pre>
+            <div className="mt-2 bg-cream border border-rule rounded p-4 max-h-64 overflow-y-auto">
+              <MarkdownView content={contentMd} />
+            </div>
           )}
         </div>
       )}

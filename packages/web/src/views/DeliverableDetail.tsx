@@ -5,6 +5,7 @@ import { StatusBadge } from '../components/StatusBadge.js';
 import { TypeBadge } from '../components/TypeBadge.js';
 import { RevisionTabs } from '../components/RevisionTabs.js';
 import { DeliverableActions } from '../components/DeliverableActions.js';
+import { MarkdownView } from '../components/MarkdownView.js';
 
 interface Revision {
   id: string;
@@ -83,9 +84,7 @@ export function DeliverableDetail() {
             {loadingContent ? (
               <div className="text-ink-2 italic">Betöltés…</div>
             ) : content ? (
-              <div className="prose prose-sm max-w-none text-ink-1 whitespace-pre-wrap font-sans">
-                {content}
-              </div>
+              <MarkdownView content={content} />
             ) : (
               <div className="text-ink-2 italic">Nincs tartalom elérhető.</div>
             )}
