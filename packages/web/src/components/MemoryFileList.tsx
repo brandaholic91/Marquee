@@ -29,7 +29,6 @@ export function MemoryFileList({
                 aria-label={exists ? 'létezik' : 'nem létezik'}
               />
               <span className="font-medium">{label}</span>
-              <span className="ml-auto text-xs text-ink-2 font-mono">{file}</span>
             </button>
           </li>
         );

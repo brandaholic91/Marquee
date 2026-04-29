@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 
+const FILE_LABELS: Record<string, string> = {
+  'profile.md': 'Ügyfélprofil',
+  'brand_voice.md': 'Brand voice',
+  'ongoing_campaigns.md': 'Aktív kampányok',
+};
+
 export function MemoryEditor({
   file, initialContent, onSave,
 }: {
@@ -23,7 +29,7 @@ export function MemoryEditor({
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-2">
-        <h3 className="font-serif text-lg">{file}</h3>
+        <h3 className="font-serif text-lg">{FILE_LABELS[file] ?? file}</h3>
         {saved && !dirty && <span className="text-xs text-success-deep">Mentve</span>}
         {dirty && <span className="text-xs text-ink-2">Módosított</span>}
       </div>
