@@ -1,6 +1,6 @@
 ---
 name: eval_seo_report
-description: Evaluates seo_report deliverables on three dimensions specific to keyword research quality: keyword relevance to client positioning, intent-deliverable alignment, and actionability. Use this instead of three_dim_review for seo_report type deliverables.
+description: "Evaluates seo_report deliverables on keyword relevance, intent-deliverable alignment, and actionability. Use instead of three_dim_review for seo_report type deliverables."
 ---
 
 Értékeld az seo_report-ot három dimenzióban, mindegyik 1–5:
