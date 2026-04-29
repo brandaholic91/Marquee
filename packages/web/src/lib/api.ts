@@ -114,6 +114,41 @@ export const threadsApi = {
   list: (): Promise<ThreadRow[]> => fetch('/api/threads').then(json),
   create: (title?: string): Promise<{ thread_id: string }> =>
     post('/api/threads', { title }),
+  rename: (id: string, title: string): Promise<{ ok: true }> =>
+    fetch(`/api/threads/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title }),
+    }).then(json),
+  archive: (id: string): Promise<{ ok: true }> =>
+    post(`/api/threads/${id}/archive`),
+};
+
+// -------------------------
+// Campaigns
+// -------------------------
+export interface CampaignRow {
+  id: string;
+  title: string;
+  status: 'active' | 'completed' | 'archived';
+  createdAt: number;
+  deliverableCount: number;
+  pendingApprovals: number;
+}
+
+export interface CampaignDetail extends CampaignRow {
+  deliverables: DeliverableRow[];
+}
+
+export const campaignsApi = {
+  list: (): Promise<CampaignRow[]> => fetch('/api/campaigns').then(json),
+  get: (id: string): Promise<CampaignDetail> => fetch(`/api/campaigns/${id}`).then(json),
+  patch: (id: string, body: { title?: string; status?: string }): Promise<{ ok: true }> =>
+    fetch(`/api/campaigns/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(json),
 };
 
 // -------------------------

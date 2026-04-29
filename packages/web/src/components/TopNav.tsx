@@ -10,6 +10,7 @@ export function TopNav() {
         <nav className="flex gap-2 ml-4">
           <NavItem to="/" label="Műhely" />
           <NavItem to="/jovahagyas" label={`Jóváhagyás${pending > 0 ? ` (${pending})` : ''}`} />
+          <NavItem to="/kampanyok" label="Kampányok" />
           <NavItem to="/memoria" label="Memória" />
         </nav>
       </div>

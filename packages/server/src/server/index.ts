@@ -4,6 +4,7 @@ import type { Broker } from "../broker/event-bus.js";
 import { briefsRoutes } from "./routes/briefs.js";
 import { messagesRoutes } from "./routes/messages.js";
 import { threadsRoutes } from "./routes/threads.js";
+import { campaignsRoutes } from "./routes/campaigns.js";
 import { deliverablesRoutes } from "./routes/deliverables.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { authMiddleware } from "./auth-middleware.js";
@@ -59,6 +60,7 @@ export async function buildServer(opts: ServerOpts) {
 	await app.register(briefsRoutes, { db, broker: flatBroker, dataDir: opts.dataDir, authManager: opts.authManager });
 	await app.register(messagesRoutes, { db, broker: flatBroker });
 	await app.register(threadsRoutes, { db });
+	await app.register(campaignsRoutes, { db });
 	await app.register(deliverablesRoutes, {
 		db,
 		broker: flatBroker,

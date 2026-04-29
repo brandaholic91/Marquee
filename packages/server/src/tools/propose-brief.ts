@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq, and, ne, like } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { briefs } from '../db/schema.js';
+import { briefs, campaigns } from '../db/schema.js';
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker { emit: (event: Record<string, unknown>) => void; }
@@ -17,6 +18,7 @@ export interface ProposeBriefInput {
   deliverable_type: 'social_post' | 'email' | 'blog_post' | 'ad_copy';
   target_specialist: 'copywriter' | 'social-manager' | 'paid-specialist';
   platform?: string;
+  campaign_name?: string;
 }
 
 export interface ProposeBriefContext {
@@ -38,6 +40,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
         deliverable_type: { type: 'string', enum: ['social_post', 'email', 'blog_post', 'ad_copy'] },
         target_specialist: { type: 'string', enum: ['copywriter', 'social-manager', 'paid-specialist'] },
         platform: { type: 'string' },
+        campaign_name: { type: 'string', description: 'Opcionális kampánynév. Ha meg van adva, a brief egy kampányhoz tartozik. Azonos névvel több brief is kerülhet egy kampányba.' },
       },
       required: ['title', 'content_md', 'deliverable_type', 'target_specialist'],
     },
@@ -46,11 +49,37 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
       if (!allowed.includes(input.deliverable_type)) {
         throw new Error(`${input.target_specialist} cannot produce ${input.deliverable_type}`);
       }
+
+      // Find or create campaign if campaign_name provided
+      let campaignId: string | null = null;
+      if (input.campaign_name) {
+        const existing = await ctx.db.select().from(campaigns)
+          .where(and(
+            eq(campaigns.clientSlug, ctx.clientSlug),
+            like(campaigns.title, input.campaign_name),
+            ne(campaigns.status, 'archived'),
+          ))
+          .limit(1).all();
+        if (existing.length > 0) {
+          campaignId = existing[0].id;
+        } else {
+          campaignId = createId();
+          await ctx.db.insert(campaigns).values({
+            id: campaignId,
+            clientSlug: ctx.clientSlug,
+            title: input.campaign_name,
+            status: 'active',
+            createdAt: Date.now(),
+          });
+        }
+      }
+
       const id = createId();
       await ctx.db.insert(briefs).values({
         id,
         clientSlug: ctx.clientSlug,
         sourceThreadId: ctx.threadId,
+        campaignId,
         contentMd: JSON.stringify({
           title: input.title,
           body: input.content_md,

@@ -40,6 +40,7 @@ export async function dispatchBrief(input: DispatchInput): Promise<void> {
     id: delegationId,
     briefId: input.briefId,
     clientSlug: brief.clientSlug,
+    campaignId: brief.campaignId ?? null,
     fromAgent: 'director',
     toAgent: payload.target_specialist,
     payloadJson: brief.contentMd,

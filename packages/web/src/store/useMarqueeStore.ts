@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { briefsApi, deliverablesApi, type DeliverableRow, memoryApi, messagesApi, threadsApi } from '../lib/api.js';
+import { briefsApi, deliverablesApi, type DeliverableRow, type ThreadRow, memoryApi, messagesApi, threadsApi } from '../lib/api.js';
 import { marqueeEvents } from '../lib/sse.js';
 
 export interface Message {
@@ -23,8 +23,11 @@ export interface ProposedBrief {
 export type Deliverable = DeliverableRow;
 
 interface MarqueeStore {
-  // Chat
+  // Threads
+  threads: ThreadRow[];
   threadId: string | null;
+
+  // Chat
   messages: Message[];
 
   // Brief proposals (in-flight from agents — appear as inline cards in chat)
@@ -42,6 +45,10 @@ interface MarqueeStore {
 
   // Actions
   fetchInitialState: () => Promise<void>;
+  createThread: (title?: string) => Promise<void>;
+  selectThread: (id: string) => Promise<void>;
+  archiveThread: (id: string) => Promise<void>;
+  renameThread: (id: string, title: string) => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   dispatchBrief: (id: string) => Promise<void>;
   discardBrief: (id: string) => Promise<void>;
@@ -92,6 +99,7 @@ function mapServerMessage(raw: {
 let sseHandlersRegistered = false;
 
 export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
+  threads: [],
   threadId: null,
   messages: [],
   proposedBriefs: [],
@@ -105,7 +113,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
     const threads = await threadsApi.list();
     const firstThread = threads[0] ?? null;
     const threadId = firstThread?.id ?? null;
-    set({ threadId });
+    set({ threads, threadId });
 
     // 2. Fetch messages for the thread
     if (threadId) {
@@ -155,6 +163,9 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       // Skip user messages (already added optimistically)
       const senderRaw = payload.sender ?? payload.role ?? '';
       if (senderRaw === 'user' || senderRaw === 'human') return;
+      // Only show messages belonging to the currently active thread
+      const activeThreadId = get().threadId;
+      if (payload.thread_id && payload.thread_id !== activeThreadId) return;
       const msg = mapServerMessage({
         id: payload.id ?? payload.message_id ?? String(Date.now()),
         sender: senderRaw,
@@ -320,6 +331,46 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       proposedBriefs: s.proposedBriefs.filter((b) => b.briefId !== id),
     }));
     return Promise.resolve();
+  },
+
+  createThread: async (title?: string) => {
+    const { thread_id } = await threadsApi.create(title);
+    const allThreads = await threadsApi.list();
+    const messages: Message[] = [];
+    set({ threads: allThreads, threadId: thread_id, messages, proposedBriefs: [] });
+  },
+
+  selectThread: async (id: string) => {
+    if (get().threadId === id) return;
+    const rawMessages = await messagesApi.list(id);
+    const messages: Message[] = rawMessages.map(mapServerMessage);
+    set({ threadId: id, messages, proposedBriefs: [] });
+  },
+
+  archiveThread: async (id: string) => {
+    await threadsApi.archive(id);
+    const allThreads = await threadsApi.list();
+    const active = allThreads.filter((t) => !t.archivedAt);
+    const nextId = active[0]?.id ?? null;
+    if (nextId && nextId !== id) {
+      const rawMessages = await messagesApi.list(nextId);
+      const messages: Message[] = rawMessages.map(mapServerMessage);
+      set({ threads: allThreads, threadId: nextId, messages, proposedBriefs: [] });
+    } else if (!nextId) {
+      // All archived: create a fresh thread
+      const { thread_id } = await threadsApi.create();
+      const updated = await threadsApi.list();
+      set({ threads: updated, threadId: thread_id, messages: [], proposedBriefs: [] });
+    } else {
+      set({ threads: allThreads });
+    }
+  },
+
+  renameThread: async (id: string, title: string) => {
+    await threadsApi.rename(id, title);
+    set((s) => ({
+      threads: s.threads.map((t) => t.id === id ? { ...t, title } : t),
+    }));
   },
 
   fetchDeliverables: async (statusFilter?: string) => {

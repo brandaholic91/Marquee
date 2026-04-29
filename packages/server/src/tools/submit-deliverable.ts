@@ -42,11 +42,16 @@ export function makeSubmitDeliverableTool(ctx: SubmitDeliverableContext) {
       let revisionNo: number;
 
       if (existing.length === 0) {
+        const delegRows = await ctx.db.select().from(delegations)
+          .where(eq(delegations.id, ctx.delegationId)).limit(1).all();
+        const campaignId = delegRows[0]?.campaignId ?? null;
+
         deliverableId = createId();
         await ctx.db.insert(deliverables).values({
           id: deliverableId,
           delegationId: ctx.delegationId,
           clientSlug: ctx.clientSlug,
+          campaignId,
           type: ctx.deliverableType,
           status: 'awaiting_approval',
           currentRevisionId: null,

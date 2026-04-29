@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ChatThread } from '../components/ChatThread.js';
 import { ChatComposer } from '../components/ChatComposer.js';
 import { EmptyState } from '../components/EmptyState.js';
+import { ThreadList } from '../components/ThreadList.js';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 
 export function Workshop() {
@@ -25,9 +26,12 @@ export function Workshop() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)]">
-      <ChatThread />
-      <ChatComposer />
+    <div className="flex h-[calc(100vh-100px)] -mx-8">
+      <ThreadList />
+      <div className="flex flex-col flex-1 min-w-0 px-6">
+        <ChatThread />
+        <ChatComposer />
+      </div>
     </div>
   );
 }

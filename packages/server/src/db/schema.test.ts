@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import * as schema from './schema.js';
 
 describe('schema exports', () => {
-  it('has all 13 MVP tables', () => {
+  it('has all 14 MVP tables', () => {
     expect(schema.clients).toBeDefined();
+    expect(schema.campaigns).toBeDefined();
     expect(schema.chatThreads).toBeDefined();
     expect(schema.messages).toBeDefined();
     expect(schema.briefs).toBeDefined();
@@ -21,7 +22,6 @@ describe('schema exports', () => {
   it('does not export removed tables', () => {
     expect((schema as any).workflowRuns).toBeUndefined();
     expect((schema as any).evals).toBeUndefined();
-    expect((schema as any).campaigns).toBeUndefined();
     expect((schema as any).tasks).toBeUndefined();
   });
 });

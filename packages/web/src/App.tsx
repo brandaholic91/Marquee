@@ -4,6 +4,7 @@ import { Workshop } from './views/Workshop.js';
 import { Approvals } from './views/Approvals.js';
 import { DeliverableDetail } from './views/DeliverableDetail.js';
 import { Memory } from './views/Memory.js';
+import { Campaigns } from './views/Campaigns.js';
 
 export function App() {
   return (
@@ -14,6 +15,7 @@ export function App() {
           <Route path="/" element={<Workshop />} />
           <Route path="/jovahagyas" element={<Approvals />} />
           <Route path="/jovahagyas/:id" element={<DeliverableDetail />} />
+          <Route path="/kampanyok" element={<Campaigns />} />
           <Route path="/memoria" element={<Memory />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

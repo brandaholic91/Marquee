@@ -8,6 +8,16 @@ export const clients = sqliteTable('clients', {
   createdAt: integer('created_at').notNull(),
 });
 
+export const campaigns = sqliteTable('campaigns', {
+  id: text('id').primaryKey(),
+  clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  title: text('title').notNull(),
+  status: text('status', { enum: ['active', 'completed', 'archived'] }).notNull().default('active'),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  byClient: index('idx_campaigns_client').on(t.clientSlug, t.status),
+}));
+
 export const chatThreads = sqliteTable('chat_threads', {
   id: text('id').primaryKey(),
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
@@ -32,6 +42,7 @@ export const briefs = sqliteTable('briefs', {
   id: text('id').primaryKey(),
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
   sourceThreadId: text('source_thread_id').references(() => chatThreads.id),
+  campaignId: text('campaign_id').references(() => campaigns.id),
   contentMd: text('content_md').notNull(),
   status: text('status', { enum: ['draft', 'dispatched', 'done'] }).notNull(),
   createdAt: integer('created_at').notNull(),
@@ -42,6 +53,7 @@ export const delegations = sqliteTable('delegations', {
   id: text('id').primaryKey(),
   briefId: text('brief_id').notNull().references(() => briefs.id),
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  campaignId: text('campaign_id').references(() => campaigns.id),
   fromAgent: text('from_agent').notNull(),
   toAgent: text('to_agent', { enum: ['copywriter', 'social-manager', 'paid-specialist'] }).notNull(),
   payloadJson: text('payload_json').notNull(),
@@ -57,6 +69,7 @@ export const deliverables = sqliteTable('deliverables', {
   id: text('id').primaryKey(),
   delegationId: text('delegation_id').notNull().references(() => delegations.id),
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
+  campaignId: text('campaign_id').references(() => campaigns.id),
   type: text('type', { enum: ['social_post', 'email', 'blog_post', 'ad_copy'] }).notNull(),
   status: text('status', { enum: ['drafting', 'awaiting_approval', 'shipped', 'archived'] }).notNull(),
   currentRevisionId: text('current_revision_id'),

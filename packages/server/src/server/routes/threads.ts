@@ -44,4 +44,27 @@ export const threadsRoutes: FastifyPluginAsync<ThreadsRoutesOpts> = async (app, 
 
     return [...active, ...archived];
   });
+
+  app.patch<{ Params: { id: string }; Body: { title: string } }>(
+    '/api/threads/:id',
+    async (req, reply) => {
+      const title = req.body?.title;
+      if (!title) return reply.code(400).send({ error: 'title required' });
+      await db.update(chatThreads).set({ title })
+        .where(and(eq(chatThreads.id, req.params.id), eq(chatThreads.clientSlug, 'default')));
+      return { ok: true };
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/api/threads/:id/archive',
+    async (req, reply) => {
+      const rows = await db.select().from(chatThreads)
+        .where(and(eq(chatThreads.id, req.params.id), eq(chatThreads.clientSlug, 'default'))).all();
+      if (rows.length === 0) return reply.code(404).send({ error: 'not found' });
+      await db.update(chatThreads).set({ archivedAt: Date.now() })
+        .where(eq(chatThreads.id, req.params.id));
+      return { ok: true };
+    },
+  );
 };
