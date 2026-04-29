@@ -1,28 +1,66 @@
-import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { writeMemoryFile } from "./write.js";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mkdtempSync, readFileSync, existsSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { writeMemoryFile } from './write.js';
+import * as schema from '../db/schema.js';
 
-describe("writeMemoryFile", () => {
-	let dir: string;
+let baseDir: string;
+let db: ReturnType<typeof drizzle>;
 
-	beforeEach(() => {
-		dir = mkdtempSync(join(tmpdir(), "agency-write-"));
-		mkdirSync(join(dir, "memory"));
-		execSync("git init", { cwd: dir });
-		execSync("git config user.email test@test.com", { cwd: dir });
-		execSync("git config user.name Test", { cwd: dir });
-	});
+beforeEach(async () => {
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-mem-'));
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  // Seed default client
+  await db.insert(schema.clients).values({ slug: 'default', name: 'Default', createdAt: Date.now() });
+});
 
-	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+const validProfile = `---
+business_description: "Foo"
+target_audience: ["a"]
+usp: "x"
+competitors: ["c"]
+---
+# Body`;
 
-	it("writes a memory file and creates a git commit", async () => {
-		await writeMemoryFile(dir, "client_profile", "---\nclient_name: TestCo\n---\n\nbody\n");
-		const content = readFileSync(join(dir, "memory/client_profile.md"), "utf8");
-		expect(content).toContain("TestCo");
-		const log = execSync("git log --oneline", { cwd: dir }).toString();
-		expect(log).toContain("memory/client_profile.md");
-	});
+describe('writeMemoryFile', () => {
+  it('atomically writes file and creates audit row', async () => {
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    const path = join(baseDir, 'memory', 'clients', 'default', 'profile.md');
+    expect(existsSync(path)).toBe(true);
+    expect(readFileSync(path, 'utf8')).toBe(validProfile);
+    const audit = await db.select().from(schema.memoryAudit).all();
+    expect(audit).toHaveLength(1);
+    expect(audit[0].source).toBe('user');
+    expect(audit[0].file).toBe('profile.md');
+    expect(audit[0].newContentHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('rejects content with invalid frontmatter', async () => {
+    const bad = `---\nfoo: bar\n---\n# Body`;
+    await expect(
+      writeMemoryFile(baseDir, db, 'default', 'profile.md', bad, 'user')
+    ).rejects.toThrow(/missing required frontmatter/);
+  });
+
+  it('records prev_content_hash on overwrite', async () => {
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile + '\n# Updated', 'agent:director');
+    const audit = await db.select().from(schema.memoryAudit).all();
+    expect(audit).toHaveLength(2);
+    expect(audit[1].prevContentHash).toBe(audit[0].newContentHash);
+    expect(audit[1].source).toBe('agent:director');
+  });
+
+  it('does not leave .tmp files behind', async () => {
+    await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
+    const dir = join(baseDir, 'memory', 'clients', 'default');
+    const files = readdirSync(dir);
+    expect(files.some((f) => f.includes('.tmp'))).toBe(false);
+  });
 });
