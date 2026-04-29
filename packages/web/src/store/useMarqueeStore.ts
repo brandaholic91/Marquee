@@ -187,7 +187,10 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       set((s) => {
         // Dedupe by id (defends against SSE replay echoing already-fetched messages)
         if (s.messages.some((m) => m.id === msg.id)) return s;
-        return { messages: [...s.messages, msg] };
+        // Director responded — clear thinking indicator
+        const activeAgents = new Set(s.activeAgents);
+        if (senderRaw === 'director') activeAgents.delete('director');
+        return { messages: [...s.messages, msg], activeAgents };
       });
     });
 
@@ -223,10 +226,15 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
         ts: Date.now(),
       };
 
-      set((s) => ({
-        proposedBriefs: [...s.proposedBriefs, brief],
-        messages: [...s.messages, cardMsg],
-      }));
+      set((s) => {
+        const activeAgents = new Set(s.activeAgents);
+        activeAgents.delete('director');
+        return {
+          proposedBriefs: [...s.proposedBriefs, brief],
+          messages: [...s.messages, cardMsg],
+          activeAgents,
+        };
+      });
     });
 
     // brief_dispatched: remove from proposedBriefs
