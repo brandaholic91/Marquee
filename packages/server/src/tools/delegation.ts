@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { briefs, delegations } from "../db/schema.js";
 import type { AgentToolDef, ToolContext } from "./types.js";
@@ -40,6 +40,14 @@ export const delegateToLead: AgentToolDef<z.infer<typeof delegateToLeadInput>, {
 		if (input.briefId) {
 			const brief = ctx.db.select().from(briefs).where(eq(briefs.id, input.briefId)).get();
 			campaignId = brief?.campaignId ?? null;
+		}
+		// Fallback: if no campaignId from briefId, use the most recently dispatched brief's campaign
+		if (!campaignId) {
+			const recent = ctx.db.select().from(briefs)
+				.where(eq(briefs.status, "dispatched"))
+				.orderBy(desc(briefs.id))
+				.limit(1).get();
+			campaignId = recent?.campaignId ?? null;
 		}
 		const id = randomUUID();
 		ctx.db.insert(delegations).values({
