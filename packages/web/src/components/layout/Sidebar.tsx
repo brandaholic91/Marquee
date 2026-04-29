@@ -12,10 +12,10 @@ const NAV: { id: NavId; label: string }[] = [
   { id: "campaigns", label: "Kampányok" },
   { id: "pipeline",  label: "Pipeline" },
   { id: "tasks",     label: "Feladatok" },
+  { id: "calendar",  label: "Naptár" },
   { id: "memory",    label: "Memória" },
   { id: "agents",    label: "Agensek" },
   { id: "skills",    label: "Skillek" },
-  { id: "calendar",  label: "Naptár" },
 ];
 
 const TEAM: { slug: string; name: string }[] = [
