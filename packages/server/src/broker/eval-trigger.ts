@@ -7,6 +7,11 @@ import { makeAgent, type MakeAgentOpts } from "../agents/factory.js";
 import type { Broker, PersistedEvent } from "./event-bus.js";
 import type { AuthManager } from "../providers/auth.js";
 
+export interface EvalTriggerOpts {
+	authManager?: AuthManager;
+	orchestrator?: { onDeliverableShipped: (deliverableId: string) => boolean };
+}
+
 export class EvalTrigger {
 	private unsub?: () => void;
 
@@ -14,7 +19,7 @@ export class EvalTrigger {
 		private db: AgencyDb,
 		private broker: Broker,
 		private dataDir: string,
-		private authManager?: AuthManager,
+		private opts: EvalTriggerOpts = {},
 	) {}
 
 	attach(): void {
@@ -53,7 +58,7 @@ export class EvalTrigger {
 				dataDir: this.dataDir,
 				db: this.db,
 				sessionId,
-				authManager: this.authManager,
+				authManager: this.opts.authManager,
 				emit: (type, payload) => this.broker.emit(type, payload, { agentSlug: "eval-judge", sessionId }),
 			} satisfies MakeAgentOpts);
 			this.db.insert(agentSessions).values({
@@ -70,6 +75,7 @@ export class EvalTrigger {
 			].join("\n");
 
 			agent.prompt(userMessage).catch(console.error);
+			this.opts.orchestrator?.onDeliverableShipped(deliverableId);
 		});
 	}
 

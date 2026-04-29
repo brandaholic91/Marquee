@@ -5,6 +5,7 @@ import { Broker } from "./broker/event-bus.js";
 import { AgentRouter } from "./broker/router.js";
 import { recoverState } from "./broker/recovery.js";
 import { EvalTrigger } from "./broker/eval-trigger.js";
+import { BriefOrchestrator } from "./broker/orchestrator.js";
 import { buildServer } from "./server/index.js";
 import { seedDefaultSkills } from "./skills/loader.js";
 import { seedDefaultMemory } from "./memory/seed.js";
@@ -48,9 +49,14 @@ async function main() {
 	const taskManager = new TaskManager(db, broker, router);
 	taskManager.boot();
 	router.boot();
+	const orchestrator = new BriefOrchestrator(db, broker, router);
+	router.setOrchestrator(orchestrator);
 	recoverState(db, router);
 
-	const evalTrigger = new EvalTrigger(db, broker, dataDir, authManager);
+	const evalTrigger = new EvalTrigger(db, broker, dataDir, {
+		authManager,
+		orchestrator,
+	});
 	evalTrigger.attach();
 
 	const cronManager = new CronManager();
@@ -94,7 +100,7 @@ async function main() {
 	cronManager.start();
 
 	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
-	const app = await buildServer({ db, broker, router, dataDir, webRoot, cronManager });
+	const app = await buildServer({ db, broker, router, dataDir, webRoot, cronManager, orchestrator });
 
 	const shutdown = async () => {
 		authManager?.stop();

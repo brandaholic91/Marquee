@@ -25,6 +25,9 @@ export interface ServerOpts {
 	dataDir: string;
 	webRoot: string;
 	cronManager?: CronManager;
+	orchestrator?: {
+		onApprovalDecision: (deliverableId: string, decision: string, note?: string) => boolean;
+	};
 }
 
 export async function buildServer(opts: ServerOpts) {

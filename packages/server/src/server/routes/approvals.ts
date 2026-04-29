@@ -106,6 +106,7 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 				opts.broker.emit("delegation_created", { delegationId: newDelId, from: "review", to: targetAgent });
 			}
 		}
+		opts.orchestrator?.onApprovalDecision(id, decision, note);
 		opts.broker.emit("approval_decision", { deliverableId: id, decision, note });
 		return { ok: true };
 	});
