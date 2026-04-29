@@ -117,37 +117,51 @@ function NewBriefForm({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const activeCampaigns = campaigns.filter((c) => c.status !== "archived");
+
   return (
-    <div className="card" style={{ padding: "16px 18px", marginTop: 16 }}>
-      <textarea
-        className="textarea-chat"
-        style={{ width: "100%", minHeight: 80, border: "1px solid var(--rule-strong)", borderRadius: 4, padding: 8, resize: "vertical" }}
-        placeholder="Írd le, mire van szükséged…"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      {campaigns.length > 0 && (
-        <div style={{ marginTop: 8 }}>
-          <label className="caption" style={{ display: "block", marginBottom: 4 }}>Kampány</label>
-          <select
-            value={selectedCampaignId}
-            onChange={(e) => setSelectedCampaignId(e.target.value)}
-            style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
-          >
-            <option value="">— Új kampány —</option>
-            {campaigns.map((c) => (
-              <option key={c.id} value={c.id}>{c.title}</option>
-            ))}
-          </select>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.25)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="card" style={{ width: "100%", maxWidth: 520, padding: "20px 22px", background: "var(--white)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Új brief</div>
+        <textarea
+          autoFocus
+          className="textarea-chat"
+          style={{ width: "100%", minHeight: 100, border: "1px solid var(--rule-strong)", borderRadius: 4, padding: 8, resize: "vertical", boxSizing: "border-box" }}
+          placeholder="Írd le, mire van szükséged…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        />
+        {activeCampaigns.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <label className="caption" style={{ display: "block", marginBottom: 4 }}>Kampány</label>
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              style={{ width: "100%", padding: "6px 8px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--parchment)", fontSize: 13 }}
+            >
+              <option value="">— Új kampány —</option>
+              {activeCampaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={submitting}>
+            Mégse
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting || !text.trim()}>
+            Brief küldése
+          </button>
         </div>
-      )}
-      <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
-        <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={submitting}>
-          Mégse
-        </button>
-        <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting || !text.trim()}>
-          Brief küldése
-        </button>
       </div>
     </div>
   );
