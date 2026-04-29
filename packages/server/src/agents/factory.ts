@@ -1,109 +1,94 @@
-import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { TSchema } from "@mariozechner/pi-ai";
-import type { AgencyDb } from "../db/index.js";
-import { modelForRole, getEnvApiKey } from "../providers/index.js";
-import { listSkillsForRole } from "../skills/loader.js";
-import { toolsForRole } from "../tools/registry.js";
-import type { ToolContext } from "../tools/types.js";
-import { convertToLlm } from "./convert-to-llm.js";
-import { makeTransformContext } from "./transform-context.js";
-import { loadAgentConfig, loadAgentIdentity, buildBehaviorBlock } from "./config.js";
-import type { AuthManager } from "../providers/auth.js";
+import { Agent } from '@mariozechner/pi-agent-core';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { createId } from '@paralleldrive/cuid2';
+import { agentSessions } from '../db/schema.js';
+import { getRoleConfig, RoleSlug } from './config.js';
+import { modelForRole } from '../providers/index.js';
+import { makeReadMemoryTool } from '../tools/read-memory.js';
+import { makeProposeBriefTool } from '../tools/propose-brief.js';
+import { makeProposeMemoryUpdateTool } from '../tools/propose-memory-update.js';
+import { makeSubmitDeliverableTool } from '../tools/submit-deliverable.js';
+import { loadSkillRecipes } from '../skills/loader.js';
+import { renderMemoryContext } from './transform-context.js';
 
-export interface MakeAgentOpts {
-	role: string;
-	dataDir: string;
-	db: AgencyDb;
-	sessionId: string;
-	delegationId?: string;
-	threadId?: string;
-	authManager?: AuthManager;
-	emit: (eventType: string, payload: Record<string, unknown>) => void;
+type Db = ReturnType<typeof drizzle>;
+interface Broker { emit: (e: Record<string, unknown>) => void; }
+
+export interface SpawnInput {
+  db: Db;
+  broker: Broker;
+  dataDir: string;
+  clientSlug: string;
+  role: RoleSlug;
+  threadId?: string;
+  delegationId?: string;
+  deliverableType?: 'social_post' | 'email' | 'blog_post' | 'ad_copy';
 }
 
-const DEFAULT_IDENTITY = (role: string) => [
-	`You are the ${role} agent of Marquee AI Marketing Agency.`,
-	`Use only the tools provided. Do not attempt actions outside your toolset.`,
-	`Read memory before making client-specific decisions.`,
-].join("\n");
+export interface SpawnedAgent {
+  agent: Agent;
+  session: { id: string; lifecycle: 'warm' | 'transient' };
+}
 
-const buildSystemPrompt = (role: string, dataDir: string): string => {
-	const skills = listSkillsForRole(dataDir, role);
-	const config = loadAgentConfig(dataDir, role);
+export async function spawnAgent(input: SpawnInput): Promise<SpawnedAgent> {
+  const config = getRoleConfig(input.role);
+  const sessionId = createId();
+  const now = Date.now();
 
-	const identity = loadAgentIdentity(dataDir, role) ?? DEFAULT_IDENTITY(role);
+  await input.db.insert(agentSessions).values({
+    id: sessionId,
+    clientSlug: input.clientSlug,
+    agentSlug: input.role,
+    lifecycle: config.lifecycle,
+    parentDelegationId: input.delegationId ?? null,
+    startedAt: now,
+    endedAt: null,
+  });
 
-	const skillList = skills.length === 0 ? "" : [
-		"## Available Skills",
-		"",
-		"Call `use_skill` with a skill name to load its full instructions before starting work on a matching task.",
-		"",
-		...skills.map((s) => `- **${s.name}**: ${s.description}`),
-	].join("\n");
+  const tools = await buildToolsForRole(config.slug, input, sessionId);
 
-	const behaviorBlock = config ? buildBehaviorBlock(config) : "";
+  const skills = await loadSkillRecipes(input.dataDir, config.slug);
+  const memoryBlock = await renderMemoryContext(input.dataDir, input.clientSlug, config.slug);
+  const systemPrompt = `${memoryBlock}\n\n${skills}`;
 
-	return [identity, skillList, behaviorBlock]
-		.filter(Boolean)
-		.join("\n\n");
-};
+  const agent = new Agent({
+    model: modelForRole(config.slug),
+    systemPrompt,
+    tools,
+  } as never);
 
-export function makeAgent(opts: MakeAgentOpts): Agent {
-	const toolCtx: ToolContext = {
-		db: opts.db,
-		agentSlug: opts.role,
-		agentSessionId: opts.sessionId,
-		delegationId: opts.delegationId,
-		threadId: opts.threadId,
-		emit: opts.emit,
-	};
+  return { agent, session: { id: sessionId, lifecycle: config.lifecycle } };
+}
 
-	const rawTools = toolsForRole(opts.role, opts.dataDir);
-	const config = loadAgentConfig(opts.dataDir, opts.role);
-	const model = modelForRole(opts.role, config?.model ?? undefined);
+async function buildToolsForRole(
+  role: RoleSlug,
+  input: SpawnInput,
+  sessionId: string
+): Promise<unknown[]> {
+  const tools: unknown[] = [];
+  const cfg = getRoleConfig(role);
 
-	const agentTools: AgentTool<TSchema>[] = rawTools.map((t) => ({
-		name: t.name,
-		label: t.name,
-		description: t.description,
-		parameters: t.schema as unknown as TSchema,
-		execute: async (
-			_toolCallId: string,
-			params: unknown,
-		): Promise<AgentToolResult<unknown>> => {
-			try {
-				const parsed = t.input.parse(params);
-				const value = await t.execute(parsed, toolCtx);
-				const text = typeof value === "string" ? value : JSON.stringify(value);
-				const prefixed = `[tool:${t.name}]\n${text}`;
-				return {
-					content: [{ type: "text", text: prefixed }],
-					details: value,
-				};
-			} catch (e) {
-				const message = e instanceof Error ? e.message : String(e);
-				return {
-					content: [{ type: "text", text: `Error: ${message}` }],
-					details: { error: message },
-					terminate: false,
-				};
-			}
-		},
-	}));
-
-	const transformContextFn = makeTransformContext({ dataDir: opts.dataDir, role: opts.role });
-
-	return new Agent({
-		initialState: {
-			systemPrompt: buildSystemPrompt(opts.role, opts.dataDir),
-			model,
-			tools: agentTools,
-			thinkingLevel: config?.thinking_level ?? "off",
-		},
-		convertToLlm: convertToLlm as never,
-		transformContext: transformContextFn as never,
-		getApiKey: (provider: string) =>
-			opts.authManager?.getApiKey(provider) ?? getEnvApiKey(provider) ?? undefined,
-	});
+  for (const toolName of cfg.tools) {
+    switch (toolName) {
+      case 'read_memory':
+        tools.push(makeReadMemoryTool({ dataDir: input.dataDir, clientSlug: input.clientSlug }));
+        break;
+      case 'propose_brief':
+        if (!input.threadId) throw new Error('propose_brief needs threadId');
+        tools.push(makeProposeBriefTool({ db: input.db, broker: input.broker, clientSlug: input.clientSlug, threadId: input.threadId }));
+        break;
+      case 'propose_memory_update':
+        tools.push(makeProposeMemoryUpdateTool({ db: input.db, broker: input.broker, clientSlug: input.clientSlug, agentSessionId: sessionId }));
+        break;
+      case 'submit_deliverable':
+        if (!input.delegationId || !input.deliverableType) throw new Error('submit_deliverable needs delegationId and deliverableType');
+        tools.push(makeSubmitDeliverableTool({
+          db: input.db, broker: input.broker, dataDir: input.dataDir,
+          clientSlug: input.clientSlug, delegationId: input.delegationId,
+          agentSlug: role, deliverableType: input.deliverableType,
+        }));
+        break;
+    }
+  }
+  return tools;
 }
