@@ -112,12 +112,19 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
   fetchInitialState: async () => {
     // 1. Fetch (or auto-create) threads
     const threads = await threadsApi.list();
-    const firstThread = threads[0] ?? null;
-    const threadId = firstThread?.id ?? null;
+    const currentId = get().threadId;
+    // Keep existing active thread if it's still in the list; otherwise pick first
+    const threadId = (currentId && threads.find((t) => t.id === currentId))
+      ? currentId
+      : (threads[0]?.id ?? null);
     set({ threads, threadId });
 
-    // 2. Fetch messages for the thread
-    if (threadId) {
+    // 2. Fetch messages only if thread changed (avoid wiping in-flight messages)
+    if (threadId && threadId !== currentId) {
+      const rawMessages = await messagesApi.list(threadId);
+      const messages: Message[] = rawMessages.map(mapServerMessage);
+      set({ messages });
+    } else if (threadId && !currentId) {
       const rawMessages = await messagesApi.list(threadId);
       const messages: Message[] = rawMessages.map(mapServerMessage);
       set({ messages });

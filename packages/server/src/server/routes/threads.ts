@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq, and, isNull, isNotNull, desc } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull, desc, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { chatThreads } from '../../db/schema.js';
 
@@ -25,7 +25,7 @@ export const threadsRoutes: FastifyPluginAsync<ThreadsRoutesOpts> = async (app, 
   app.get('/api/threads', async () => {
     const active = await db.select().from(chatThreads)
       .where(and(eq(chatThreads.clientSlug, 'default'), isNull(chatThreads.archivedAt)))
-      .orderBy(desc(chatThreads.id))
+      .orderBy(sql`rowid DESC`)
       .all();
 
     if (active.length === 0) {
