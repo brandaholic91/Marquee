@@ -6,15 +6,15 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 const TEAM = [
   { slug: "director",          name: "Director" },
   { slug: "content-lead",      name: "Content Lead" },
-  { slug: "distribution-lead", name: "Distribution Lead" },
-  { slug: "insights-lead",     name: "Insights Lead" },
   { slug: "copywriter",        name: "Copywriter" },
-  { slug: "social-manager",    name: "Social Manager" },
-  { slug: "seo-analyst",       name: "SEO Analyst" },
-  { slug: "eval-judge",        name: "Eval Judge" },
-  { slug: "paid-specialist",   name: "Paid Specialist" },
   { slug: "repurposer",        name: "Repurposer" },
+  { slug: "distribution-lead", name: "Distribution Lead" },
+  { slug: "social-manager",    name: "Social Manager" },
+  { slug: "paid-specialist",   name: "Paid Specialist" },
+  { slug: "insights-lead",     name: "Insights Lead" },
+  { slug: "seo-analyst",       name: "SEO Analyst" },
   { slug: "analytics-analyst", name: "Analytics Analyst" },
+  { slug: "eval-judge",        name: "Eval Judge" },
 ];
 
 interface AgentConfig {
