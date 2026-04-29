@@ -365,7 +365,7 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           )}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, alignItems: "flex-end" }}>
+      <div style={{ position: "relative", flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 6 }}>
           {onRepurpose && (
             <button className="btn btn-secondary" onClick={onRepurpose}>Újrafelhasználás</button>
@@ -380,7 +380,12 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
           <button className="btn btn-ghost" onClick={onReject}>Elutasítás</button>
         </div>
         {showNoteInput && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, width: 360 }}>
+          <div style={{
+            position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100,
+            width: 360, background: "var(--white)", border: "1px solid var(--rule)",
+            borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", padding: 12,
+            display: "flex", flexDirection: "column", gap: 8,
+          }}>
             <textarea
               autoFocus
               value={note}
@@ -388,9 +393,9 @@ function DeliverableTopBar({ deliverable, revision, onApprove, onRequestChanges,
               placeholder="Mi a probléma? Mit javítson az agent?"
               rows={3}
               style={{
-                padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4,
+                width: "100%", padding: "8px 10px", border: "1px solid var(--rule)", borderRadius: 4,
                 fontSize: 13, resize: "none", fontFamily: "inherit", lineHeight: 1.5,
-                background: "var(--white)",
+                background: "var(--parchment)", boxSizing: "border-box",
               }}
             />
             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -618,8 +623,8 @@ function ThreadTab({ deliverableId }: { deliverableId: string }) {
                     {timeLabel && <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: "auto" }}>{timeLabel}</span>}
                   </div>
                   {step.task && (
-                    <div style={{ padding: "10px 12px", background: "var(--surface)", borderRadius: 6, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto" }}>
-                      {step.task.slice(0, 400)}{(step.task.length ?? 0) > 400 ? "…" : ""}
+                    <div style={{ padding: "10px 12px", background: "var(--surface)", borderRadius: 6, fontSize: 13, color: "var(--ink-2)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                      {step.task.slice(0, 600)}{(step.task.length ?? 0) > 600 ? "…" : ""}
                     </div>
                   )}
                 </div>
