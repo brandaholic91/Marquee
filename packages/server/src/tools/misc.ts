@@ -74,10 +74,15 @@ export const submitEvalReport: AgentToolDef<z.infer<typeof submitEvalReportInput
 		const rev = ctx.db.select().from(deliverableRevisions)
 			.where(eq(deliverableRevisions.id, input.deliverableRevisionId)).get();
 		if (rev) {
-			ctx.db.update(deliverables)
-				.set({ status: "awaiting_approval", updatedAt: new Date() })
-				.where(eq(deliverables.id, rev.deliverableId))
-				.run();
+			const d = ctx.db.select().from(deliverables)
+				.where(eq(deliverables.id, rev.deliverableId)).get();
+			// Don't override if already shipped or archived
+			if (d && d.status !== "shipped" && d.status !== "archived") {
+				ctx.db.update(deliverables)
+					.set({ status: "awaiting_approval", updatedAt: new Date() })
+					.where(eq(deliverables.id, rev.deliverableId))
+					.run();
+			}
 		}
 		ctx.emit("eval_submitted", { evalId: id, revisionId: input.deliverableRevisionId });
 		return { evalId: id };

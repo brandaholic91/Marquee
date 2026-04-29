@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import type { ServerOpts } from "../index.js";
-import { approvals, delegations, deliverables } from "../../db/schema.js";
+import { approvals, briefs, delegations, deliverables } from "../../db/schema.js";
 
 export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 	app.post<{
@@ -17,6 +17,14 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 		if (decision === "approved") {
 			opts.db.update(deliverables).set({ status: "shipped", updatedAt: new Date() })
 				.where(eq(deliverables.id, id)).run();
+			// Mark the originating brief as done so recovery doesn't re-queue it
+			const d = opts.db.select().from(deliverables).where(eq(deliverables.id, id)).get();
+			if (d?.delegationId) {
+				const del = opts.db.select().from(delegations).where(eq(delegations.id, d.delegationId)).get();
+				if (del?.briefId) {
+					opts.db.update(briefs).set({ status: "done" }).where(eq(briefs.id, del.briefId)).run();
+				}
+			}
 		} else if (decision === "rejected") {
 			opts.db.update(deliverables).set({ status: "archived", updatedAt: new Date() })
 				.where(eq(deliverables.id, id)).run();
