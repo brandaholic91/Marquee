@@ -133,8 +133,13 @@ export function CampaignsView() {
     await api.campaigns.patch(id, { status }).catch(() => {});
     loadCampaigns();
     if (selected?.id === id) {
-      const detail = await api.campaigns.get(id).catch(() => null);
-      if (detail) setSelected(detail as CampaignDetail);
+      if (status === "archived") {
+        setSelected(null);
+        if (isMobile) setMobilePanel("list");
+      } else {
+        const detail = await api.campaigns.get(id).catch(() => null);
+        if (detail) setSelected(detail as CampaignDetail);
+      }
     }
   }
 
@@ -150,11 +155,13 @@ export function CampaignsView() {
     }
   }
 
+  const visibleCampaigns = campaigns.filter((c) => c.status !== "archived");
+
   const listPanel = (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {campaigns.length === 0
+      {visibleCampaigns.length === 0
         ? <div style={{ padding: "40px 20px", color: "var(--ink-3)", fontSize: 13 }}>Még nincs kampány. Hozz létre egy briefet az induláshoz.</div>
-        : campaigns.map((c) => (
+        : visibleCampaigns.map((c) => (
           <button
             key={c.id}
             onClick={() => handleSelect(c.id)}
