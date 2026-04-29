@@ -229,3 +229,21 @@ export const taskPendingUpdates = sqliteTable("task_pending_updates", {
 	deliveredAt: integer("delivered_at", { mode: "timestamp_ms" }),
 	createdAt: ts("created_at"),
 });
+
+export const workflowRuns = sqliteTable("workflow_runs", {
+  id: text("id").primaryKey(),
+  briefId: text("brief_id").notNull().references(() => briefs.id),
+  campaignId: text("campaign_id").references(() => campaigns.id),
+  workflowId: text("workflow_id").notNull(),
+  currentStepId: text("current_step_id").notNull(),
+  stateJson: text("state_json", { mode: "json" }).notNull().$defaultFn(() => ({})),
+  status: text("status", {
+    enum: ["running", "awaiting_approval", "complete", "failed"],
+  })
+    .notNull()
+    .default("running"),
+  activeDelegationId: text("active_delegation_id"),
+  retryCount: integer("retry_count").notNull().default(0),
+  createdAt: ts("created_at"),
+  updatedAt: ts("updated_at"),
+});
