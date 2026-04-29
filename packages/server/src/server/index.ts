@@ -1,83 +1,75 @@
 import Fastify from "fastify";
 import type { AgencyDb } from "../db/index.js";
 import type { Broker } from "../broker/event-bus.js";
-import type { AgentRouter } from "../broker/router.js";
-import type { CronManager } from "../cron/manager.js";
-import { registerBriefRoutes } from "./routes/briefs.js";
-import { registerMessageRoutes } from "./routes/messages.js";
-import { registerApprovalRoutes } from "./routes/approvals.js";
-import { registerMemoryRoutes } from "./routes/memory.js";
-import { registerDeliverableRoutes } from "./routes/deliverables.js";
-import { registerThreadRoutes } from "./routes/threads.js";
-import { registerHealthRoute } from "./routes/dashboard.js";
-import { registerTaskRoutes } from "./routes/tasks.js";
-import { registerAgentRoutes } from "./routes/agents.js";
-import { registerSkillRoutes } from "./routes/skills.js";
-import { registerStatsRoutes } from "./routes/stats.js";
-import { registerCampaignRoutes } from "./routes/campaigns.js";
-import { registerInputRoutes } from "./routes/inputs.js";
+import { briefsRoutes } from "./routes/briefs.js";
+import { messagesRoutes } from "./routes/messages.js";
+import { threadsRoutes } from "./routes/threads.js";
+import { deliverablesRoutes } from "./routes/deliverables.js";
+import { memoryRoutes } from "./routes/memory.js";
+import { authMiddleware } from "./auth-middleware.js";
 import { registerSseRoute } from "./sse.js";
 
 export interface ServerOpts {
 	db: AgencyDb;
 	broker: Broker;
-	router: AgentRouter;
 	dataDir: string;
 	webRoot: string;
-	cronManager?: CronManager;
-	orchestrator?: {
-		onApprovalDecision: (deliverableId: string, decision: string, note?: string) => boolean;
+	n8nWebhookUrl: string | null;
+}
+
+/**
+ * The route plugins use a local `interface Broker { emit(e: Record<string,unknown>): void }`
+ * with a flat object signature, while the real Broker.emit(type, payload, meta) takes separate
+ * args. This shim adapts the flat-object style to the real Broker.
+ */
+function makeFlatBroker(broker: Broker): { emit: (e: Record<string, unknown>) => void } {
+	return {
+		emit(e: Record<string, unknown>) {
+			const { type, ...payload } = e;
+			broker.emit(String(type), payload as Record<string, unknown>);
+		},
 	};
 }
 
 export async function buildServer(opts: ServerOpts) {
 	const app = Fastify({ logger: false });
-	// Serve static files only in production (webRoot might not exist in tests)
+
+	// Static assets — only in production
 	try {
 		const { default: fastifyStatic } = await import("@fastify/static");
-		await app.register(fastifyStatic, { root: opts.webRoot, prefix: "/", wildcard: true, decorateReply: false });
-	} catch {
-		// ignore if webRoot doesn't exist in test environment
-	}
-
-	// API token auth guard for write endpoints
-	const apiToken = process.env.MARQUEE_API_TOKEN;
-	if (apiToken) {
-		app.addHook("preHandler", async (req, reply) => {
-			const writeMethods = ["POST", "PUT", "PATCH", "DELETE"];
-			if (!writeMethods.includes(req.method)) return;
-			if (!req.url.startsWith("/api/")) return;
-			const auth = req.headers.authorization;
-			if (!auth || auth !== `Bearer ${apiToken}`) {
-				return reply.code(401).send({ error: "Unauthorized" });
-			}
+		await app.register(fastifyStatic, {
+			root: opts.webRoot,
+			prefix: "/",
+			wildcard: true,
+			decorateReply: false,
 		});
+	} catch {
+		// ok in tests or if webRoot doesn't exist
 	}
 
-	registerHealthRoute(app);
-	registerThreadRoutes(app, opts);
-	registerBriefRoutes(app, opts);
-	registerMessageRoutes(app, opts);
-	registerApprovalRoutes(app, opts);
-	registerDeliverableRoutes(app, opts);
-	registerMemoryRoutes(app, opts);
-	registerTaskRoutes(app, opts);
-	registerAgentRoutes(app, opts);
-	registerSkillRoutes(app, opts);
-	registerStatsRoutes(app, opts);
-	registerCampaignRoutes(app, opts);
-	registerInputRoutes(app, opts);
-	// Cron jobs list
-	app.get("/api/crons", async () => opts.cronManager?.list() ?? []);
-	// Re-trigger a stuck delegation (admin utility)
-	app.post<{ Body: { delegationId: string } }>("/api/admin/retrigger-delegation", async (req, reply) => {
-		const { eq } = await import("drizzle-orm");
-		const { delegations } = await import("../db/schema.js");
-		const del = opts.db.select().from(delegations).where(eq(delegations.id, req.body.delegationId)).get();
-		if (!del) return reply.code(404).send({ error: "delegation not found" });
-		opts.broker.emit("delegation_created", { delegationId: del.id, from: del.fromAgent, to: del.toAgent });
-		return { ok: true, to: del.toAgent };
+	// Bearer-token auth (no-op if MARQUEE_API_TOKEN unset)
+	await app.register(authMiddleware);
+
+	const flatBroker = makeFlatBroker(opts.broker);
+	const db = opts.db as unknown as ReturnType<typeof import("drizzle-orm/better-sqlite3").drizzle>;
+
+	// API plugins
+	await app.register(briefsRoutes, { db, broker: flatBroker, dataDir: opts.dataDir });
+	await app.register(messagesRoutes, { db, broker: flatBroker });
+	await app.register(threadsRoutes, { db });
+	await app.register(deliverablesRoutes, {
+		db,
+		broker: flatBroker,
+		dataDir: opts.dataDir,
+		n8nWebhookUrl: opts.n8nWebhookUrl,
 	});
-	registerSseRoute(app, opts);
+	await app.register(memoryRoutes, { db, dataDir: opts.dataDir });
+
+	// SSE (uses typed AgencyDb + Broker directly)
+	registerSseRoute(app, { db: opts.db, broker: opts.broker });
+
+	// Health check
+	app.get("/api/health", async () => ({ ok: true }));
+
 	return app;
 }

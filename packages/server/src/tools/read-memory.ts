@@ -1,5 +1,5 @@
 import { readMemoryFile } from '../memory/read.js';
-import { MEMORY_FILES, MemoryFile } from '../memory/validate.js';
+import { MEMORY_FILES, type MemoryFile } from '../memory/validate.js';
 
 export interface ReadMemoryContext {
   dataDir: string;

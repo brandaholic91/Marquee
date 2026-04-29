@@ -2,7 +2,7 @@ import { Agent } from '@mariozechner/pi-agent-core';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createId } from '@paralleldrive/cuid2';
 import { agentSessions } from '../db/schema.js';
-import { getRoleConfig, RoleSlug } from './config.js';
+import { getRoleConfig, type RoleSlug } from './config.js';
 import { modelForRole } from '../providers/index.js';
 import { makeReadMemoryTool } from '../tools/read-memory.js';
 import { makeProposeBriefTool } from '../tools/propose-brief.js';

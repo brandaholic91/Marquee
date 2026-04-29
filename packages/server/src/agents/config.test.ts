@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ROLE_CONFIGS, getRoleConfig, RoleSlug } from './config.js';
+import { ROLE_CONFIGS, getRoleConfig, type RoleSlug } from './config.js';
 
 describe('agent role config', () => {
   it('has exactly 4 roles', () => {

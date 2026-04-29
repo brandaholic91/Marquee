@@ -1,121 +1,67 @@
+import "dotenv/config";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { openDb } from "./db/index.js";
 import { Broker } from "./broker/event-bus.js";
-import { AgentRouter } from "./broker/router.js";
 import { recoverState } from "./broker/recovery.js";
-import { EvalTrigger } from "./broker/eval-trigger.js";
-import { BriefOrchestrator } from "./broker/orchestrator.js";
 import { buildServer } from "./server/index.js";
-import { seedDefaultSkills } from "./skills/loader.js";
-import { seedDefaultMemory } from "./memory/seed.js";
-import { seedDefaultAgentIdentities } from "./agents/seed.js";
-import { ensureGitRepo } from "./memory/git.js";
-import { TaskManager } from "./tasks/manager.js";
-import { runDailySummary } from "./cron/daily-summary.js";
-import { runMorningBrief } from "./cron/morning-brief.js";
-import { runWeeklyReport } from "./cron/weekly-report.js";
-import { runMonthlyReview } from "./cron/monthly-review.js";
-import { CronManager } from "./cron/manager.js";
-import { providerMode } from "./providers/index.js";
-import { AuthManager } from "./providers/auth.js";
-import { Telemetry } from "./telemetry/index.js";
+import { seedClientIfNeeded } from "./memory/seed.js";
 
 const NAME = process.env.MARQUEE_NAME ?? "marquee";
 const dataDir = process.env.DATA_DIR ?? join(homedir(), `.${NAME}`);
 const port = Number(process.env.PORT ?? 7892);
+const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL ?? null;
+
+// TODO(v2): POST /api/messages doesn't prompt the warm Director directly;
+// that wiring belongs here once the Director lifecycle is added. For v1,
+// chat messages are persisted and `chat_message` events are emitted, but
+// the Director is not triggered automatically.
 
 async function main() {
-	await ensureGitRepo(dataDir);
-	seedDefaultSkills(dataDir);
-	await seedDefaultMemory(dataDir);
-	seedDefaultAgentIdentities(dataDir);
-	const { db, close } = openDb(join(dataDir, "state.db"));
-	const webhookUrl = process.env.N8N_WEBHOOK_URL ?? undefined;
-	const broker = new Broker(db, webhookUrl);
-	const dailyBudgetCents = Number(process.env.MARQUEE_DAILY_BUDGET_CENTS ?? 0);
-	const telemetry = new Telemetry(db, { dailyBudgetCents });
+	// 1. Seed memory + skills from packaged seed/ on first run
+	const here = dirname(fileURLToPath(import.meta.url));
+	// Seed dir is at packages/server/seed/ — relative to this file:
+	//   dev  (src/index.ts):  ../seed
+	//   prod (dist/index.js): ../seed  (assuming dist sits next to seed)
+	const seedDir = join(here, "..", "seed");
+	await seedClientIfNeeded(dataDir, seedDir, "default");
 
-	let authManager: AuthManager | undefined;
-	if (providerMode() === "openai-subscription") {
-		const authFile = process.env.PI_AUTH_FILE
-			?? join(homedir(), ".pi", "agent", "auth.json");
-		authManager = new AuthManager(authFile);
-		await authManager.start();
-		console.log("[marquee] openai-subscription mode: auth loaded");
+	// 2. Open DB (auto-migrates on connect)
+	const { db, close } = openDb(join(dataDir, "state.db"));
+
+	// 3. Ensure 'default' client row exists (FK target for everything)
+	const { clients } = await import("./db/schema.js");
+	const { eq } = await import("drizzle-orm");
+	const existing = db.select().from(clients).where(eq(clients.slug, "default")).all();
+	if (existing.length === 0) {
+		db.insert(clients).values({ slug: "default", name: "Default", createdAt: Date.now() }).run();
 	}
 
-	const router = new AgentRouter(db, broker, dataDir, authManager, telemetry);
-	const taskManager = new TaskManager(db, broker, router);
-	taskManager.boot();
-	router.boot();
-	const orchestrator = new BriefOrchestrator(db, broker, router);
-	router.setOrchestrator(orchestrator);
-	recoverState(db, router);
+	// 4. Create the broker
+	const broker = new Broker(db);
 
-	const evalTrigger = new EvalTrigger(db, broker, dataDir, {
-		authManager,
-		orchestrator,
-	});
-	evalTrigger.attach();
+	// 5. Recover from any open sessions left by a previous crash
+	recoverState(db, broker);
 
-	const cronManager = new CronManager();
-	cronManager.register({
-		id: "daily_summary",
-		name: "Daily Summary",
-		expression: "50 23 * * *",
-		description: "Nightly agent activity summary written to memory/daily_notes/",
-		enabled: true,
-	}, () => runDailySummary(db, dataDir).catch(console.error));
-	cronManager.register(
-		{
-			id: "morning_brief",
-			name: "Morning Brief",
-			expression: "0 7 * * *",
-			description: "Napi ügynökségi briefing a Director chat-en",
-			enabled: true,
-		},
-		() => runMorningBrief(db, dataDir, broker).catch(console.error),
-	);
-	cronManager.register(
-		{
-			id: "weekly_report",
-			name: "Weekly Performance Report",
-			expression: "0 8 * * 1",
-			description: "Heti teljesítményjelentés Analytics Analyst-on keresztül",
-			enabled: true,
-		},
-		() => runWeeklyReport(db, dataDir, broker).catch(console.error),
-	);
-	cronManager.register(
-		{
-			id: "monthly_review",
-			name: "Monthly Strategy Review",
-			expression: "0 9 1 * *",
-			description: "Havi stratégiai review Director → memory proposals",
-			enabled: true,
-		},
-		() => runMonthlyReview(db, dataDir, broker).catch(console.error),
-	);
-	cronManager.start();
-
-	const webRoot = process.env.WEB_ROOT ?? join(import.meta.dirname, "../../web/dist");
-	const app = await buildServer({ db, broker, router, dataDir, webRoot, cronManager, orchestrator });
+	// 6. Build + start the server
+	const webRoot = process.env.WEB_ROOT ?? join(here, "..", "..", "web", "dist");
+	const app = await buildServer({ db, broker, dataDir, webRoot, n8nWebhookUrl });
 
 	const shutdown = async () => {
-		authManager?.stop();
-		cronManager.stop();
 		await app.close();
 		close();
+		process.exit(0);
 	};
 	process.on("SIGTERM", shutdown);
 	process.on("SIGINT", shutdown);
 
 	await app.listen({ host: "0.0.0.0", port });
 	console.log(`marquee server listening on :${port}`);
+	if (n8nWebhookUrl) console.log(`n8n webhook configured: ${n8nWebhookUrl}`);
 }
 
-main().catch((e) => {
-	console.error(e);
+main().catch((err) => {
+	console.error(err);
 	process.exit(1);
 });

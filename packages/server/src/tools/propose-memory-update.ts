@@ -1,7 +1,7 @@
 import matter from 'gray-matter';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { createProposal } from '../memory/proposals.js';
-import { validateFrontmatter, MEMORY_FILES, MemoryFile } from '../memory/validate.js';
+import { validateFrontmatter, MEMORY_FILES, type MemoryFile } from '../memory/validate.js';
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker { emit: (e: Record<string, unknown>) => void; }

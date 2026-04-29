@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateFrontmatter, MemoryFile } from './validate.js';
+import { validateFrontmatter, type MemoryFile } from './validate.js';
 
 describe('validateFrontmatter', () => {
   it('accepts valid profile.md', () => {

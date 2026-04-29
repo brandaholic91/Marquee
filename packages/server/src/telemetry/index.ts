@@ -1,7 +1,6 @@
-import { gte, sum } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
-import type { AgencyDb } from "../db/index.js";
-import { turns } from "../db/schema.js";
+// Telemetry is a v0.3 feature (budget tracking). In v1 the turns table has no
+// costUsd column. This module is kept as a stub so existing test scaffolding
+// compiles; the real implementation will be restored when costUsd is added back.
 
 export class BudgetExceededError extends Error {
 	constructor(used: number, limit: number) {
@@ -23,35 +22,21 @@ export interface TurnRecord {
 }
 
 export class Telemetry {
-	constructor(private db: AgencyDb, readonly opts: TelemetryOptions) {}
+	private total = 0;
+
+	constructor(_db: unknown, readonly opts: TelemetryOptions) {}
 
 	recordTurn(turn: TurnRecord): void {
-		this.db.insert(turns).values({
-			id: randomUUID(),
-			sessionId: turn.sessionId,
-			model: turn.model,
-			promptTokens: turn.promptTokens,
-			completionTokens: turn.completionTokens,
-			costUsd: turn.costUsdCents,
-			latencyMs: turn.latencyMs,
-		}).run();
+		this.total += turn.costUsdCents;
 	}
 
 	getTodayUsage(): { totalCents: number } {
-		const dayStart = new Date();
-		dayStart.setUTCHours(0, 0, 0, 0);
-		const rows = this.db
-			.select({ total: sum(turns.costUsd).mapWith(Number) })
-			.from(turns)
-			.where(gte(turns.startedAt, dayStart))
-			.get();
-		return { totalCents: rows?.total ?? 0 };
+		return { totalCents: this.total };
 	}
 
 	checkBudget(): void {
-		const { totalCents } = this.getTodayUsage();
-		if (totalCents > this.opts.dailyBudgetCents) {
-			throw new BudgetExceededError(totalCents, this.opts.dailyBudgetCents);
+		if (this.total > this.opts.dailyBudgetCents) {
+			throw new BudgetExceededError(this.total, this.opts.dailyBudgetCents);
 		}
 	}
 }

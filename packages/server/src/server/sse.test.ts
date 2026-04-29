@@ -3,11 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDb, type AgencyDb } from "../db/index.js";
+import { clients } from "../db/schema.js";
 import { Broker } from "../broker/event-bus.js";
-import { AgentRouter } from "../broker/router.js";
 import { buildServer } from "./index.js";
 
-describe("SSE + snapshot", () => {
+describe("SSE endpoint", () => {
 	let dir: string;
 	let db: AgencyDb;
 	let close: () => void;
@@ -19,14 +19,12 @@ describe("SSE + snapshot", () => {
 		const handle = openDb(join(dir, "test.db"));
 		db = handle.db;
 		close = handle.close;
-		mkdirSync(join(dir, "memory"), { recursive: true });
-		writeFileSync(join(dir, "memory/client_profile.md"), "---\nclient_name: T\n---\nbody");
-		writeFileSync(join(dir, "memory/brand_guidelines.md"), "---\ntone_of_voice: x\n---\nb");
+		mkdirSync(join(dir, "memory", "clients", "default"), { recursive: true });
+		writeFileSync(join(dir, "memory", "clients", "default", "client_profile.md"), "---\nclient_name: T\n---\nbody");
+		// Seed client row
+		db.insert(clients).values({ slug: "default", name: "Default", createdAt: Date.now() }).run();
 		broker = new Broker(db);
-		const router = new AgentRouter(db, broker, dir);
-		router.boot();
-		app = await buildServer({ db, broker, router, dataDir: dir, webRoot: "/tmp" });
-		// SSE is registered inside buildServer, no need to register separately
+		app = await buildServer({ db, broker, dataDir: dir, webRoot: "/tmp", n8nWebhookUrl: null });
 	});
 
 	afterEach(async () => {
@@ -35,13 +33,17 @@ describe("SSE + snapshot", () => {
 		rmSync(dir, { recursive: true, force: true });
 	});
 
-	it("GET /api/state/snapshot returns pipeline and active agents", async () => {
-		const res = await app.inject({ method: "GET", url: "/api/state/snapshot" });
+	it("GET /api/health returns ok", async () => {
+		const res = await app.inject({ method: "GET", url: "/api/health" });
 		expect(res.statusCode).toBe(200);
-		const body = res.json();
-		expect(body).toHaveProperty("approvals");
-		expect(body).toHaveProperty("pipeline");
-		expect(body).toHaveProperty("activeAgents");
-		expect(body).toHaveProperty("threads");
+		expect(res.json()).toEqual({ ok: true });
+	});
+
+	it("GET /api/events is registered (route exists)", async () => {
+		// SSE connections stay open; we verify the route is registered by checking
+		// a preflight that doesn't keep the connection open. Actual SSE streaming is
+		// tested end-to-end in smoke.ts.
+		const routes = app.printRoutes();
+		expect(routes).toContain("events");
 	});
 });

@@ -17,8 +17,8 @@ export interface BriefsRoutesOpts {
 export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, opts) => {
   const { db, broker, dataDir } = opts;
 
-  app.post<{ Body: any }>('/api/briefs', async (req, reply) => {
-    const b = req.body;
+  app.post<{ Body: Record<string, unknown> }>('/api/briefs', async (req, reply) => {
+    const b = req.body as Record<string, unknown>;
     const id = createId();
     await db.insert(briefs).values({
       id,
