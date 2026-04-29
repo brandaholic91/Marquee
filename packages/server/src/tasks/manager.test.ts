@@ -86,7 +86,7 @@ describe("TaskManager", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].assignedTo).toBe("copywriter");
     expect(rows[0].title).toBe("Write a blog post about AI");
-    expect(rows[0].status).toBe("open");
+    expect(rows[0].status).toBe("in_progress");
   });
 
   it("truncates task title to 80 chars", () => {

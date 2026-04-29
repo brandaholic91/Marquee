@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import type { AgencyDb } from "../db/index.js";
-import { delegations, tasks, taskPendingUpdates } from "../db/schema.js";
+import { delegations, deliverables, tasks, taskPendingUpdates } from "../db/schema.js";
 import type { Broker, PersistedEvent } from "../broker/event-bus.js";
 import type { AgentRouter } from "../broker/router.js";
 
@@ -48,6 +48,7 @@ export class TaskManager {
   boot(): void {
     this.broker.subscribe((evt: PersistedEvent) => {
       if (evt.type === "delegation_created") this.onDelegationCreated(evt);
+      if (evt.type === "deliverable_submitted") this.onDeliverableSubmitted(evt);
       if (evt.type === "task_updated") this.onTaskUpdated(evt);
     });
   }
@@ -61,10 +62,21 @@ export class TaskManager {
     const title = (payload.task ?? "Untitled task").slice(0, 80);
     this.db.insert(tasks).values({
       id: randomUUID(), delegationId, title,
-      status: "open", assignedTo: delegation.toAgent,
+      status: "in_progress", assignedTo: delegation.toAgent,
       campaignId: delegation.campaignId ?? null,
     }).run();
     this.broker.emit("task_created", { delegationId, assignedTo: delegation.toAgent });
+  }
+
+  private onDeliverableSubmitted(evt: PersistedEvent): void {
+    const { deliverableId } = evt.payload as { deliverableId: string };
+    const d = this.db.select().from(deliverables).where(eq(deliverables.id, deliverableId)).get();
+    if (!d?.delegationId) return;
+    const task = this.db.select().from(tasks).where(eq(tasks.delegationId, d.delegationId)).get();
+    if (!task || task.status === "done") return;
+    this.db.update(tasks)
+      .set({ status: "done", version: sql`version + 1`, updatedAt: new Date() } as never)
+      .where(eq(tasks.id, task.id)).run();
   }
 
   private onTaskUpdated(evt: PersistedEvent): void {
