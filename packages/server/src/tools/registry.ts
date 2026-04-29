@@ -8,6 +8,7 @@ import { makeCompleteOnboarding } from "./onboarding.js";
 import { updateTask } from "./tasks.js";
 import { queryMatomo } from "./matomo.js";
 import { serpApiSearch } from "./serpapi.js";
+import { tavilySearch } from "./tavily.js";
 import type { AgentToolDef } from "./types.js";
 
 export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknown, unknown>[] {
@@ -31,13 +32,13 @@ export function toolsForRole(role: string, dataDir: string): AgentToolDef<unknow
 		case "social-manager":
 			return [submitDeliverable, respondToLead, readMemory, proposeMemoryUpdate, webFetch, useSkill] as never;
 		case "seo-analyst":
-			return [submitDeliverable, respondToLead, readMemory, webFetch, useSkill] as never;
+			return [submitDeliverable, respondToLead, readMemory, webFetch, serpApiSearch, tavilySearch, useSkill] as never;
 		case "paid-specialist":
 			return [submitDeliverable, respondToLead, readMemory, requestInput, useSkill] as never;
 		case "repurposer":
 			return [submitDeliverable, respondToLead, readMemory, useSkill] as never;
 		case "analytics-analyst":
-			return [submitDeliverable, respondToLead, readMemory, queryMatomo, serpApiSearch, useSkill] as never;
+			return [submitDeliverable, respondToLead, readMemory, queryMatomo, serpApiSearch, tavilySearch, useSkill] as never;
 		default:
 			throw new Error(`unknown role: ${role}`);
 	}
