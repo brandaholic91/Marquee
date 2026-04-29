@@ -10,7 +10,7 @@ export const campaigns = sqliteTable("campaigns", {
 	id: text("id").primaryKey(),
 	title: text("title").notNull(),
 	description: text("description"),
-	status: text("status", { enum: ["active", "completed", "archived"] }).notNull().default("active"),
+	status: text("status", { enum: ["active", "inactive", "completed", "archived"] }).notNull().default("active"),
 	createdAt: ts("created_at"),
 });
 

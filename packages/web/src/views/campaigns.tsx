@@ -6,11 +6,19 @@ import type { Campaign, CampaignDetail } from "../store/useAgencyStore.js";
 
 const STATUS_COLOR: Record<string, string> = {
   active: "var(--success, #2d7a4f)",
+  inactive: "var(--warning-deep, #b45309)",
   completed: "var(--ink-2)",
   archived: "var(--ink-3)",
 };
 
-function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: CampaignDetail; isMobile?: boolean }) {
+const STATUS_LABEL: Record<string, string> = {
+  active: "Aktív",
+  inactive: "Inaktív",
+  completed: "Befejezve",
+  archived: "Archivált",
+};
+
+function CampaignDetailPanel({ campaign, onStatusChange, isMobile = false }: { campaign: CampaignDetail; onStatusChange?: (id: string, status: string) => void; isMobile?: boolean }) {
   const pad = isMobile ? 16 : 32;
   const deliverablesByStatus = campaign.deliverables.reduce<Record<string, number>>((acc, d) => {
     acc[d.status] = (acc[d.status] ?? 0) + 1;
@@ -19,14 +27,34 @@ function CampaignDetailPanel({ campaign, isMobile = false }: { campaign: Campaig
 
   return (
     <div style={{ padding: `0 ${pad}px` }}>
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{
           fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
           color: STATUS_COLOR[campaign.status] ?? "var(--ink-2)",
           padding: "2px 8px", borderRadius: 3, border: `1px solid currentColor`,
         }}>
-          {campaign.status}
+          {STATUS_LABEL[campaign.status] ?? campaign.status}
         </span>
+        {onStatusChange && (
+          <div style={{ display: "flex", gap: 6 }}>
+            {campaign.status !== "active" && (
+              <button
+                onClick={() => onStatusChange(campaign.id, "active")}
+                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, border: "1px solid var(--success, #2d7a4f)", background: "transparent", color: "var(--success, #2d7a4f)", cursor: "pointer" }}
+              >
+                Aktiválás
+              </button>
+            )}
+            {campaign.status === "active" && (
+              <button
+                onClick={() => onStatusChange(campaign.id, "inactive")}
+                style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, border: "1px solid var(--warning-deep, #b45309)", background: "transparent", color: "var(--warning-deep, #b45309)", cursor: "pointer" }}
+              >
+                Inaktívvá tétel
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {campaign.description && (
@@ -87,9 +115,20 @@ export function CampaignsView() {
   const [mobilePanel, setMobilePanel] = useState<"list" | "detail">("list");
   const { isMobile } = useBreakpoint();
 
-  useEffect(() => {
+  function loadCampaigns() {
     api.campaigns.list().then(setCampaigns).catch(() => {});
-  }, []);
+  }
+
+  useEffect(() => { loadCampaigns(); }, []);
+
+  async function handleStatusChange(id: string, status: string) {
+    await api.campaigns.patch(id, { status }).catch(() => {});
+    loadCampaigns();
+    if (selected?.id === id) {
+      const detail = await api.campaigns.get(id).catch(() => null);
+      if (detail) setSelected(detail as CampaignDetail);
+    }
+  }
 
   async function handleSelect(id: string) {
     setSelected(null);
@@ -134,7 +173,7 @@ export function CampaignsView() {
               fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
               color: STATUS_COLOR[c.status] ?? "var(--ink-3)",
             }}>
-              {c.status}
+              {STATUS_LABEL[c.status] ?? c.status}
             </span>
           </button>
         ))
@@ -155,7 +194,7 @@ export function CampaignsView() {
       <h2 className="heading" style={{ padding: `0 ${isMobile ? 16 : 32}px`, marginBottom: 16, fontSize: 18 }}>
         {loading ? "…" : selected.title}
       </h2>
-      {!loading && <CampaignDetailPanel campaign={selected} isMobile={isMobile} />}
+      {!loading && <CampaignDetailPanel campaign={selected} isMobile={isMobile} onStatusChange={handleStatusChange} />}
     </div>
   ) : (
     <div style={{ padding: "40px 32px", color: "var(--ink-3)", fontSize: 13 }}>
