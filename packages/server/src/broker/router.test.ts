@@ -1,72 +1,54 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { randomUUID } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { openDb, type AgencyDb } from "../db/index.js";
-import { briefs } from "../db/schema.js";
-import { Broker } from "./event-bus.js";
-import { AgentRouter } from "./router.js";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { dispatchBrief } from './router.js';
+import * as schema from '../db/schema.js';
 
-describe("AgentRouter", () => {
-	let dir: string;
-	let db: AgencyDb;
-	let close: () => void;
-	let broker: Broker;
-	let router: AgentRouter;
+vi.mock('@mariozechner/pi-agent-core', () => ({
+  Agent: class FakeAgent {
+    constructor(public opts: any) {}
+    async prompt() { /* simulate specialist completion via direct DB writes */ }
+  },
+}));
 
-	beforeEach(() => {
-		dir = mkdtempSync(join(tmpdir(), "agency-router-"));
-		const handle = openDb(join(dir, "test.db"));
-		db = handle.db;
-		close = handle.close;
-		mkdirSync(join(dir, "memory"), { recursive: true });
-		writeFileSync(join(dir, "memory/client_profile.md"), "---\nclient_name: T\n---\nbody");
-		writeFileSync(join(dir, "memory/brand_guidelines.md"), "---\ntone_of_voice: x\n---\nb");
-		broker = new Broker(db);
-		router = new AgentRouter(db, broker, dir);
-	});
+let db: ReturnType<typeof drizzle>;
+let baseDir: string;
+const broker = { emit: vi.fn() };
 
-	afterEach(() => {
-		close();
-		rmSync(dir, { recursive: true, force: true });
-	});
+beforeEach(async () => {
+  baseDir = mkdtempSync(join(tmpdir(), 'marquee-rt-'));
+  const sqlite = new Database(':memory:');
+  db = drizzle(sqlite, { schema });
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  await db.insert(schema.briefs).values({
+    id: 'br_1', clientSlug: 'default', sourceThreadId: null,
+    contentMd: JSON.stringify({ title: 't', body: 'b', deliverable_type: 'social_post', target_specialist: 'social-manager', platform: 'instagram' }),
+    status: 'draft', createdAt: Date.now(), dispatchedAt: null,
+  });
+  broker.emit.mockClear();
+});
 
-	it("boots without error and creates warm agent configs", () => {
-		expect(() => router.boot()).not.toThrow();
-		expect(router.getWarmRoles()).toContain("director");
-		expect(router.getWarmRoles()).toContain("content-lead");
-		expect(router.getWarmRoles()).toContain("eval-judge");
-	});
+describe('dispatchBrief', () => {
+  it('marks brief dispatched, creates delegation, spawns specialist', async () => {
+    await dispatchBrief({ db, broker, dataDir: baseDir, briefId: 'br_1' });
+    const briefs = await db.select().from(schema.briefs).all();
+    expect(briefs[0].status).toBe('dispatched');
+    expect(briefs[0].dispatchedAt).not.toBeNull();
+    const dels = await db.select().from(schema.delegations).all();
+    expect(dels).toHaveLength(1);
+    expect(dels[0].toAgent).toBe('social-manager');
+    expect(dels[0].fromAgent).toBe('director');
+    expect(broker.emit).toHaveBeenCalledWith(expect.objectContaining({ type: 'brief_dispatched', brief_id: 'br_1' }));
+    expect(broker.emit).toHaveBeenCalledWith(expect.objectContaining({ type: 'delegation_started' }));
+  });
 
-	it("dispatches the brief to the director without throwing", () => {
-		router.boot();
-		const briefId = randomUUID();
-		db.insert(briefs).values({
-			id: briefId, status: "dispatched", contentMd: "# Test\n\n**Scope:** test",
-		}).run();
-		// queueBrief now dispatches directly to the director agent — no queue to inspect
-		expect(() => router.queueBrief(briefId)).not.toThrow();
-		// getBriefQueue is a no-op stub in the new implementation
-		expect(router.getBriefQueue()).toEqual([]);
-	});
-
-	it("promptWarmAgent does not throw when role exists", () => {
-		router.boot();
-		expect(() => router.promptWarmAgent("director", "hello")).not.toThrow();
-	});
-
-	it("promptWarmAgent does not throw when role does not exist", () => {
-		router.boot();
-		expect(() => router.promptWarmAgent("nonexistent-role", "hello")).not.toThrow();
-	});
-
-	it("restartWarmAgent replaces the warm agent session", () => {
-		router.boot();
-		const roles1 = router.getWarmRoles();
-		router.restartWarmAgent("director");
-		const roles2 = router.getWarmRoles();
-		expect(roles1).toContain("director");
-		expect(roles2).toContain("director");
-	});
+  it('throws on already-dispatched brief', async () => {
+    await dispatchBrief({ db, broker, dataDir: baseDir, briefId: 'br_1' });
+    await expect(dispatchBrief({ db, broker, dataDir: baseDir, briefId: 'br_1' })).rejects.toThrow(/already dispatched/);
+  });
 });
