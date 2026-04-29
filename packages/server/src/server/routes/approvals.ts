@@ -29,8 +29,10 @@ export function registerApprovalRoutes(app: FastifyInstance, opts: ServerOpts) {
 					if (del?.briefId) {
 						opts.db.update(briefs).set({ status: "done" }).where(eq(briefs.id, del.briefId)).run();
 					}
-					// Re-trigger parent lead agent to synthesize result and continue pipeline
-					if (del?.parentDelegationId) {
+					// Re-trigger parent lead only for intermediate deliverables (seo_report etc.)
+					// Final content deliverables (blog_post, linkedin_post, etc.) do NOT need synthesis
+					const INTERMEDIATE_TYPES = new Set(["seo_report", "performance_report"]);
+					if (del?.parentDelegationId && d?.type && INTERMEDIATE_TYPES.has(d.type)) {
 						const parentDel = opts.db.select().from(delegations)
 							.where(eq(delegations.id, del.parentDelegationId)).get();
 						if (parentDel) {
