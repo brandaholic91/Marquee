@@ -1,38 +1,47 @@
-import { randomUUID } from "node:crypto";
-import type { FastifyInstance } from "fastify";
-import type { ServerOpts } from "../index.js";
-import { chatThreads, messages } from "../../db/schema.js";
-import { eq } from "drizzle-orm";
+import type { FastifyPluginAsync } from 'fastify';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq, and, isNull, isNotNull, desc } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
+import { chatThreads } from '../../db/schema.js';
 
-export function registerThreadRoutes(app: FastifyInstance, opts: ServerOpts) {
-	app.get("/api/threads", async () => opts.db.select().from(chatThreads).all());
+type Db = ReturnType<typeof drizzle>;
 
-	app.post<{ Body: { title: string; type?: string } }>("/api/threads", async (req) => {
-		const id = randomUUID();
-		opts.db.insert(chatThreads).values({
-			id, title: req.body.title,
-			type: (req.body.type as "intake" | "dispatched" | "consultative") ?? "intake",
-		}).run();
-		return { id };
-	});
+export interface ThreadsRoutesOpts { db: Db; }
 
-	app.get<{ Params: { id: string } }>("/api/threads/:id", async (req) =>
-		opts.db.select().from(chatThreads).where(eq(chatThreads.id, req.params.id)).get() ?? null,
-	);
+export const threadsRoutes: FastifyPluginAsync<ThreadsRoutesOpts> = async (app, opts) => {
+  const { db } = opts;
 
-	app.get<{ Params: { id: string } }>("/api/threads/:id/messages", async (req) =>
-		opts.db.select().from(messages).where(eq(messages.threadId, req.params.id)).all(),
-	);
+  app.post<{ Body?: { title?: string } }>('/api/threads', async (req, reply) => {
+    const id = createId();
+    await db.insert(chatThreads).values({
+      id,
+      clientSlug: 'default',
+      title: req.body?.title ?? null,
+      archivedAt: null,
+    });
+    return reply.code(201).send({ thread_id: id });
+  });
 
-	app.patch<{ Params: { id: string }; Body: { title: string } }>("/api/threads/:id", async (req, reply) => {
-		const { title } = req.body;
-		if (!title?.trim()) return reply.code(400).send({ error: "title required" });
-		opts.db.update(chatThreads).set({ title: title.trim() }).where(eq(chatThreads.id, req.params.id)).run();
-		return { ok: true };
-	});
+  app.get('/api/threads', async () => {
+    const active = await db.select().from(chatThreads)
+      .where(and(eq(chatThreads.clientSlug, 'default'), isNull(chatThreads.archivedAt)))
+      .orderBy(desc(chatThreads.id))
+      .all();
 
-	app.delete<{ Params: { id: string } }>("/api/threads/:id", async (req) => {
-		opts.db.update(chatThreads).set({ archivedAt: new Date() }).where(eq(chatThreads.id, req.params.id)).run();
-		return { ok: true };
-	});
-}
+    if (active.length === 0) {
+      // Auto-create one on first request
+      const id = createId();
+      await db.insert(chatThreads).values({
+        id, clientSlug: 'default', title: null, archivedAt: null,
+      });
+      return [{ id, clientSlug: 'default', title: null, archivedAt: null }];
+    }
+
+    const archived = await db.select().from(chatThreads)
+      .where(and(eq(chatThreads.clientSlug, 'default'), isNotNull(chatThreads.archivedAt)))
+      .orderBy(desc(chatThreads.archivedAt))
+      .all();
+
+    return [...active, ...archived];
+  });
+};

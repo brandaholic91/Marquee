@@ -1,73 +1,43 @@
-import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
-import type { FastifyInstance } from "fastify";
-import type { ServerOpts } from "../index.js";
-import { chatThreads, messages } from "../../db/schema.js";
-import { writeMemoryFile } from "../../memory/write.js";
+import type { FastifyPluginAsync } from 'fastify';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq, asc } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
+import { messages } from '../../db/schema.js';
 
-const ONBOARDING_INSTRUCTIONS = [
-	"Onboarding interjút vezetsz egy új ügyfél számára. SZIGORÚ SZABÁLYOK:",
-	"- Minden válaszodban pontosan EGY kérdés szerepel, semmi több.",
-	"- Soha ne adj kérdéslistát vagy felsorolást.",
-	"- Magyarul, tegező formában kommunikálsz végig.",
-	"- Ne kommentáld a saját lépéseidet.",
-	"",
-	"Összegyűjtendő információk (sorrendben, egy kérdéssel egyszerre):",
-	"cég neve → ideális ügyfél → fő értékajánlat → brand voice → versenytársak → referencia kiadványok → részletes hangnem",
-	"",
-	"Ha mindent tudod, hívd meg a propose_memory_update eszközt kétszer:",
-	"1. client_profile.md (title, client_name, icp, usp, competitors, brand_voice)",
-	"2. brand_guidelines.md (title, tone_of_voice, reference_posts, formatting_rules)",
-	"Utána mondd: 'Elkészítettem az ügyfélprofilt és a brand irányelveket jóváhagyásra.'",
-].join("\n");
+type Db = ReturnType<typeof drizzle>;
+interface Broker { emit: (e: Record<string, unknown>) => void; }
 
-export function registerMessageRoutes(app: FastifyInstance, opts: ServerOpts) {
-	app.post<{ Body: { threadId: string; text: string } }>("/api/messages", async (req) => {
-		const { threadId, text } = req.body;
-		const id = randomUUID();
-		opts.db.insert(messages).values({
-			id, threadId, sender: "human",
-			type: "chat", contentJson: { text } as never,
-		}).run();
-
-		// For onboarding threads, prepend instructions to every user message so the
-		// director (which starts fresh each turn) always has the interview context.
-		const thread = opts.db.select().from(chatThreads).where(eq(chatThreads.id, threadId)).get();
-		const agentText = thread?.type === "onboarding"
-			? `${ONBOARDING_INSTRUCTIONS}\n\n---\n\nFelhasználó válasza: ${text}`
-			: text;
-
-		opts.broker.emit("human_message", { threadId, text: agentText });
-		return { id };
-	});
-
-	app.post("/api/onboarding/start", async () => {
-		const threadId = randomUUID();
-		opts.db.insert(chatThreads).values({
-			id: threadId, title: "Onboarding", type: "onboarding",
-		}).run();
-
-		const GREETING = "Szia! Üdvözöllek a Marquee-nél — én vagyok a csapat Direktorja. Mielőtt belevágnánk az első kampányba, szeretnék megismerni a vállalkozásodat. Mi a céged vagy terméked neve?";
-
-		// Insert greeting directly — no LLM call needed for first message
-		const greetingId = randomUUID();
-		opts.db.insert(messages).values({
-			id: greetingId, threadId, sender: "agent",
-			type: "chat", contentJson: { text: GREETING } as never,
-		}).run();
-
-		// Emit SSE so the frontend shows the greeting immediately
-		opts.broker.emit("agent_message", { threadId, agentSlug: "director", text: GREETING });
-
-		return { threadId };
-	});
-
-	app.post<{ Body: { clientProfile: string; brandGuidelines: string; threadId?: string } }>("/api/onboarding/save", async (req, reply) => {
-		const { clientProfile, brandGuidelines, threadId } = req.body;
-		if (!clientProfile || !brandGuidelines) return reply.code(400).send({ error: "missing content" });
-		await writeMemoryFile(opts.dataDir, "client_profile", clientProfile);
-		await writeMemoryFile(opts.dataDir, "brand_guidelines", brandGuidelines);
-		opts.broker.emit("onboarding_complete", { threadId });
-		return { ok: true };
-	});
+export interface MessagesRoutesOpts {
+  db: Db;
+  broker: Broker;
 }
+
+export const messagesRoutes: FastifyPluginAsync<MessagesRoutesOpts> = async (app, opts) => {
+  const { db, broker } = opts;
+
+  app.post<{ Body: { thread_id: string; content: string } }>('/api/messages', async (req, reply) => {
+    const { thread_id, content } = req.body;
+    const id = createId();
+    const ts = Date.now();
+    await db.insert(messages).values({
+      id,
+      threadId: thread_id,
+      agentSessionId: null,
+      sender: 'user',
+      type: 'chat',
+      contentJson: JSON.stringify({ text: content }),
+      ts,
+    });
+    broker.emit({ type: 'chat_message', message_id: id, thread_id, sender: 'user', text: content, ts });
+    return reply.code(201).send({ message_id: id });
+  });
+
+  app.get<{ Querystring: { thread_id: string } }>('/api/messages', async (req) => {
+    const tid = req.query.thread_id;
+    if (!tid) return [];
+    return db.select().from(messages)
+      .where(eq(messages.threadId, tid))
+      .orderBy(asc(messages.ts))
+      .all();
+  });
+};
