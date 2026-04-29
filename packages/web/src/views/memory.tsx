@@ -68,10 +68,11 @@ interface FileListPanelProps {
   onCreateFile: () => void;
   onApproveProposal: (id: string) => void;
   onRejectProposal: (id: string) => void;
+  onViewProposal: (p: MemoryProposal) => void;
   fullWidth?: boolean;
 }
 
-function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile, onApproveProposal, onRejectProposal, fullWidth }: FileListPanelProps) {
+function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile, onApproveProposal, onRejectProposal, onViewProposal, fullWidth }: FileListPanelProps) {
   const [newFileName, setNewFileName] = useState("");
   const [showNew, setShowNew] = useState(false);
 
@@ -174,34 +175,16 @@ function FileListPanel({ files, selectedFile, onSelect, proposals, onCreateFile,
               <span className="badge badge-primary-soft">{proposals.length}</span>
             </div>
           </div>
-          <div style={{ padding: "0 12px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ padding: "0 12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
             {proposals.map((p) => (
-              <div
-                key={p.id}
-                className="card"
-                style={{ padding: 10, background: "var(--white)", borderColor: "var(--rule)" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <AgentBadge slug={p.agent} active />
-                </div>
-                <div className="mono" style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>
-                  {p.file}
-                </div>
-                <div className="body-sm" style={{ fontSize: 12, lineHeight: 1.4, color: "var(--ink-2)" }}>{p.summary}</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  <button
-                    onClick={() => onApproveProposal(p.id)}
-                    style={{ flex: 1, padding: "5px 0", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 11, fontWeight: 500 }}
-                  >
-                    Jóváhagyás
-                  </button>
-                  <button
-                    onClick={() => onRejectProposal(p.id)}
-                    style={{ flex: 1, padding: "5px 0", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 11 }}
-                  >
-                    Elutasítás
-                  </button>
-                </div>
+              <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: 4, background: "var(--white)", border: "1px solid var(--rule)" }}>
+                <span style={{ fontSize: 12, color: "var(--ink-2)", fontFamily: "var(--font-mono)" }}>{p.file}</span>
+                <button
+                  onClick={() => onViewProposal(p)}
+                  style={{ fontSize: 11, padding: "3px 8px", borderRadius: 3, border: "1px solid var(--rule)", background: "transparent", cursor: "pointer", color: "var(--ink-2)", whiteSpace: "nowrap" }}
+                >
+                  Megtekintés
+                </button>
               </div>
             ))}
           </div>
@@ -594,6 +577,7 @@ export function MemoryView() {
   const [fileContent, setFileContent] = useState<MemoryFileContent | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"files" | "content">("files");
+  const [viewingProposal, setViewingProposal] = useState<MemoryProposal | null>(null);
   const { isMobile } = useBreakpoint();
 
   // Load file list function (called on mount and after file creation)
@@ -675,12 +659,14 @@ export function MemoryView() {
   async function handleApproveProposal(id: string) {
     await api.memory.approve(id).catch(() => {});
     setProposals((prev) => prev.filter((p) => p.id !== id));
+    setViewingProposal(null);
     loadFiles();
   }
 
   async function handleRejectProposal(id: string) {
     await api.memory.reject(id).catch(() => {});
     setProposals((prev) => prev.filter((p) => p.id !== id));
+    setViewingProposal(null);
   }
 
   return (
@@ -690,6 +676,43 @@ export function MemoryView() {
       background: "var(--cream)",
     }}>
       <Sidebar activeNav="memory" />
+
+      {/* Proposal modal */}
+      {viewingProposal && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setViewingProposal(null); }}
+        >
+          <div style={{ width: "100%", maxWidth: 560, background: "var(--white)", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--warning-deep)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>MEMÓRIA · JAVASLAT</div>
+                <div style={{ fontSize: 13, color: "var(--ink-2)", fontFamily: "var(--font-mono)", marginTop: 2 }}>{viewingProposal.file}</div>
+              </div>
+              <button onClick={() => setViewingProposal(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "var(--ink-3)", lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: "16px 20px", maxHeight: 360, overflowY: "auto" }}>
+              <pre style={{ margin: 0, fontSize: 12, lineHeight: 1.7, fontFamily: "var(--font-mono)", color: "var(--ink-1)", whiteSpace: "pre-wrap", wordBreak: "break-word", background: "var(--parchment)", padding: "12px 14px", borderRadius: 4 }}>
+                {viewingProposal.summary}
+              </pre>
+            </div>
+            <div style={{ padding: "12px 20px 16px", display: "flex", gap: 8, borderTop: "1px solid var(--rule)" }}>
+              <button
+                onClick={() => handleApproveProposal(viewingProposal.id)}
+                style={{ flex: 1, padding: "8px 0", borderRadius: 4, border: "none", cursor: "pointer", background: "var(--bulb)", color: "#fff", fontSize: 13, fontWeight: 500 }}
+              >
+                Jóváhagyás & mentés
+              </button>
+              <button
+                onClick={() => handleRejectProposal(viewingProposal.id)}
+                style={{ padding: "8px 16px", borderRadius: 4, border: "1px solid var(--rule)", cursor: "pointer", background: "transparent", color: "var(--ink-3)", fontSize: 13 }}
+              >
+                Elutasítás
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isMobile ? (
         mobilePanel === "files" ? (
           <FileListPanel
@@ -699,6 +722,7 @@ export function MemoryView() {
             proposals={proposals}
             onCreateFile={loadFiles}
             onApproveProposal={handleApproveProposal}
+            onViewProposal={setViewingProposal}
             onRejectProposal={handleRejectProposal}
             fullWidth
           />
@@ -720,6 +744,7 @@ export function MemoryView() {
             proposals={proposals}
             onCreateFile={loadFiles}
             onApproveProposal={handleApproveProposal}
+            onViewProposal={setViewingProposal}
             onRejectProposal={handleRejectProposal}
           />
           <MainContent
