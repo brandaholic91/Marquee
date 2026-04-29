@@ -102,7 +102,7 @@ describe("TaskManager", () => {
     broker.emit("delegation_created", { delegationId, from: "director", to: "copywriter" });
 
     const row = db.select().from(tasks).all()[0];
-    expect(row.title.length).toBe(80);
+    expect(row.title.length).toBe(300);
   });
 
   it("notifies warm agent immediately on task_updated", () => {
