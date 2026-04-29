@@ -249,7 +249,9 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
     });
 
     // error: push system message
-    marqueeEvents.on<{ type: string; message?: string; error?: string }>('error', (payload) => {
+    marqueeEvents.on<{ type: string; source?: string; message?: string; error?: string }>('error', (payload) => {
+      // Infra-level recovery noise — suppress
+      if (payload.source === 'recovery') return;
       const text = payload.message ?? payload.error ?? 'Ismeretlen hiba';
       const errMsg: Message = {
         id: `err_${Date.now()}`,
