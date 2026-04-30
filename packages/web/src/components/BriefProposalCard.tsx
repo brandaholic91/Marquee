@@ -55,7 +55,7 @@ export function BriefProposalCard({
     {editing && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
         <div className="bg-parchment rounded-xl shadow-xl w-full max-w-xl mx-4 p-6 flex flex-col gap-4">
-          <h2 className="font-serif text-lg font-semibold">Brief szerkesztése</h2>
+          <h2 className="text-lg font-semibold">Brief szerkesztése</h2>
 
           <div>
             <label className="text-xs font-medium text-ink-2 uppercase tracking-wide">Cím</label>
@@ -96,8 +96,14 @@ export function BriefProposalCard({
         </div>
       </div>
     )}
-    <div className="border-2 border-primary rounded-lg p-6 bg-off-white my-3">
-      <h3 className="font-serif text-lg font-semibold">{title}</h3>
+    <div className="border-[1.5px] border-primary rounded-lg p-6 bg-off-white my-3">
+      <div className="flex items-center mb-1">
+        <span className="text-[10px] font-bold tracking-widest text-primary uppercase flex items-center gap-1.5">
+          <span className="inline-block w-1 h-3.5 bg-primary rounded-sm" />
+          Brief javaslat
+        </span>
+      </div>
+      <h3 className="text-lg font-semibold">{title}</h3>
       <div className="text-sm text-ink-2 mt-1">
         Deliverable: <strong>{deliverableType}</strong>
         {platform && <span> · platform: {platform}</span>}
@@ -137,7 +143,7 @@ export function BriefProposalCard({
       {contentMd && (
         <div className="mt-3">
           <button
-            className="text-xs text-primary-hover hover:underline"
+            className="text-xs text-primary hover:underline"
             onClick={() => setExpanded((v) => !v)}
           >
             {expanded ? '▲ Brief elrejtése' : '▼ Brief megtekintése'}
@@ -152,21 +158,21 @@ export function BriefProposalCard({
 
       <div className="flex gap-2 mt-4">
         <button
-          className="bg-primary text-white px-4 py-2 rounded-md disabled:opacity-50 hover:bg-primary-hover"
+          className="bg-primary text-sidebar-bg font-bold px-4 py-2 rounded-md disabled:opacity-50 hover:bg-primary-hover"
           disabled={busy}
           onClick={handleDispatch}
         >
-          Jóváhagy &amp; dispatch
+          Jóváhagy &amp; indít
         </button>
         <button
-          className="border border-rule-strong px-4 py-2 rounded-md text-ink-1 hover:bg-cream"
+          className="bg-off-white border border-rule px-4 py-2 rounded-md text-ink-2 font-medium hover:bg-cream"
           disabled={busy}
           onClick={() => setEditing(true)}
         >
           Szerkeszt
         </button>
         <button
-          className="px-3 py-2 rounded-md text-ink-2 hover:bg-cream"
+          className="px-3 py-2 rounded-md text-ink-3 font-medium hover:text-ink-1"
           disabled={busy}
           onClick={async () => {
             setBusy(true);

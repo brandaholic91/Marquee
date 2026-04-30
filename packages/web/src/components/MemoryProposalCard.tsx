@@ -20,10 +20,10 @@ export function MemoryProposalCard({
   const preview = proposal.newContent.slice(0, 200);
 
   return (
-    <div className="border-2 border-secondary rounded-lg p-4 bg-off-white my-3">
+    <div className="border-[1.5px] border-primary rounded-lg p-4 bg-off-white my-3">
       <div className="flex items-start justify-between">
         <div>
-          <h4 className="font-serif font-semibold">Memória javaslat: <code className="font-mono text-sm">{proposal.file}</code></h4>
+          <h4 className="font-semibold">Memória javaslat: <code className="font-mono text-sm">{proposal.file}</code></h4>
           {proposal.reason && <p className="text-sm text-ink-2 mt-1">{proposal.reason}</p>}
         </div>
         <span className="text-xs text-ink-2">{new Date(proposal.createdAt).toLocaleString('hu-HU')}</span>
@@ -34,7 +34,7 @@ export function MemoryProposalCard({
       </pre>
       {proposal.newContent.length > 200 && (
         <button
-          className="mt-1 text-xs text-primary-hover hover:underline"
+          className="mt-1 text-xs text-primary hover:underline"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? 'Kevesebb' : 'Több'}

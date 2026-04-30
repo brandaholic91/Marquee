@@ -28,7 +28,7 @@ export function SendBackModal({ deliverableId, onCancel, onSubmit }: SendBackMod
         className="bg-off-white rounded-lg p-6 w-full max-w-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-serif text-lg mb-3">Visszaküldés javításra</h3>
+        <h3 className="text-lg font-semibold mb-3">Visszaküldés javításra</h3>
 
         {!loading && hasReview && (
           <div className="mb-4 bg-primary-soft border border-primary/20 rounded-md px-4 py-3 text-sm text-primary-hover">

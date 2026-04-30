@@ -93,7 +93,7 @@ export function BrandVoiceReviewPanel({ deliverableId }: { deliverableId: string
           </div>
 
           <button
-            className="text-xs text-primary-hover hover:underline mb-2"
+            className="text-xs text-primary hover:underline mb-2"
             onClick={() => setExpanded((v) => !v)}
           >
             {expanded ? '▲ Részletek elrejtése' : '▼ Részletek megtekintése'}
