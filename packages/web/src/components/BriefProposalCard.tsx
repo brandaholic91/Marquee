@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { MarkdownView } from './MarkdownView.js';
 import { MarkdownEditor } from './MarkdownEditor.js';
+import { roleLabel } from '../lib/roles.js';
 
 export function BriefProposalCard({
   briefId,
@@ -81,7 +82,7 @@ export function BriefProposalCard({
         Deliverable: <strong>{deliverableType}</strong>
         {platform && <span> · platform: {platform}</span>}
         <br />
-        Specialista: <strong>{targetSpecialist}</strong>
+        Specialista: <strong>{roleLabel(targetSpecialist)}</strong>
       </div>
 
       {contentMd && (
