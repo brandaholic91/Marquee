@@ -111,6 +111,22 @@ export function CampaignDetail() {
 					<PlanEditor
 						initial={plan}
 						busy={saving}
+						onStartPlanning={() => setActiveTab("chat")}
+						onCreateEmptyPlan={async () => {
+							setSaving(true);
+							await plansApi.put(id, {
+								goal: "",
+								goal_type: "other",
+								audience: "",
+								key_messages: [],
+								channel_mix: [],
+								timeline_start: null,
+								timeline_end: null,
+								kpi: "",
+							});
+							await reload();
+							setSaving(false);
+						}}
 						onSave={async (form) => {
 							setSaving(true);
 							await plansApi.put(id, form);
