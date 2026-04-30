@@ -9,9 +9,9 @@ import { Campaigns } from './views/Campaigns.js';
 
 export function App() {
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="flex h-screen overflow-hidden bg-cream">
       <Sidebar />
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Routes>
           <Route path="/hq" element={<HQ />} />
           <Route path="/" element={<Workshop />} />
