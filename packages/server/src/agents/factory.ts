@@ -109,6 +109,18 @@ export async function spawnAgent(input: SpawnInput): Promise<SpawnedAgent> {
 		getApiKey: (provider: string) => input.authManager?.getApiKey(provider) ?? getEnvApiKey(provider) ?? undefined,
 	});
 
+	if (typeof agent.subscribe === "function") {
+		agent.subscribe((event: Record<string, unknown>) => {
+			if (event.type === "tool_execution_start") {
+				console.log("[tool:start]", config.slug, event.toolName, JSON.stringify(event.args).slice(0, 200));
+			} else if (event.type === "tool_execution_end") {
+				const status = event.isError ? "FAIL" : "OK";
+				const preview = typeof event.result === "string" ? event.result : JSON.stringify(event.result);
+				console.log("[tool:end]", config.slug, event.toolName, status, preview.slice(0, 300));
+			}
+		});
+	}
+
 	return { agent, session: { id: sessionId, lifecycle: config.lifecycle } };
 }
 
