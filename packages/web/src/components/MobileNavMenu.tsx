@@ -20,7 +20,7 @@ export function MobileNavMenu() {
       {/* Hamburger gomb — bal felső sarok */}
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden fixed top-2.5 left-3 z-50 w-9 h-9 flex items-center justify-center rounded-lg text-ink-2 hover:bg-parchment transition-colors"
+        className="md:hidden fixed top-[7px] left-3 z-50 w-9 h-9 flex items-center justify-center rounded-lg text-ink-2 hover:bg-parchment transition-colors"
         aria-label="Navigáció megnyitása"
       >
         <svg width="18" height="14" viewBox="0 0 18 14" fill="none">

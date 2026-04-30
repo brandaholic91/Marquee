@@ -48,20 +48,8 @@ export function Workshop() {
 
       {/* Mobile thread drawer — full screen */}
       {mobileThreadsOpen && (
-        <div className="fixed inset-0 z-[70] md:hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 h-12 bg-sidebar-bg border-b border-sidebar-border shrink-0">
-            <span className="text-sm font-semibold text-sidebar-text">Beszélgetések</span>
-            <button
-              onClick={() => setMobileThreadsOpen(false)}
-              className="w-9 h-9 flex items-center justify-center text-sidebar-text text-2xl leading-none"
-              aria-label="Bezárás"
-            >
-              ×
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <ThreadList />
-          </div>
+        <div className="fixed inset-0 z-[70] md:hidden">
+          <ThreadList fullWidth onClose={() => setMobileThreadsOpen(false)} />
         </div>
       )}
 

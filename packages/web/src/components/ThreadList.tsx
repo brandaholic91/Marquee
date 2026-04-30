@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 
-export function ThreadList() {
+export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClose?: () => void }) {
   const threads = useMarqueeStore((s) => s.threads);
   const threadId = useMarqueeStore((s) => s.threadId);
   const createThread = useMarqueeStore((s) => s.createThread);
@@ -26,16 +26,27 @@ export function ThreadList() {
   }
 
   return (
-    <aside className="flex w-[200px] shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden">
+    <aside className={`flex shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden ${fullWidth ? 'w-full' : 'w-[200px]'}`}>
       <div className="px-3 pt-4 pb-2 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Beszélgetések</span>
-        <button
-          onClick={() => void createThread()}
-          className="text-xs text-primary-hover hover:text-primary px-2 py-1 rounded hover:bg-cream"
-          title="Új beszélgetés"
-        >
-          + Új
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => void createThread()}
+            className="text-xs text-primary-hover hover:text-primary px-2 py-1 rounded hover:bg-cream"
+            title="Új beszélgetés"
+          >
+            + Új
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-ink-2 hover:text-ink-1 text-xl leading-none px-1"
+              aria-label="Bezárás"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
