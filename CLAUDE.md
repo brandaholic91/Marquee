@@ -18,6 +18,8 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 ✅ TipTap rich text editor briefeknél, react-markdown + remark-breaks renderelés mindenhol.
 ✅ Director kontextus: `get_campaign_status` tool (DB-ből kérdezi le az aktív kampányok állapotát).
 ✅ Approval flow: jóváhagy/visszaküld/eldob + auto-navigate + success state.
+✅ n8n outbound webhook: deliverable approve → `deliverable_shipped` payload → n8n (3× retry).
+✅ n8n inbound: `POST /api/briefs` Bearer tokennel védve (`MARQUEE_API_TOKEN`).
 ✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json` (openai-codex credentials).
 ⚠️ VM 260 deploy még nem történt meg — OAuth setup (`~/.pi/agent/auth.json`) hiányzik a szerveren.
 
@@ -48,10 +50,12 @@ DATA_DIR=/home/balazs/.marquee   # VM-en; lokálisan ~/.marquee-dev
 PORT=7892
 WEB_ROOT=/opt/marquee/packages/web/dist  # csak prod
 # Optional:
-# MARQUEE_API_TOKEN=<bearer-secret>      # n8n inbound védelem
-# N8N_WEBHOOK_URL=<https://...>          # deliverable_shipped outbound
+# MARQUEE_API_TOKEN=<bearer-secret>      # POST /api/briefs védelme (n8n inbound)
+# N8N_WEBHOOK_URL=<https://...>          # deliverable_shipped outbound webhook
 # PI_AUTH_FILE=/home/balazs/.pi/agent/auth.json  # OAuth credentials path
 ```
+
+**Fontos:** a `.env` a repo gyökerében van. A szerver `packages/server/`-ből indul (`tsx --env-file=../../.env`), ez automatikusan betölti. A `dotenv/config` import redundáns, de ártalmatlan.
 
 **OAuth setup kötelező első indulás előtt** — a `openai-codex` provider ChatGPT-előfizetéses OAuth flow-t igényel. Ha nincs `auth.json`, az agent indulás failel. Token expiry esetén `error` event a Director chat-be.
 
@@ -84,10 +88,10 @@ marquee/
 │   │   └── src/
 │   │       ├── agents/          # config (4 role), factory (spawn), transform-context
 │   │       ├── broker/          # event-bus, router (dispatchBrief), recovery
-│   │       ├── db/              # schema (13 tábla), queries, index
+│   │       ├── db/              # schema (14 tábla: +campaigns), queries, index
 │   │       ├── memory/          # read, write, proposals, validate, seed
 │   │       ├── providers/       # openai-codex modelForRole + auth
-│   │       ├── tools/           # read-memory, propose-brief, propose-memory-update, submit-deliverable
+│   │       ├── tools/           # read-memory, propose-brief, propose-memory-update, submit-deliverable, get-campaign-status
 │   │       ├── server/          # buildServer + auth-middleware + routes/* + sse
 │   │       ├── skills/          # loader (loadSkillRecipes)
 │   │       ├── webhooks/        # n8n-outbound (3× retry)
@@ -139,6 +143,10 @@ DATA_DIR=~/.marquee-dev npm run smoke --workspace=packages/server
 **Drizzle-orm verzió mismatch.** Root `0.45.2`, `packages/server` `0.36.0`. Most működik (npm hoist), de jövőbeli típushibák okai lehet. Egyelőre ne nyúlj hozzá.
 
 **Frontend token mapping.** A spec-ben szereplő `border-divider` / `text-slate` / `bg-surface-white` token nevek nem léteznek a `tailwind.config.js`-ben. Használd: `border-rule` / `text-ink-2` / `bg-off-white`.
+
+**Auth middleware scope.** A `MARQUEE_API_TOKEN` csak `POST /api/briefs` (n8n inbound) route-ot védi. A frontend hívások (üzenetküldés, approve, stb.) token nélkül mennek — single-tenant LAN-only app, ez szándékos.
+
+**Kampány dedup.** A `propose_brief` tool párhuzamos LLM tool call esetén `INSERT OR IGNORE` + UNIQUE index (`uq_campaigns_client_title`) kombóval védi a duplikált kampány-létrehozást.
 
 ## Production VM 260 állapot (2026-04-30)
 
