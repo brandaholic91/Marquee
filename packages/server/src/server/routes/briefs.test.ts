@@ -26,6 +26,11 @@ beforeEach(async () => {
   db = drizzle(sqlite, { schema });
   await migrate(db, { migrationsFolder: 'drizzle' });
   await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  await db.insert(schema.campaigns).values({ id: 'c1', clientSlug: 'default', title: 'Campaign', status: 'active', createdAt: Date.now() });
+  await db.insert(schema.campaignPlans).values({
+    id: 'p1', campaignId: 'c1', clientSlug: 'default', goal: 'g', goalType: 'lead-gen', audience: 'a',
+    keyMessages: [], channelMix: [], timelineStart: null, timelineEnd: null, kpi: '', createdAt: Date.now(), updatedAt: Date.now(),
+  });
   app = Fastify();
   await app.register(briefsRoutes, { db, broker, dataDir: baseDir, authManager });
 });
@@ -52,14 +57,49 @@ describe('briefs routes', () => {
   });
 
   it('GET /api/briefs — lists briefs for default client', async () => {
+    await db.insert(schema.campaignCalendarItems).values({
+      id: 'i1', planId: 'p1', campaignId: 'c1', clientSlug: 'default', channel: 'linkedin', deliverableType: 'social_post',
+      targetDate: 1715000000, intent: 'intent', keyMessageRef: null, status: 'planned', createdAt: Date.now(), updatedAt: Date.now(),
+    });
     await db.insert(schema.briefs).values({
       id: 'br_1', clientSlug: 'default', sourceThreadId: null,
       contentMd: '{"title":"x","body":"y","deliverable_type":"email","target_specialist":"copywriter"}',
-      status: 'draft', createdAt: Date.now(), dispatchedAt: null,
+      campaignId: 'c1', calendarItemId: 'i1',
+      status: 'draft', createdAt: Date.now(), dispatchedAt: null, parentDeliverableId: null,
     });
     const res = await app.inject({ method: 'GET', url: '/api/briefs' });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toHaveLength(1);
+    const body = res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].calendar_item?.id).toBe('i1');
+  });
+
+  it('GET /api/briefs?calendar_item_id filters by linked item', async () => {
+    await db.insert(schema.campaignCalendarItems).values([
+      {
+        id: 'i1', planId: 'p1', campaignId: 'c1', clientSlug: 'default', channel: 'linkedin', deliverableType: 'social_post',
+        targetDate: 1715000000, intent: 'intent', keyMessageRef: null, status: 'planned', createdAt: Date.now(), updatedAt: Date.now(),
+      },
+      {
+        id: 'i2', planId: 'p1', campaignId: 'c1', clientSlug: 'default', channel: 'email', deliverableType: 'email',
+        targetDate: 1715100000, intent: 'intent2', keyMessageRef: null, status: 'planned', createdAt: Date.now(), updatedAt: Date.now(),
+      },
+    ]);
+    await db.insert(schema.briefs).values([
+      {
+        id: 'br_1', clientSlug: 'default', sourceThreadId: null, campaignId: 'c1', calendarItemId: 'i1',
+        contentMd: '{}', status: 'draft', createdAt: Date.now(), dispatchedAt: null, parentDeliverableId: null,
+      },
+      {
+        id: 'br_2', clientSlug: 'default', sourceThreadId: null, campaignId: 'c1', calendarItemId: 'i2',
+        contentMd: '{}', status: 'draft', createdAt: Date.now(), dispatchedAt: null, parentDeliverableId: null,
+      },
+    ]);
+    const res = await app.inject({ method: 'GET', url: '/api/briefs?calendar_item_id=i1' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toHaveLength(1);
+    expect(body[0].id).toBe('br_1');
   });
 
   it('POST /api/briefs/:id/dispatch — dispatches the brief', async () => {

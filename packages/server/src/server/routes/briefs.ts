@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { briefs, campaigns } from '../../db/schema.js';
+import { briefs, campaignCalendarItems, campaigns } from '../../db/schema.js';
 import { dispatchBrief } from '../../broker/router.js';
 import { AuthManager } from '../../providers/auth.js';
 
@@ -40,9 +40,37 @@ export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, op
     return reply.code(201).send({ brief_id: id });
   });
 
-  app.get('/api/briefs', async () => {
-    const all = await db.select().from(briefs).where(eq(briefs.clientSlug, 'default')).orderBy(desc(briefs.createdAt)).all();
-    return all;
+  app.get<{ Querystring: { calendar_item_id?: string } }>('/api/briefs', async (req) => {
+    const calendarItemId = req.query?.calendar_item_id;
+    const all = calendarItemId
+      ? await db.select().from(briefs)
+        .where(and(eq(briefs.clientSlug, 'default'), eq(briefs.calendarItemId, calendarItemId)))
+        .orderBy(desc(briefs.createdAt)).all()
+      : await db.select().from(briefs)
+        .where(eq(briefs.clientSlug, 'default'))
+        .orderBy(desc(briefs.createdAt)).all();
+
+    const itemIds = all.map((b) => b.calendarItemId).filter((id): id is string => !!id);
+    const items = itemIds.length > 0
+      ? await db.select().from(campaignCalendarItems).all()
+      : [];
+    const byId = new Map(items.map((i) => [i.id, i]));
+
+    return all.map((b) => {
+      const item = b.calendarItemId ? byId.get(b.calendarItemId) : null;
+      return {
+        ...b,
+        calendar_item: item
+          ? {
+              id: item.id,
+              channel: item.channel,
+              type: item.deliverableType,
+              target_date: item.targetDate,
+              intent: item.intent,
+            }
+          : null,
+      };
+    });
   });
 
   app.patch<{ Params: { id: string }; Body: { title?: string; content_md?: string; campaign_name?: string | null } }>(
