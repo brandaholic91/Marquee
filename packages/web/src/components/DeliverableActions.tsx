@@ -61,6 +61,7 @@ export function DeliverableActions({ deliverableId }: DeliverableActionsProps) {
 
       {showSendBack && (
         <SendBackModal
+          deliverableId={deliverableId}
           onCancel={() => setShowSendBack(false)}
           onSubmit={async (note) => {
             setBusy(true);

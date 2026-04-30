@@ -107,6 +107,35 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
     broker.emit({ type: 'delegation_started', delegation_id: newDelId, agent_slug: oldDel.toAgent, session_id: session.id });
 
     const prevRev = (await db.select().from(deliverableRevisions).where(eq(deliverableRevisions.id, d.currentRevisionId!)).all())[0];
+
+    const latestReview = (await db.select().from(deliverableReviews)
+      .where(eq(deliverableReviews.deliverableId, d.id))
+      .orderBy(desc(deliverableReviews.createdAt))
+      .limit(1).all())[0] ?? null;
+
+    const reviewSection: string[] = [];
+    if (latestReview) {
+      const comments: Array<{ quote: string; issue: string; severity: string }> = JSON.parse(latestReview.comments);
+      const suggestions: Array<{ original: string; suggested: string; reasoning: string }> = JSON.parse(latestReview.suggestions);
+      const icon = (s: string) => s === 'error' ? '🔴' : s === 'warn' ? '🟡' : 'ℹ️';
+      reviewSection.push('## BRAND VOICE ELLENŐRZÉS EREDMÉNYE');
+      reviewSection.push(`Pontszám: ${latestReview.score}/10`);
+      reviewSection.push(`Összefoglaló: ${latestReview.summary}`);
+      if (comments.length > 0) {
+        reviewSection.push('');
+        reviewSection.push('### Észrevételek');
+        comments.forEach(c => reviewSection.push(`- ${icon(c.severity)} „${c.quote}" — ${c.issue}`));
+      }
+      if (suggestions.length > 0) {
+        reviewSection.push('');
+        reviewSection.push('### Javaslatok');
+        suggestions.forEach(s => {
+          reviewSection.push(`- „${s.original}" → „${s.suggested}"`);
+          reviewSection.push(`  Indok: ${s.reasoning}`);
+        });
+      }
+    }
+
     const prompt = [
       `# Brief: ${payload.title}`,
       `Deliverable típus: ${payload.deliverable_type}`,
@@ -117,11 +146,13 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
       '## ELŐZŐ VERZIÓ (file)',
       prevRev.artifactPath,
       '',
+      ...reviewSection,
+      reviewSection.length > 0 ? '' : '',
       '## OPERATOR FEEDBACK',
-      note ?? '(nincs konkrét megjegyzés)',
+      note?.trim() ? note : '(nincs plusz megjegyzés)',
       '',
-      'Készítsd el az új verziót a feedback alapján.',
-    ].filter(Boolean).join('\n');
+      'Készítsd el az új verziót a fenti visszajelzések alapján.',
+    ].filter((l, i, arr) => !(l === '' && arr[i - 1] === '')).join('\n');
     void agent.prompt(prompt).catch((err) => broker.emit({ type: 'error', source: 'specialist', message: String(err) }));
 
     return reply.send({ ok: true });
