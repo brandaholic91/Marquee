@@ -13,7 +13,7 @@ import { makeSubmitDeliverableTool } from "../tools/submit-deliverable.js";
 import { makeSubmitReviewTool } from "../tools/submit-review.js";
 import { makeGetCampaignStatusTool } from "../tools/get-campaign-status.js";
 import { loadSkillRecipes } from "../skills/loader.js";
-import { renderMemoryContext } from "./transform-context.js";
+import { renderMemoryContext, renderBrandVoiceBlock } from "./transform-context.js";
 import { AuthManager } from "../providers/auth.js";
 
 type Db = ReturnType<typeof drizzle>;
@@ -94,7 +94,8 @@ export async function spawnAgent(input: SpawnInput): Promise<SpawnedAgent> {
 
 	const skills = await loadSkillRecipes(input.dataDir, config.slug);
 	const memoryBlock = await renderMemoryContext(input.dataDir, input.clientSlug, config.slug);
-	const systemPrompt = `${memoryBlock}\n\n${skills}`;
+	const brandVoiceBlock = await renderBrandVoiceBlock(input.dataDir, input.clientSlug, config.slug);
+	const systemPrompt = [memoryBlock, brandVoiceBlock, skills].filter(Boolean).join("\n\n");
 
 	const agent = new Agent({
 		initialState: {
