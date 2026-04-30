@@ -50,6 +50,7 @@ export const briefsApi = {
 export interface DeliverableRow {
   id: string;
   type: string;
+  title: string | null;
   status: string;
   updatedAt: number;
   delegationId: string;

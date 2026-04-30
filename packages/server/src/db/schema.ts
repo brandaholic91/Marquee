@@ -72,6 +72,7 @@ export const deliverables = sqliteTable('deliverables', {
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
   campaignId: text('campaign_id').references(() => campaigns.id),
   type: text('type', { enum: ['social_post', 'email', 'blog_post', 'ad_copy'] }).notNull(),
+  title: text('title'),
   status: text('status', { enum: ['drafting', 'awaiting_approval', 'shipped', 'archived'] }).notNull(),
   currentRevisionId: text('current_revision_id'),
   createdAt: integer('created_at').notNull(),

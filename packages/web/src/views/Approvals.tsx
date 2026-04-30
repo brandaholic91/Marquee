@@ -159,8 +159,9 @@ export function Approvals() {
                 </button>
                 <div>
                 <p className="text-[15px] font-bold text-ink-1">
-                  {detail.deliverable.type} — {detail.deliverable.id.slice(0, 8)}
+                  {detail.deliverable.title ?? detail.deliverable.type}
                 </p>
+                <p className="text-[11px] text-ink-3 font-mono">{detail.deliverable.type}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <StatusBadge status={detail.deliverable.status} />
                   <span className="text-[11px] text-ink-3 font-mono">
@@ -276,13 +277,16 @@ function DeliverableListItem({
       } ${dim ? 'opacity-70' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span
-          className={`text-[13px] leading-snug ${
-            isActive ? 'font-semibold text-ink-1' : 'font-medium text-ink-1'
-          }`}
-        >
-          {d.type}
-        </span>
+        <div className="min-w-0">
+          <span
+            className={`text-[13px] leading-snug block truncate ${
+              isActive ? 'font-semibold text-ink-1' : 'font-medium text-ink-1'
+            }`}
+          >
+            {d.title ?? d.type}
+          </span>
+          {d.title && <span className="text-[10px] text-ink-3">{d.type}</span>}
+        </div>
         <StatusBadge status={d.status} />
       </div>
       <p className="text-[11px] text-ink-3 mt-1">

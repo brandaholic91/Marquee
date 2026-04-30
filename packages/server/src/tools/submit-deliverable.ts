@@ -45,6 +45,12 @@ export function makeSubmitDeliverableTool(ctx: SubmitDeliverableContext) {
         const delegRows = await ctx.db.select().from(delegations)
           .where(eq(delegations.id, ctx.delegationId)).limit(1).all();
         const campaignId = delegRows[0]?.campaignId ?? null;
+        const briefTitle = (() => {
+          try {
+            const p = JSON.parse(delegRows[0]?.payloadJson ?? '{}') as { title?: string };
+            return p.title ?? null;
+          } catch { return null; }
+        })();
 
         deliverableId = createId();
         await ctx.db.insert(deliverables).values({
@@ -53,6 +59,7 @@ export function makeSubmitDeliverableTool(ctx: SubmitDeliverableContext) {
           clientSlug: ctx.clientSlug,
           campaignId,
           type: ctx.deliverableType,
+          title: briefTitle,
           status: 'awaiting_approval',
           currentRevisionId: null,
           createdAt: now,

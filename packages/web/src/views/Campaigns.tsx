@@ -169,8 +169,8 @@ export function Campaigns() {
                         <span className="bg-parchment text-ink-2 text-[10px] font-semibold px-2 py-0.5 rounded-chip">
                           {TYPE_LABEL[d.type] ?? d.type}
                         </span>
-                        <span className="text-[13px] text-ink-1">
-                          {new Date(d.updatedAt).toLocaleDateString('hu-HU')}
+                        <span className="text-[13px] text-ink-1 truncate max-w-[180px]">
+                          {d.title ?? new Date(d.updatedAt).toLocaleDateString('hu-HU')}
                         </span>
                       </div>
                       <span className="text-[11px] text-ink-2">{DELIVERABLE_STATUS_LABEL[d.status] ?? d.status}</span>

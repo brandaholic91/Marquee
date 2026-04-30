@@ -29,6 +29,13 @@
       "when": 1746216000000,
       "tag": "0003_deliverable_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1746302400000,
+      "tag": "0004_deliverable_title",
+      "breakpoints": true
     }
   ]
 }

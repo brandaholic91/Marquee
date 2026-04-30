@@ -138,8 +138,8 @@ export function HQ() {
                 >
                   <span className={activityBulb(d.status)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-ink-1 truncate">{activityLabel(d)}</p>
-                    <p className="text-[11px] text-ink-3 mt-0.5">{d.type}</p>
+                    <p className="text-[12px] font-semibold text-ink-1 truncate">{d.title ?? d.type}</p>
+                    <p className="text-[11px] text-ink-3 mt-0.5">{activityLabel(d)}</p>
                   </div>
                   <span className="text-[10px] text-ink-3 shrink-0">{formatTime(d.updatedAt)}</span>
                 </div>
