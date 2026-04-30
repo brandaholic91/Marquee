@@ -46,14 +46,20 @@ export function Workshop() {
         <ThreadList />
       </div>
 
-      {/* Mobile thread drawer */}
+      {/* Mobile thread drawer — full screen */}
       {mobileThreadsOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMobileThreadsOpen(false)}
-          />
-          <div className="absolute left-0 top-0 bottom-14 w-64 shadow-xl overflow-hidden">
+        <div className="fixed inset-0 z-40 md:hidden flex flex-col">
+          <div className="flex items-center justify-between px-4 h-12 bg-sidebar-bg border-b border-sidebar-border shrink-0">
+            <span className="text-sm font-semibold text-sidebar-text">Beszélgetések</span>
+            <button
+              onClick={() => setMobileThreadsOpen(false)}
+              className="w-9 h-9 flex items-center justify-center text-sidebar-text text-2xl leading-none"
+              aria-label="Bezárás"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
             <ThreadList />
           </div>
         </div>
@@ -63,17 +69,19 @@ export function Workshop() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Chat header */}
         <div className="px-4 py-3.5 border-b border-rule bg-cream flex items-center gap-2">
+          {/* Left spacer mobilon a nav hamburger miatt */}
+          <span className="md:hidden w-10 shrink-0" />
+          <span className="flex-1 text-[14px] font-bold text-ink-1 truncate">
+            {threads.find((t) => t.id === threadId)?.title ?? 'Új beszélgetés'}
+          </span>
+          {activeAgents.has('director') && <span className="bulb shrink-0" />}
           <button
             onClick={() => setMobileThreadsOpen(true)}
-            className="md:hidden text-ink-2 text-[20px] leading-none mr-1 px-1"
+            className="md:hidden text-ink-2 text-[20px] leading-none px-1 shrink-0"
             aria-label="Beszélgetések"
           >
             ☰
           </button>
-          <span className="text-[14px] font-bold text-ink-1 truncate">
-            {threads.find((t) => t.id === threadId)?.title ?? 'Új beszélgetés'}
-          </span>
-          {activeAgents.has('director') && <span className="bulb ml-1 shrink-0" />}
         </div>
 
         {/* Messages */}
