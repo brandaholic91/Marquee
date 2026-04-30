@@ -274,6 +274,36 @@ A "Jóváhagyások" nav item amber pill badge-dzse megjelenik ha `awaiting_appro
 
 ---
 
+---
+
+---
+
+## 7a. Memória nézet — editor UX
+
+### Renderelt nézet + szerkesztés toggle
+
+A memória fájlok backend formátuma (YAML frontmatter + markdown törzs) változatlan marad. A frontend két módban mutatja ugyanazt a tartalmat:
+
+**Olvasási mód (alapértelmezett):**
+- A YAML frontmatter `name` és `description` mezői metaadat-sávként jelennek meg a kártya tetején (`#F5F2EF` háttér, 10px 600 `text-muted` labelek) — a user soha nem lát nyers YAML-t
+- A markdown törzs renderelve jelenik meg (`react-markdown` + `remark-breaks`, ugyanaz mint a többi nézeten)
+- Jobb felső sarokban: "Szerkesztés" gomb (`button-secondary`)
+
+**Szerkesztési mód ("Szerkesztés" gombra):**
+- A kártya tartalmát felváltja egy `<textarea>` a teljes nyers tartalommal (YAML frontmatter + markdown)
+- A "Szerkesztés" gomb helyett: "Mentés" (`button-primary`, amber) + "Mégse" (`button-ghost`)
+- Mentés után visszaáll olvasási módba, a friss tartalom újra renderelve
+
+## 7b. Kampányok nézet — kiegészítések
+
+### Deliverable sorok navigációja
+
+A kampány részletpanelben minden deliverable sor kattintható, státusztól függetlenül (folyamatban, jóváh. vár, kiszállítva egyaránt). Kattintásra a Jóváhagyások nézetre navigál, az adott deliverable előre betöltve a részletpanelben (`/approvals/:id` route). A Jóváhagyások nézet kezeli a shipped státuszú itemeket is — ebben az esetben az akciógombok (Jóváhagy / Visszaküld / Eldob) rejtve vannak, a tartalom olvasható.
+
+A sor hover állapota: `border-color: border-strong`, cursor: pointer — jelzi a kattinthatóságot.
+
+---
+
 ## 8. Komponensek amelyek NEM változnak
 
 - Memória nézet (MemoryFileList, MemoryEditor) — csak token frissítés
