@@ -181,11 +181,10 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
         ts: payload.ts,
       });
       set((s) => {
-        // Dedupe by id (defends against SSE replay echoing already-fetched messages)
-        if (s.messages.some((m) => m.id === msg.id)) return s;
-        // Director responded — clear thinking indicator
         const activeAgents = new Set(s.activeAgents);
         if (senderRaw === 'director') activeAgents.delete('director');
+        // Dedupe by id — but always clear the thinking indicator
+        if (s.messages.some((m) => m.id === msg.id)) return { activeAgents };
         return { messages: [...s.messages, msg], activeAgents };
       });
     });
