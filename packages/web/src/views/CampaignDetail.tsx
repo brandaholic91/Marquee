@@ -14,6 +14,8 @@ import { marqueeEvents } from "../lib/sse.js";
 import { PlanEditor } from "../components/PlanEditor.js";
 import { CalendarItemCard } from "../components/CalendarItemCard.js";
 import { CalendarItemEditModal } from "../components/CalendarItemEditModal.js";
+import { PlanProposalCard, type PlanProposal } from "../components/PlanProposalCard.js";
+import { CalendarItemProposalCard, type CalendarProposal } from "../components/CalendarItemProposalCard.js";
 
 export function CampaignDetail() {
 	const { id = "" } = useParams();
@@ -30,6 +32,39 @@ export function CampaignDetail() {
 	const [chatMessages, setChatMessages] = useState<MessageRow[]>([]);
 	const [chatInput, setChatInput] = useState("");
 	const keyMessageById = new Map((plan?.keyMessages ?? []).map((km) => [km.id, km.text]));
+
+	function renderCampaignChatMessage(m: MessageRow) {
+		if ((m.type === "plan_proposal" || m.type === "plan_update_proposal") && m.contentJson) {
+			try {
+				const payload = JSON.parse(m.contentJson) as PlanProposal;
+				return <PlanProposalCard key={m.id} messageId={m.id} payload={payload} />;
+			} catch {
+				return null;
+			}
+		}
+		if (m.type === "calendar_item_proposal" && m.contentJson) {
+			try {
+				const payload = JSON.parse(m.contentJson) as CalendarProposal;
+				return <CalendarItemProposalCard key={m.id} messageId={m.id} payload={payload} />;
+			} catch {
+				return null;
+			}
+		}
+		const parsed = (() => {
+			try {
+				return JSON.parse(m.contentJson) as { text?: string };
+			} catch {
+				return { text: "" };
+			}
+		})();
+		return (
+			<div key={m.id} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
+				<div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.sender === "user" ? "bg-primary-soft" : "bg-parchment border border-rule"}`}>
+					{parsed.text ?? ""}
+				</div>
+			</div>
+		);
+	}
 
 	async function reload() {
 		const [campaignDetail, planResponse] = await Promise.all([campaignsApi.get(id), plansApi.get(id)]);
@@ -165,22 +200,7 @@ export function CampaignDetail() {
 			) : (
 				<div className="border border-rule rounded-lg bg-off-white p-4">
 					<div className="space-y-2 max-h-[420px] overflow-auto">
-						{chatMessages.map((m) => {
-							const parsed = (() => {
-								try {
-									return JSON.parse(m.contentJson) as { text?: string };
-								} catch {
-									return { text: "" };
-								}
-							})();
-							return (
-								<div key={m.id} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
-									<div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${m.sender === "user" ? "bg-primary-soft" : "bg-parchment border border-rule"}`}>
-										{parsed.text ?? ""}
-									</div>
-								</div>
-							);
-						})}
+						{chatMessages.map((m) => renderCampaignChatMessage(m))}
 					</div>
 					<div className="mt-3 flex gap-2">
 						<input
