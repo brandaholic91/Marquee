@@ -29,7 +29,7 @@ export function MemoryEditor({
   return (
     <div>
       <div className="flex items-baseline gap-2 mb-2">
-        <h3 className="font-serif text-lg">{FILE_LABELS[file] ?? file}</h3>
+        <h3 className="font-sans font-semibold text-lg">{FILE_LABELS[file] ?? file}</h3>
         {saved && !dirty && <span className="text-xs text-success-deep">Mentve</span>}
         {dirty && <span className="text-xs text-ink-2">Módosított</span>}
       </div>

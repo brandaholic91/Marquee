@@ -6,7 +6,7 @@ export function EmptyState({ title, body, actionLabel, onAction }: {
 }) {
   return (
     <div className="border border-rule rounded-lg bg-off-white p-8 text-center">
-      <h2 className="font-serif text-xl mb-2">{title}</h2>
+      <h2 className="font-sans font-semibold text-xl mb-2">{title}</h2>
       <p className="text-ink-2 mb-6">{body}</p>
       {actionLabel && onAction && (
         <button

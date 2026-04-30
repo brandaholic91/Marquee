@@ -21,7 +21,7 @@ export function MarkdownEditor({ value, onChange, minHeight = '180px', placehold
       attributes: {
         class: [
           'prose prose-sm max-w-none outline-none p-3',
-          'text-ink-1 prose-headings:font-serif prose-headings:text-ink-1',
+          'text-ink-1 prose-headings:font-sans prose-headings:text-ink-1',
           'prose-p:text-ink-1 prose-li:text-ink-1 prose-strong:text-ink-1',
         ].join(' '),
         style: `min-height: ${minHeight}`,

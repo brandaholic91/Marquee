@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 export type BadgeKind =
   | "cream"
   | "primary-soft"
-  | "secondary-soft"
   | "success-soft"
   | "danger-soft"
   | "agent";

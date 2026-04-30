@@ -35,7 +35,6 @@
   --success-deep: #15803D;
   --danger-soft: #FEF2F2;
   --danger-deep: #B91C1C;
-  --warning-deep: #92400E;
 
   /* Bulb (Amber) */
   --bulb: #F59E0B;
@@ -102,7 +101,6 @@ input {
   font: 500 11px/1 var(--font-sans); letter-spacing: 0.01em;
 }
 .badge-primary-soft { background: var(--primary-soft); color: var(--primary-deep); }
-.badge-secondary-soft { background: var(--secondary-soft); color: var(--warning-deep); }
 .badge-success-soft { background: var(--success-soft); color: var(--success-deep); }
 .badge-danger-soft { background: var(--danger-soft); color: var(--danger-deep); }
 .badge-cream { background: var(--cream); color: var(--ink-2); border: 1px solid var(--rule); }
@@ -121,7 +119,7 @@ input {
   font: 600 11px/1 var(--font-sans); flex: none; letter-spacing: 0.02em;
 }
 .avatar-md { width: 32px; height: 32px; font-size: 12px; }
-.avatar-human            { background: #3A3128; color: #FAF4E8; }
+.avatar-human            { background: #3A3128; color: var(--cream); }
 .avatar-director         { background: #E9C7B5; color: #7A3A26; }
 .avatar-content-lead     { background: #DDD3B2; color: #6E5A1E; }
 .avatar-distribution-lead{ background: #C9D9C2; color: #355C2E; }
