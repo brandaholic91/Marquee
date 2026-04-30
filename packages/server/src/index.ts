@@ -7,6 +7,7 @@ import { Broker } from "./broker/event-bus.js";
 import { recoverState } from "./broker/recovery.js";
 import { buildServer } from "./server/index.js";
 import { seedClientIfNeeded } from "./memory/seed.js";
+import { seedDefaultAgents } from "./agents/loader.js";
 import { spawnAgent, type SpawnedAgent } from "./agents/factory.js";
 import { messages } from "./db/schema.js";
 import { createId } from "@paralleldrive/cuid2";
@@ -35,6 +36,7 @@ async function main() {
 	//   prod (dist/index.js): ../seed  (assuming dist sits next to seed)
 	const seedDir = join(here, "..", "seed");
 	await seedClientIfNeeded(dataDir, seedDir, "default");
+	seedDefaultAgents(dataDir);
 
 	// 2. Open DB (auto-migrates on connect)
 	const { db, close } = openDb(join(dataDir, "state.db"));
