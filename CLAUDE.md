@@ -5,23 +5,29 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 **Architektúra részletek a spec-ben:** `docs/superpowers/specs/2026-04-29-marquee-mvp-redesign-design.md`
 **Wave 1 spec:** `docs/superpowers/specs/2026-04-30-marquee-new-agents-wave-1-design.md`
 **Wave 1 plan:** `docs/superpowers/plans/2026-04-30-marquee-wave-1-agents.md`
+**Plan v1 (kampány-terv) spec:** `docs/superpowers/specs/2026-04-30-marquee-campaign-plan-design.md`
+**Plan v1 (kampány-terv) plan:** `docs/superpowers/plans/2026-04-30-marquee-campaign-plan.md`
 
 ## Branch állapot
 
 - **`master`** — aktív fejlesztési branch. `v0.2-final` tag archív referencia.
 
-## Jelenlegi állapot (2026-04-30)
+## Jelenlegi állapot (2026-05-01)
 
 ✅ Teljes brief→specialist→deliverable flow (Director chat → brief javaslat → approve → specialist LLM → deliverable → approval queue).
 ✅ Multi-thread chat (több párhuzamos beszélgetés, sidebar, rename, archiválás).
 ✅ Kampányok (campaign_name grouping, Kampányok nézet, brief kártyán kampány hozzárendelés chip-ekkel).
 ✅ TipTap rich text editor briefeknél, react-markdown + remark-breaks renderelés mindenhol.
-✅ Director kontextus: `get_campaign_status` tool.
+✅ Director kontextus: `get_campaign_status` és `get_campaign_plan` tool.
 ✅ Approval flow: jóváhagy/visszaküld/eldob + auto-navigate. Vázlat státuszban Eldob gomb.
 ✅ Brand Voice Guardian: operátor triggereli DeliverableDetail-ből, review score + észrevételek + javaslatok. Visszaküldéskor a review bekerül a specialist promptjába.
+✅ Brand Voice guidelines kalibrált: csatornaspecifikus jó/rossz minták (landing/linkedin/email_subject/email_body/audit_diagnozis/nehez_igazsag), tiltott→helyettesítés párok, borderline rossz példák `miert` + `helyette` mezőkkel.
+✅ Kampány-tervezési réteg (Plan v1): `campaign_plans` + `campaign_calendar_items` domain-objektumok, Plan editor form (cél, audience, key messages, channel mix, timeline, KPI), calendar lista status-szegmentálással. Director-vezetett tervezési chat dedikált thread-tel (`chat_threads.campaign_id`).
+✅ Director Plan-tools: `propose_campaign_plan`, `update_campaign_plan`, `propose_calendar_item`, `get_campaign_plan` + 2 új skill recipe (`kampany_tervezes`, `terv_kontextusu_brief`).
+✅ Brief származtatás calendar item-ből (laza kötés: `briefs.calendar_item_id` opcionális). Calendar item state machine event-driven státusz-átmenetekkel.
 ✅ n8n outbound webhook + inbound (`POST /api/briefs` Bearer tokennel).
 ✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json`.
-⚠️ VM 260 deploy még nem történt meg.
+⚠️ VM 260 deploy még nem történt meg (Plan v1 sem deployolva).
 
 ## Agentek (7 role)
 
@@ -89,31 +95,39 @@ Rsync → VM 260 (192.168.2.60) → `npm install --omit=dev` → `sudo systemctl
 marquee/
 ├── packages/
 │   ├── server/
-│   │   ├── drizzle/             # migrations 0000–0003 + meta/_journal.json
+│   │   ├── drizzle/             # migrations 0000–0007 + meta/_journal.json
 │   │   ├── seed/
 │   │   │   ├── memory/          # 6 template: profile, brand_voice, ongoing_campaigns,
 │   │   │   │                    #   email_list_segments, seo_keyword_bank, brand_voice_guidelines
-│   │   │   └── skills/          # director(3), copywriter(2), social-manager(1),
+│   │   │   └── skills/          # director(5), copywriter(2), social-manager(1),
 │   │   │                        #   paid-specialist(2), email-marketer(3), seo-specialist(4),
 │   │   │                        #   brand-voice-guardian(1)
 │   │   └── src/
 │   │       ├── agents/          # config (7 role), factory (spawn), transform-context
-│   │       ├── broker/          # event-bus, router (dispatchBrief), review-dispatcher, recovery
-│   │       ├── db/              # schema (15 tábla: +deliverable_reviews), queries, index
+│   │       ├── broker/          # event-bus, router (dispatchBrief), review-dispatcher,
+│   │       │                    #   recovery, calendar-state-machine
+│   │       ├── db/              # schema (17 tábla: +deliverable_reviews, +campaign_plans,
+│   │       │                    #   +campaign_calendar_items), queries, index
 │   │       ├── memory/          # read, write, proposals, validate, seed
 │   │       ├── providers/       # openai-codex modelForRole + auth
 │   │       ├── tools/           # read-memory, propose-brief, propose-memory-update,
-│   │       │                    #   submit-deliverable, submit-review, get-campaign-status
-│   │       ├── server/          # buildServer + routes/* + sse
+│   │       │                    #   submit-deliverable, submit-review, get-campaign-status,
+│   │       │                    #   get-campaign-plan, propose-campaign-plan,
+│   │       │                    #   update-campaign-plan, propose-calendar-item,
+│   │       │                    #   tavily-search, web-fetch
+│   │       ├── server/          # buildServer + routes/* (+ plans.ts) + sse
 │   │       ├── skills/          # loader
 │   │       ├── webhooks/        # n8n-outbound (3× retry)
 │   │       └── scripts/         # smoke.ts, login-openai.ts
 │   └── web/src/
 │       ├── components/          # BriefProposalCard (kampány chip-ek), BrandVoiceReviewPanel,
+│       │                        #   PlanEditor, CalendarItemCard, CalendarItemEditModal,
+│       │                        #   PlanProposalCard, CalendarItemProposalCard,
 │       │                        #   SendBackModal (review-aware), StatusBadge, ...
-│       ├── views/               # Workshop, Approvals, DeliverableDetail (+ DraftingActions)
-│       ├── store/               # useMarqueeStore (SSE handler guard, dispatched brief filter)
-│       └── lib/                 # api (reviewsApi), roles.ts, sse, design, utils
+│       ├── views/               # Workshop, Approvals, Campaigns, CampaignDetail, ...
+│       ├── store/               # useMarqueeStore (SSE handler guard, dispatched brief filter,
+│       │                        #   plans slice)
+│       └── lib/                 # api (reviewsApi, plansApi), roles.ts, sse, design, utils
 ├── scripts/deploy.sh
 ├── infra/marquee.service
 └── docs/superpowers/{specs,plans}/
@@ -167,17 +181,22 @@ Friss DB-n (pl. VM 260) az `openDb` automatikusan alkalmazza az összes migráci
 
 **Brief card SSE replay.** Csak az aktív thread-hez tartozó, még draft státuszú briefek jelennek meg kártyaként. Cross-thread és dispatched brief-ek ki vannak szűrve.
 
-**Brand Voice Guardian kalibrálás.** A `brand_voice_guidelines.md` memory template feltöltése kötelező éles használat előtt (legalább 5-5 jó/rossz példamondat GrowthFrame brand voice-ból).
+**Brand Voice Guardian kalibrálás.** A `brand_voice_guidelines.md` GrowthFrame-specifikus tartalommal feltöltve (csatornaspecifikus jó/rossz minták, 18 tiltott kifejezés `helyette` mezővel, borderline rossz példák `miert` + `helyette` indoklással). A finomhangolási ciklus (manuális vs. Guardian review konvergencia 2-3 körben, real-world copy mintákra cserélés) éles használat során fut. Ha új csatorna típusa jön, a `pelda_jo_mondatok_*` és `pelda_rossz_mondatok_borderline` listákhoz adj 5+ mintát.
 
-## Production VM 260 állapot (2026-04-30)
+**Plan v1 calendar item state machine.** A `calendar-state-machine.ts` event-driven módon vezeti a státusz-átmeneteket: `brief.created (calendar_item_id-vel)` → `brief_created`, `brief.discarded` → `planned`, `deliverable.approved (link-elt brief-en keresztül)` → `delivered`. UI **nem** írhat státuszt direkt módon — csak `cancel` action-on. A `delivered` státuszú item-ek nem mehetnek vissza más státuszba.
 
-Deploy-ready, de még nem deployolva:
+**Plan-chat thread scope.** A kampány-tervezési chat ugyanaz a `chat_threads` tábla, csak `campaign_id` mezővel scope-olva. A Director skill-ek (`kampany_tervezes`, `terv_kontextusu_brief`) a thread `campaign_id`-jéből döntik el, hogy plan-aware módban vannak-e. Ad-hoc Workshop chat (campaign_id NULL) flow változatlan.
+
+## Production VM 260 állapot (2026-05-01)
+
+Deploy-ready (Wave 1 + Plan v1 lokálisan kész), de még nem deployolva:
 - `marquee.service` **inactive (dead)**
 - **OAuth setup hiányzik** a szerveren:
   ```bash
   ssh balazs@192.168.2.60
   cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
   ```
+- Friss DB-n a 0007 migration az `openDb`-vel automatikusan alkalmazódik (a `__drizzle_migrations` tracking bug csak meglévő DB-ket érint).
 
 ## Homelab kontextus
 
