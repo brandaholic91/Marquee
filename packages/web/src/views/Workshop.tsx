@@ -48,7 +48,7 @@ export function Workshop() {
 
       {/* Mobile thread drawer — full screen */}
       {mobileThreadsOpen && (
-        <div className="fixed inset-0 z-40 md:hidden flex flex-col">
+        <div className="fixed inset-0 z-[70] md:hidden flex flex-col">
           <div className="flex items-center justify-between px-4 h-12 bg-sidebar-bg border-b border-sidebar-border shrink-0">
             <span className="text-sm font-semibold text-sidebar-text">Beszélgetések</span>
             <button
@@ -97,8 +97,6 @@ export function Workshop() {
             <ChatComposer />
           </div>
         </div>
-        {/* Bottom nav spacer mobilon */}
-        <div className="h-14 md:hidden shrink-0" />
       </div>
     </div>
   );

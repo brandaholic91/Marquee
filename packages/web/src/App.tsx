@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar.js';
-import { BottomNav } from './components/BottomNav.js';
 import { MobileNavMenu } from './components/MobileNavMenu.js';
 import { HQ } from './views/HQ.js';
 import { Workshop } from './views/Workshop.js';
@@ -27,7 +26,6 @@ export function App() {
           <Route path="*" element={<Navigate to="/hq" replace />} />
         </Routes>
       </main>
-      <BottomNav />
       <MobileNavMenu />
     </div>
   );
