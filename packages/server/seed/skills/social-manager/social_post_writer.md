@@ -21,9 +21,11 @@ Brand voice alkalmazása: `{{memory.brand_voice.tone}}`, kerüld: `{{memory.bran
 
 - **Nyitó hook**: az első 2 sor a "Bővebben" gomb előtt dönt — insight, meglepő szám, vagy erős állítás
 - **Struktúra**: insight → személyes tapasztalat / üzleti kontextus → lesson learned
-- **Hossz**: 1000-3000 karakter
+- **Hossz**: 1000-3000 karakter posztanként
 - **Bullet listák**: megengedett, ha az áttekinthetőséget segíti — ne legyen több 5 elemnél
 - **Hashtag-ek**: a poszt végén, 3-5 db, szakmai relevanciával
+
+**LinkedIn sorozat (több poszt):** Ha a brief sorozatot kér, az összes posztot egy `submit_deliverable` hívásban küldd be `---` elválasztóval. Minden poszt önálló, önmagában is érthető legyen.
 
 Brand voice: `{{memory.brand_voice.tone}}`, jelzők: `{{memory.brand_voice.adjectives}}`
 Ügyfél kontextus: `{{memory.profile.business_description}}`
@@ -75,6 +77,21 @@ Hashtag Twitter esetén: maximum 2, csak ha valóban releváns — a hashtag-spa
     "text": "A legjobb döntések nem a nagy pillanatokban születnek.\n\nHanem azokban a csendes percekben, amikor...",
     "hashtags": ["#vállalkozás", "#döntéshozatal", "#leadership", "#growth", "#mindset"],
     "visual_brief": "Felső nézet: nyitott napló és kávéscsésze fa asztalon, reggeli természetes fény, semleges tónusok"
+  }
+}
+```
+
+**LinkedIn sorozat esetén** a `text` mező tartalmazza az összes posztot `---` elválasztóval:
+
+```json
+{
+  "content_md": "**Poszt 1 — Miért nem működik a legtöbb marketing automatizálás?**\n\nAz eszköz nem a probléma...\n\n---\n\n**Poszt 2 — Az alap, ami nélkül minden AI vakon fut**\n\nMielőtt bármit automatizálsz...",
+  "structured_data": {
+    "platform": "linkedin",
+    "post_count": 4,
+    "text": "Poszt 1 szövege...\n---\nPostz 2 szövege...\n---\nPostz 3 szövege...\n---\nPostz 4 szövege...",
+    "hashtags": ["#marketing", "#automatizálás", "#kkv"],
+    "visual_brief": null
   }
 }
 ```
