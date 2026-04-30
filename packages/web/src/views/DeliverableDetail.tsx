@@ -17,7 +17,6 @@ function DraftingActions({ deliverableId }: { deliverableId: string }) {
 
   return (
     <div className="flex items-center gap-3 mt-6">
-      <span className="text-sm text-ink-2 italic">Javítás folyamatban…</span>
       <button
         className="px-3 py-2 rounded-md text-ink-2 hover:bg-cream disabled:opacity-50 text-sm"
         disabled={busy || done}
