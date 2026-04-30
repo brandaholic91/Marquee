@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { createId } from "@paralleldrive/cuid2";
 import { agentSessions } from "../db/schema.js";
 import { getRoleConfig, type RoleSlug } from "./config.js";
-import { modelForRole, getEnvApiKey } from "../providers/index.js";
+import { modelForRoleWithOverride, getEnvApiKey } from "../providers/index.js";
 import { makeReadMemoryTool } from "../tools/read-memory.js";
 import { makeProposeBriefTool } from "../tools/propose-brief.js";
 import { makeProposeMemoryUpdateTool } from "../tools/propose-memory-update.js";
@@ -14,8 +14,9 @@ import { makeSubmitReviewTool } from "../tools/submit-review.js";
 import { makeTavilySearchTool } from "../tools/tavily-search.js";
 import { makeWebFetchTool } from "../tools/web-fetch.js";
 import { makeGetCampaignStatusTool } from "../tools/get-campaign-status.js";
-import { loadSkillRecipes } from "../skills/loader.js";
+import { loadSkillCatalog, loadSkillBody, loadBrandVoiceInstruction } from "../skills/loader.js";
 import { renderMemoryContext, renderBrandVoiceBlock } from "./transform-context.js";
+import { loadAgentIdentity, loadAgentConfig } from "./loader.js";
 import { AuthManager } from "../providers/auth.js";
 
 type Db = ReturnType<typeof drizzle>;
@@ -91,20 +92,50 @@ export async function spawnAgent(input: SpawnInput): Promise<SpawnedAgent> {
 		endedAt: null,
 	});
 
+	const agentCfg = loadAgentConfig(input.dataDir, config.slug);
 	const rawTools = await buildToolsForRole(config.slug, input, sessionId);
+
+	// load_skill tool — added to every role
+	rawTools.push({
+		name: "load_skill",
+		description:
+			"Load the full instructions for a skill by name. Call this when a task matches a skill's description and you need detailed guidance.",
+		inputSchema: {
+			type: "object" as const,
+			properties: { name: { type: "string", description: "Skill name from the <skills> catalog" } },
+			required: ["name"],
+		},
+		execute: async (inp: unknown) => {
+			const { name } = inp as { name: string };
+			return loadSkillBody(input.dataDir, config.slug, name) ?? `Skill '${name}' not found.`;
+		},
+	});
+
 	const tools: AgentTool<TSchema>[] = rawTools.map(wrapTool);
 
-	const skills = await loadSkillRecipes(input.dataDir, config.slug);
+	const identityBlock = loadAgentIdentity(input.dataDir, config.slug);
 	const memoryBlock = await renderMemoryContext(input.dataDir, input.clientSlug, config.slug);
 	const brandVoiceBlock = await renderBrandVoiceBlock(input.dataDir, input.clientSlug, config.slug);
-	const systemPrompt = [memoryBlock, brandVoiceBlock, skills].filter(Boolean).join("\n\n");
+	const brandVoiceInstructionBlock = loadBrandVoiceInstruction(input.dataDir, config.slug);
+	const skillCatalog = loadSkillCatalog(input.dataDir, config.slug);
+	const systemPrompt = [identityBlock, memoryBlock, brandVoiceBlock, brandVoiceInstructionBlock, skillCatalog]
+		.filter(Boolean)
+		.join("\n\n");
+
+	const model = modelForRoleWithOverride(config.slug, agentCfg.model);
+	const thinkingLevel = (agentCfg.thinking_level ?? "off") as
+		| "off"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high";
 
 	const agent = new Agent({
 		initialState: {
 			systemPrompt,
-			model: modelForRole(config.slug),
+			model,
 			tools,
-			thinkingLevel: "off",
+			thinkingLevel,
 		},
 		getApiKey: (provider: string) => input.authManager?.getApiKey(provider) ?? getEnvApiKey(provider) ?? undefined,
 	});
