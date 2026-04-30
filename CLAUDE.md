@@ -7,34 +7,19 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 
 ## Branch állapot
 
-- **`master`** — `v0.2-final` tag-gel lefagyasztva. Régi v0.2 kód (8 role, lead-tier orchestration). **Itt nem fejlesztünk.**
-- **`mvp-redesign`** — aktív fejlesztési branch. **Worktree:** `.worktrees/mvp-redesign/`. Itt minden új munka.
+- **`master`** — aktív fejlesztési branch, az MVP kódja. `v0.2-final` tag jelöli a régi v0.2 állapotot (8 role, lead-tier orchestration) — archív referencia.
+- Nincs worktree, nincs külön fejlesztési branch. Minden munka közvetlenül `master`-en.
 
-A v0.3-mvp redesign Phase 1–8 + smoke kész + index.ts entrypoint wireup + warm Director chat loop + chat-rendering bug fixek + **Phase 9 Task 1-2 kész** (specialist agent flow: brief approval → specialist spawn → deliverable submission). **Lokálisan a teljes brief→specialist→deliverable flow működik** (gpt-5.4 OAuth-on át). 
+## Jelenlegi állapot (2026-04-30)
 
-## Lokális dev állapota (2026-04-29 éjszaka)
-
-✅ Backend boot tisztán (auth.json beolvasva, default client beszúrva, fresh DB, seed másolva).
-✅ Frontend bootol, Workshop nézet renderel, chat composer + bubble-ek helyesek.
-✅ User üzenet → POST /api/messages → broker subscribe → warm Director lazy spawn → agent.prompt() → GPT-5.4 válaszol → DB persist → SSE → bubble megjelenik.
-✅ Local OAuth setup kész: `~/.pi/agent/auth.json` (openai-codex credentials).
-✅ **Specialist authManager wireup** — operátor approve-ol egy briefet → dispatchBrief authManager-rel fut → specialist agent spawn-olódik → LLM hívás OK → submit_deliverable → artifact fájl + DB.
-✅ **POST empty body fix** — Fastify "Body cannot be empty" error megoldva (header csak akkor, ha van body).
-✅ **Artifact content API** — `/api/deliverables/:id/revisions/:revisionId/content` beolvassa + servál a fájlt.
-⚠️ **VM 260 OAuth még nincs** — a takarítás lefutott (régi state.db + .env + WUPHF leftover törölve), de auth.json-t a serveren még nem hoztuk létre. Első deploy előtt kell.
-
-A v0.3-mvp tervben nem volt explicit task ezekhez (warm Director loop, factory hibajavítás, frontend chat-rendering bugok) — ezek mind plan-deviations a chat-funkció megalkotásához. Listázva a "Frissítési napló" alatt.
-
-## Frissítési napló (eltérések a tervtől)
-
-| Commit | Típus | Mit |
-|---|---|---|
-| `4d58f54` | feat | **Phase 9 Task 1-2**: authManager wireup (index.ts → buildServer → briefs → dispatchBrief → spawnAgent). POST empty body fix (header csak body-val). Artifact content API endpoint. DeliverableDetail artifact display. |
-| `2f605bc` | gap-fix | `index.ts` + `server/index.ts` + `db/queries.ts` + `server/sse.ts` rewireolva (régi `AgentRouter` osztály eltávolítva, új plugin-alapú route mount). Tervben implicit volt, explicit task nem létezett. |
-| `b9611f0` | task | Task 31: smoke.ts rewrite (terv szerint). |
-| `d86b711` | gap-fix | Warm Director chat loop az `index.ts`-ben (lazy spawn első user chat_message-en, serial promise chain a concurrent prompt megelőzésére). |
-| `2fac6ab` | bug-fix | Az új `factory.ts` `as never`-rel rejtette el, hogy az Agent options shape rossz (model/systemPrompt/tools nem top-level, hanem `initialState`-en belül kell). Plus `getApiKey` és `AuthManager` nem volt wirelve. Mind javítva v0.2 minta szerint. |
-| `45e941f` | bug-fix | Frontend chat: `firstThread.id` (camelCase Drizzle), SSE `chat_message` handler `payload.text` mezőt olvas (nem `contentJson`-t), React StrictMode dupla-mount elleni guard a SSE handler regisztrációhoz, dedupe message ID szerint. |
+✅ Teljes brief→specialist→deliverable flow működik (Director chat → brief javaslat → operátor approve → specialist LLM → deliverable → approval queue).
+✅ Multi-thread chat (több párhuzamos beszélgetés, sidebar, rename, archiválás).
+✅ Kampányok (campaign_name grouping briefeknél, Kampányok nézet).
+✅ TipTap rich text editor briefeknél, react-markdown + remark-breaks renderelés mindenhol.
+✅ Director kontextus: `get_campaign_status` tool (DB-ből kérdezi le az aktív kampányok állapotát).
+✅ Approval flow: jóváhagy/visszaküld/eldob + auto-navigate + success state.
+✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json` (openai-codex credentials).
+⚠️ VM 260 deploy még nem történt meg — OAuth setup (`~/.pi/agent/auth.json`) hiányzik a szerveren.
 
 ## Tech stack
 
@@ -49,7 +34,7 @@ A v0.3-mvp tervben nem volt explicit task ezekhez (warm Director loop, factory h
 ## Lokális fejlesztés
 
 ```bash
-cd ~/Projects/Homelab/marquee/.worktrees/mvp-redesign
+cd ~/Projects/Homelab/marquee
 DATA_DIR=~/.marquee-dev npm run dev
 ```
 
@@ -155,15 +140,16 @@ DATA_DIR=~/.marquee-dev npm run smoke --workspace=packages/server
 
 **Frontend token mapping.** A spec-ben szereplő `border-divider` / `text-slate` / `bg-surface-white` token nevek nem léteznek a `tailwind.config.js`-ben. Használd: `border-rule` / `text-ink-2` / `bg-off-white`.
 
-## Production VM 260 állapot (2026-04-29)
+## Production VM 260 állapot (2026-04-30)
 
-Régi v0.1/v0.2 deployment takarítva, deploy-ready:
-- `state.db` törölve (régi schema mismatch)
-- `.env` újraírva (régi `OPENCODE_API_KEY` és `MARQUEE_PROVIDER_MODE=flat` ki)
-- WUPHF/Hermes leftover (`~/.hermes`, `~/.wuphf`, `~/go`, `/opt/ai-agency`, `/opt/hermes-venv`) törölve — ~2 GB
-- Backup: `/tmp/marquee-cleanup-2026-04-29/`
-- `marquee.service` **inactive (dead)**, várja a deployt
-- OAuth setup még hiányzik (`~/.pi/agent/auth.json` nincs) — első deploy előtt el kell intézni
+Deploy-ready, de még nem deployolva:
+- Régi v0.1/v0.2 takarítva, backup: `/tmp/marquee-cleanup-2026-04-29/`
+- `marquee.service` **inactive (dead)**
+- **OAuth setup hiányzik** — `~/.pi/agent/auth.json` nincs a szerveren, első deploy előtt kell:
+  ```bash
+  ssh balazs@192.168.2.60
+  cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
+  ```
 
 ## Homelab kontextus
 
