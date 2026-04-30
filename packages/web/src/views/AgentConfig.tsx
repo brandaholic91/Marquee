@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { agentsApi, type AgentConfigPayload } from '../lib/api.js';
+import { agentsApi, type AgentConfigPayload, type AgentSkillMeta, type AgentSkillFull } from '../lib/api.js';
 
 type Tab = 'identity' | 'skills' | 'settings';
 
@@ -201,11 +201,202 @@ function SettingsTab({ role }: { role: string }) {
   );
 }
 
-// ─── Skillek tab placeholder (implemented in Task 12) ────────────────────────
+// ─── Skillek tab ─────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function SkillsTab({ role: _role }: { role: string }) {
+function SkillsTab({ role }: { role: string }) {
+  const [skills, setSkills] = useState<AgentSkillMeta[]>([]);
+  const [modalSkill, setModalSkill] = useState<AgentSkillFull | 'new' | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const loadSkills = useCallback(async () => {
+    agentsApi.listSkills(role).then(setSkills);
+  }, [role]);
+
+  useEffect(() => { loadSkills(); }, [loadSkills]);
+
+  function openEdit(name: string) {
+    agentsApi.getSkill(role, name).then((s) => setModalSkill(s));
+  }
+
+  function openNew() {
+    setModalSkill('new');
+  }
+
+  async function handleSave(data: AgentSkillFull) {
+    try {
+      if (modalSkill === 'new') {
+        await agentsApi.postSkill(role, data);
+      } else {
+        await agentsApi.putSkill(role, data.name, { description: data.description, body: data.body });
+      }
+      setModalSkill(null);
+      loadSkills();
+    } catch {
+      setToast('Mentés sikertelen.');
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
+
+  async function handleDelete(name: string) {
+    if (!confirm(`Törlöd a „${name}" skillt? Ez nem visszavonható.`)) return;
+    try {
+      await agentsApi.deleteSkill(role, name);
+      setModalSkill(null);
+      loadSkills();
+    } catch {
+      setToast('Törlés sikertelen.');
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
+
   return (
-    <div className="text-xs text-ink-3">Skillek — következő task</div>
+    <div>
+      {toast && (
+        <div className="mb-3 text-xs text-red-400 bg-red-950/30 border border-red-800/40 rounded px-3 py-2">
+          {toast}
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        {skills.map((s) => (
+          <div
+            key={s.name}
+            className="bg-sidebar-bg border border-sidebar-border rounded-lg p-3"
+          >
+            <p className="text-xs font-semibold text-ink-1 mb-1">{s.name}</p>
+            <p className="text-xs text-ink-3 line-clamp-2 mb-3">{s.description}</p>
+            <button
+              onClick={() => openEdit(s.name)}
+              className="text-xs font-medium px-3 py-1 rounded bg-sidebar-active text-ink-2 hover:text-ink-1 transition-colors"
+            >
+              Szerkesztés
+            </button>
+          </div>
+        ))}
+        {/* New skill card */}
+        <button
+          onClick={openNew}
+          className="border border-dashed border-sidebar-border rounded-lg p-3 flex items-center justify-center text-xs text-ink-3 hover:border-primary/40 hover:text-ink-1 transition-colors"
+        >
+          + Új skill
+        </button>
+      </div>
+
+      {modalSkill !== null && (
+        <SkillModal
+          initial={modalSkill === 'new' ? { name: '', description: '', body: '' } : modalSkill}
+          isNew={modalSkill === 'new'}
+          onSave={handleSave}
+          onDelete={modalSkill !== 'new' ? () => handleDelete((modalSkill as AgentSkillFull).name) : undefined}
+          onClose={() => setModalSkill(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function SkillModal({
+  initial,
+  isNew,
+  onSave,
+  onDelete,
+  onClose,
+}: {
+  initial: AgentSkillFull;
+  isNew: boolean;
+  onSave: (data: AgentSkillFull) => Promise<void>;
+  onDelete?: () => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [description, setDescription] = useState(initial.description);
+  const [body, setBody] = useState(initial.body);
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    setSaving(true);
+    try {
+      await onSave({ name, description, body });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-sidebar-bg border border-sidebar-border rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border shrink-0">
+          <h2 className="text-sm font-semibold text-ink-1">
+            {isNew ? 'Új skill' : `Szerkesztés: ${initial.name}`}
+          </h2>
+          <button onClick={onClose} className="text-ink-3 hover:text-ink-1 text-lg leading-none">×</button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-ink-3 mb-1 uppercase tracking-wider">
+              Skill neve
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              readOnly={!isNew}
+              placeholder="pl. brief_parser"
+              className="w-full text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 font-mono read-only:opacity-60"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-ink-3 mb-1 uppercase tracking-wider">
+              Leírás <span className="normal-case font-normal">(description — ez jelenik meg a catalog-ban)</span>
+            </label>
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Mikor aktiválja az agent ezt a skillt…"
+              className="w-full text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-ink-3 mb-1 uppercase tracking-wider">
+              Body <span className="normal-case font-normal">(instrukciók — on-demand töltődik be)</span>
+            </label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={12}
+              placeholder="Részletes instrukciók az agent számára…"
+              className="w-full font-mono text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 resize-y"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between px-4 py-3 border-t border-sidebar-border shrink-0">
+          <div>
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              >
+                Törlés
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="text-xs px-3 py-1.5 rounded-lg border border-sidebar-border text-ink-3 hover:text-ink-1 transition-colors"
+            >
+              Mégse
+            </button>
+            <button
+              onClick={() => { void submit(); }}
+              disabled={saving || !name || !description}
+              className="text-xs font-medium px-4 py-1.5 rounded-lg bg-primary text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
+            >
+              {saving ? 'Mentés…' : 'Mentés'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
