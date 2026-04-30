@@ -56,6 +56,21 @@ describe("renderMemoryContext", () => {
     const out = await renderMemoryContext(dir, "ghost-client", "director");
     expect(out).toBe("");
   });
+
+  it("email-marketer gets profile + brand_voice (email_list_segments skipped when missing)", async () => {
+    const out = await renderMemoryContext(dir, "default", "email-marketer");
+    expect(out).toContain("memory/profile.md");
+    expect(out).toContain("memory/brand_voice.md");
+    // email_list_segments.md not written in beforeEach, so it should be skipped
+    expect(out).not.toContain("email_list_segments");
+  });
+
+  it("brand-voice-guardian gets profile (brand_voice_guidelines skipped when missing)", async () => {
+    const out = await renderMemoryContext(dir, "default", "brand-voice-guardian");
+    expect(out).toContain("memory/profile.md");
+    // brand_voice_guidelines.md not written in beforeEach, so it should be skipped
+    expect(out).not.toContain("brand_voice_guidelines");
+  });
 });
 
 describe("applyMemoryTemplate", () => {
