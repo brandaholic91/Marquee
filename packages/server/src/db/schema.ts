@@ -56,7 +56,7 @@ export const delegations = sqliteTable('delegations', {
   clientSlug: text('client_slug').notNull().references(() => clients.slug),
   campaignId: text('campaign_id').references(() => campaigns.id),
   fromAgent: text('from_agent').notNull(),
-  toAgent: text('to_agent', { enum: ['copywriter', 'social-manager', 'paid-specialist'] }).notNull(),
+  toAgent: text('to_agent', { enum: ['copywriter', 'social-manager', 'paid-specialist', 'email-marketer', 'seo-specialist'] }).notNull(),
   payloadJson: text('payload_json').notNull(),
   status: text('status', { enum: ['requested', 'in_progress', 'complete', 'failed'] }).notNull(),
   requestedAt: integer('requested_at').notNull(),

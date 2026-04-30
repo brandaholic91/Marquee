@@ -10,13 +10,15 @@ const SPECIALIST_FOR: Record<string, string[]> = {
   copywriter: ['email', 'blog_post'],
   'social-manager': ['social_post'],
   'paid-specialist': ['ad_copy'],
+  'email-marketer': ['email'],
+  'seo-specialist': ['blog_post'],
 };
 
 export interface ProposeBriefInput {
   title: string;
   content_md: string;
   deliverable_type: 'social_post' | 'email' | 'blog_post' | 'ad_copy';
-  target_specialist: 'copywriter' | 'social-manager' | 'paid-specialist';
+  target_specialist: 'copywriter' | 'social-manager' | 'paid-specialist' | 'email-marketer' | 'seo-specialist';
   platform?: string;
   campaign_name?: string;
 }
@@ -38,7 +40,11 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
         title: { type: 'string' },
         content_md: { type: 'string' },
         deliverable_type: { type: 'string', enum: ['social_post', 'email', 'blog_post', 'ad_copy'] },
-        target_specialist: { type: 'string', enum: ['copywriter', 'social-manager', 'paid-specialist'] },
+        target_specialist: {
+          type: 'string',
+          enum: ['copywriter', 'social-manager', 'paid-specialist', 'email-marketer', 'seo-specialist'],
+          description: 'A target_specialist lehetséges értékei:\n- copywriter: long-form szöveg (cikk, landing page, blog poszt, white paper).\n- social-manager: közösségi média poszt (LinkedIn, Facebook, Instagram, Twitter/X).\n- paid-specialist: fizetett hirdetés creative (Meta ads, Google ads, targeting javaslat).\n- email-marketer: bármilyen email (hírlevél, drip sorozat, transactional email). Automatizált sorozatnál is ezt válaszd.\n- seo-specialist: SEO-feladat (kulcsszó-kutatás, on-page audit, technikai SEO checklist, SEO-orientált content brief Copywriter-nek).\nTILOS target_specialist-ként: brand_voice_guardian — ez review role, kizárólag az operátor triggereli.',
+        },
         platform: { type: 'string' },
         campaign_name: { type: 'string', description: 'Opcionális kampánynév. Ha meg van adva, a brief egy kampányhoz tartozik. Azonos névvel több brief is kerülhet egy kampányba.' },
       },

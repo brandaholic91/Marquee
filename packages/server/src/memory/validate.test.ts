@@ -31,4 +31,23 @@ describe('validateFrontmatter', () => {
   it('rejects unknown file', () => {
     expect(() => validateFrontmatter('unknown.md', {})).toThrow(/unknown memory file/);
   });
+
+  it('accepts valid email_list_segments.md', () => {
+    expect(() => validateFrontmatter('email_list_segments.md', { segments: [] })).not.toThrow();
+  });
+
+  it('accepts valid brand_voice_guidelines.md', () => {
+    const fm = {
+      tone: ['professzionális'],
+      tiltott_kifejezesek: ['forradalmasít'],
+      pelda_jo_mondatok: ['Ez egy jó mondat.'],
+      pelda_rossz_mondatok: ['Forradalmasítjuk a piacot.'],
+    };
+    expect(() => validateFrontmatter('brand_voice_guidelines.md', fm)).not.toThrow();
+  });
+
+  it('rejects brand_voice_guidelines.md missing required fields', () => {
+    expect(() => validateFrontmatter('brand_voice_guidelines.md', { tone: ['pro'] }))
+      .toThrow(/tiltott_kifejezesek/);
+  });
 });

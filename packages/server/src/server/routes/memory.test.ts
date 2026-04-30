@@ -34,14 +34,14 @@ beforeEach(async () => {
 });
 
 describe('GET /api/memory/clients/:slug/files', () => {
-  it('returns 3 entries with exists flags', async () => {
+  it('returns 6 entries with exists flags', async () => {
     // Write one file so one exists = true
     await writeMemoryFile(baseDir, db, 'default', 'profile.md', validProfile, 'user');
 
     const res = await app.inject({ method: 'GET', url: '/api/memory/clients/default/files' });
     expect(res.statusCode).toBe(200);
     const body = res.json<{ file: string; exists: boolean }[]>();
-    expect(body).toHaveLength(3);
+    expect(body).toHaveLength(6);
     const profile = body.find(f => f.file === 'profile.md');
     expect(profile).toBeDefined();
     expect(profile!.exists).toBe(true);

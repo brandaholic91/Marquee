@@ -7,6 +7,9 @@ const FILES_FOR_ROLE: Record<RoleSlug, MemoryFile[]> = {
   copywriter: ["profile.md", "brand_voice.md"],
   "social-manager": ["profile.md", "brand_voice.md"],
   "paid-specialist": ["profile.md", "brand_voice.md"],
+  "email-marketer": ["profile.md", "brand_voice.md", "email_list_segments.md"],
+  "seo-specialist": ["profile.md", "brand_voice.md", "seo_keyword_bank.md"],
+  "brand-voice-guardian": ["profile.md", "brand_voice_guidelines.md"],
 };
 
 export async function renderMemoryContext(

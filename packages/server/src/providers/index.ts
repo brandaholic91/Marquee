@@ -5,6 +5,9 @@ const ROLE_MODEL: Record<string, string> = {
   copywriter: "gpt-5.4",
   "social-manager": "gpt-5.4-mini",
   "paid-specialist": "gpt-5.4-mini",
+  "email-marketer": "gpt-5.4",
+  "seo-specialist": "gpt-5.4-mini",
+  "brand-voice-guardian": "gpt-5.4-mini",
 };
 
 export function modelForRole(role: string) {

@@ -20,7 +20,7 @@ interface BriefPayload {
   title: string;
   body: string;
   deliverable_type: 'social_post' | 'email' | 'blog_post' | 'ad_copy';
-  target_specialist: 'copywriter' | 'social-manager' | 'paid-specialist';
+  target_specialist: 'copywriter' | 'social-manager' | 'paid-specialist' | 'email-marketer' | 'seo-specialist';
   platform?: string | null;
 }
 
