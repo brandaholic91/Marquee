@@ -36,18 +36,39 @@ describe('validateFrontmatter', () => {
     expect(() => validateFrontmatter('email_list_segments.md', { segments: [] })).not.toThrow();
   });
 
-  it('accepts valid brand_voice_guidelines.md', () => {
+  it('accepts valid brand_voice_guidelines.md with channel-specific keys', () => {
     const fm = {
       tone: ['professzionális'],
-      tiltott_kifejezesek: ['forradalmasít'],
-      pelda_jo_mondatok: ['Ez egy jó mondat.'],
-      pelda_rossz_mondatok: ['Forradalmasítjuk a piacot.'],
+      tiltott_kifejezesek_es_helyettesites: [{ tiltott: 'forradalmasít', helyette: 'lecseréli' }],
+      pelda_jo_mondatok_landing: ['Ez egy jó landing mondat.'],
+      pelda_rossz_mondatok_borderline: [{ rossz: 'Generikus.', miert: '...', helyette: '...' }],
+    };
+    expect(() => validateFrontmatter('brand_voice_guidelines.md', fm)).not.toThrow();
+  });
+
+  it('accepts brand_voice_guidelines.md with multiple channel variants', () => {
+    const fm = {
+      tone: ['x'],
+      tiltott_kifejezesek_es_helyettesites: [],
+      pelda_jo_mondatok_linkedin: [],
+      pelda_jo_mondatok_email_subject: [],
+      pelda_rossz_mondatok_nyilvanvalo_buzzword: [],
     };
     expect(() => validateFrontmatter('brand_voice_guidelines.md', fm)).not.toThrow();
   });
 
   it('rejects brand_voice_guidelines.md missing required fields', () => {
     expect(() => validateFrontmatter('brand_voice_guidelines.md', { tone: ['pro'] }))
-      .toThrow(/tiltott_kifejezesek/);
+      .toThrow(/tiltott_kifejezesek_es_helyettesites/);
+  });
+
+  it('rejects brand_voice_guidelines.md with no pelda_jo_mondatok_* prefix match', () => {
+    const fm = {
+      tone: ['x'],
+      tiltott_kifejezesek_es_helyettesites: [],
+      pelda_rossz_mondatok_borderline: [],
+    };
+    expect(() => validateFrontmatter('brand_voice_guidelines.md', fm))
+      .toThrow(/pelda_jo_mondatok\*/);
   });
 });
