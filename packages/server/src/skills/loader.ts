@@ -32,7 +32,9 @@ export function loadSkillsForRole(dataDir: string, role: string): SkillRecipe[] 
 	const dir = join(skillsDir(dataDir), role);
 	let files: string[];
 	try {
-		files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+		files = readdirSync(dir)
+			.filter((f) => f.endsWith(".md"))
+			.sort();
 	} catch {
 		return [];
 	}
@@ -43,7 +45,9 @@ export function listSkillsForRole(dataDir: string, role: string): SkillMeta[] {
 	const dir = join(skillsDir(dataDir), role);
 	let files: string[];
 	try {
-		files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+		files = readdirSync(dir)
+			.filter((f) => f.endsWith(".md"))
+			.sort();
 	} catch {
 		return [];
 	}
@@ -91,5 +95,16 @@ export async function loadSkillRecipes(dataDir: string, role: string): Promise<s
 		const c = await readFile(join(dir, f), "utf8");
 		parts.push(c);
 	}
+
+	if (role !== "brand-voice-guardian") {
+		const commonPath = join(dataDir, "skills", "_common", "brand_voice_instruction.md");
+		try {
+			const common = await readFile(commonPath, "utf8");
+			parts.push(common);
+		} catch {
+			// _common fájl hiánya nem végzetes
+		}
+	}
+
 	return parts.join("\n\n---\n\n");
 }

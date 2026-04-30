@@ -79,3 +79,44 @@ describe("loadSkillRecipes", () => {
 		expect(out).toBe("");
 	});
 });
+
+describe("loadSkillRecipes — _common brand voice injection", () => {
+	let dir: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "marquee-loader-"));
+		mkdirSync(join(dir, "skills", "copywriter"), { recursive: true });
+		mkdirSync(join(dir, "skills", "_common"), { recursive: true });
+		writeFileSync(
+			join(dir, "skills", "copywriter", "blog_post_writer.md"),
+			"---\nname: blog_post_writer\n---\nWrite a blog post.",
+		);
+		writeFileSync(
+			join(dir, "skills", "_common", "brand_voice_instruction.md"),
+			"## Brand voice\nFollow the guidelines.",
+		);
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	it("appends brand_voice_instruction to non-guardian roles", async () => {
+		const result = await loadSkillRecipes(dir, "copywriter");
+		expect(result).toContain("Write a blog post.");
+		expect(result).toContain("Follow the guidelines.");
+	});
+
+	it("does NOT append brand_voice_instruction to brand-voice-guardian", async () => {
+		mkdirSync(join(dir, "skills", "brand-voice-guardian"), { recursive: true });
+		writeFileSync(
+			join(dir, "skills", "brand-voice-guardian", "brand_voice_review.md"),
+			"---\nname: brand_voice_review\n---\nReview the content.",
+		);
+		const result = await loadSkillRecipes(dir, "brand-voice-guardian");
+		expect(result).toContain("Review the content.");
+		expect(result).not.toContain("Follow the guidelines.");
+	});
+
+	it("works fine when _common/brand_voice_instruction.md does not exist", async () => {
+		rmSync(join(dir, "skills", "_common"), { recursive: true });
+		const result = await loadSkillRecipes(dir, "copywriter");
+		expect(result).toContain("Write a blog post.");
+	});
+});
