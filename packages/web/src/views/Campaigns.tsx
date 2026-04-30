@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { campaignsApi, type CampaignRow, type CampaignDetail } from '../lib/api.js';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -28,6 +29,7 @@ const DELIVERABLE_STATUS_LABEL: Record<string, string> = {
 };
 
 export function Campaigns() {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [selected, setSelected] = useState<CampaignDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,10 +78,10 @@ export function Campaigns() {
           <button
             key={c.id}
             onClick={() => void selectCampaign(c.id)}
-            className={`w-full text-left rounded-lg border p-4 transition-colors ${
+            className={`w-full text-left rounded-lg border-l-[3px] p-4 transition-colors ${
               selected?.id === c.id
-                ? 'border-primary-hover bg-primary-soft'
-                : 'border-rule bg-off-white hover:bg-cream'
+                ? 'border-primary border-l-primary bg-primary-soft'
+                : 'border-rule border-l-transparent bg-off-white hover:bg-parchment'
             }`}
           >
             <div className="flex items-start justify-between gap-2">
@@ -104,7 +106,7 @@ export function Campaigns() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-serif font-semibold text-ink-1">{selected.title}</h2>
+                <h2 className="text-[18px] font-bold text-ink-1 tracking-tight">{selected.title}</h2>
                 <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASS[selected.status] ?? ''}`}>
                   {STATUS_LABEL[selected.status] ?? selected.status}
                 </span>
@@ -142,15 +144,21 @@ export function Campaigns() {
             ) : (
               <div className="space-y-2">
                 {selected.deliverables.map((d) => (
-                  <div key={d.id} className="border border-rule rounded-lg p-4 bg-off-white flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-ink-1">{TYPE_LABEL[d.type] ?? d.type}</span>
-                      <span className="ml-3 text-xs text-ink-2">
+                  <button
+                    key={d.id}
+                    onClick={() => navigate(`/jovahagyas/${d.id}`)}
+                    className="w-full text-left border border-rule rounded-[8px] px-3.5 py-3 bg-off-white hover:border-rule-strong hover:bg-parchment flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="bg-parchment text-ink-2 text-[10px] font-semibold px-2 py-0.5 rounded-chip">
+                        {TYPE_LABEL[d.type] ?? d.type}
+                      </span>
+                      <span className="text-[13px] text-ink-1">
                         {new Date(d.updatedAt).toLocaleDateString('hu-HU')}
                       </span>
                     </div>
-                    <span className="text-xs text-ink-2">{DELIVERABLE_STATUS_LABEL[d.status] ?? d.status}</span>
-                  </div>
+                    <span className="text-[11px] text-ink-2">{DELIVERABLE_STATUS_LABEL[d.status] ?? d.status}</span>
+                  </button>
                 ))}
               </div>
             )}
