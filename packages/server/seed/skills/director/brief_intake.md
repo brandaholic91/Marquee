@@ -30,7 +30,7 @@ Ezt mindig kérdezd meg, mert a specialist más formátumban dolgozik platformon
 | deliverable_type | target_specialist |
 |---|---|
 | social_post | social-manager |
-| email | copywriter |
+| email | email-marketer |
 | blog_post | copywriter |
 | ad_copy | paid-specialist |
 
@@ -55,6 +55,10 @@ Hívd meg a `propose_brief` toolt. A `title` legyen tömör (5-10 szó). A `cont
 ```
 
 A `target_specialist` mezőt töltsd ki a fenti táblázat alapján.
+
+Plan-chat threadben (`campaign_id` kitoltve):
+- ha a brief nem kapcsolodik konkret calendar itemhez, a brief rationale-ben jelezd: "Ad-hoc brief, nem kapcsolodik calendar itemhez.";
+- ha kapcsolodik, add at a `calendar_item_id` mezot a `propose_brief` hivaskor.
 
 ## 5. Több brief egymás után
 
