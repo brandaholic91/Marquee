@@ -48,6 +48,10 @@ export class MarqueeEvents {
     this.es = null;
   }
 
+  clearHandlers() {
+    this.subs.clear();
+  }
+
   on<T = unknown>(type: SseEventType | '*', handler: Handler<T>): () => void {
     let set = this.subs.get(type);
     if (!set) {

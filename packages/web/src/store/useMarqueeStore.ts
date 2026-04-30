@@ -98,8 +98,6 @@ function mapServerMessage(raw: {
   };
 }
 
-// Module-level guard: prevents duplicate SSE handler registration in React StrictMode.
-let sseHandlersRegistered = false;
 
 export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
   threads: [],
@@ -150,12 +148,9 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       set({ awaitingApprovalCount: 0 });
     }
 
-    // 5. Start SSE
+    // 5. Start SSE — clear stale handlers first (guards against HMR double-registration)
+    marqueeEvents.clearHandlers();
     marqueeEvents.start();
-
-    // Guard: register handlers exactly once even under React StrictMode double-mount
-    if (sseHandlersRegistered) return;
-    sseHandlersRegistered = true;
 
     // chat_message: agent message arrives
     marqueeEvents.on<{
