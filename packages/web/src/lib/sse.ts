@@ -48,8 +48,11 @@ export class MarqueeEvents {
     this.es = null;
   }
 
-  clearHandlers() {
+  handlersInitialized = false;
+
+  clearAndReinit() {
     this.subs.clear();
+    this.handlersInitialized = false;
   }
 
   on<T = unknown>(type: SseEventType | '*', handler: Handler<T>): () => void {

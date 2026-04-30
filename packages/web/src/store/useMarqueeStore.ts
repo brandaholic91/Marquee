@@ -149,9 +149,12 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       set({ awaitingApprovalCount: 0 });
     }
 
-    // 5. Start SSE — clear stale handlers first (guards against HMR double-registration)
-    marqueeEvents.clearHandlers();
+    // 5. Start SSE
     marqueeEvents.start();
+    // Guard: register handlers exactly once per marqueeEvents instance.
+    // handlersInitialized lives on the marqueeEvents object so it survives store HMR reloads.
+    if (marqueeEvents.handlersInitialized) return;
+    marqueeEvents.handlersInitialized = true;
 
     // chat_message: agent message arrives
     marqueeEvents.on<{
