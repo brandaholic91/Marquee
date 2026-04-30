@@ -20,7 +20,16 @@ export const ROLE_CONFIGS: Record<RoleSlug, RoleConfig> = {
 	director: {
 		slug: "director",
 		lifecycle: "warm",
-		tools: ["propose_brief", "propose_memory_update", "read_memory", "get_campaign_status"],
+		tools: [
+			"propose_brief",
+			"propose_memory_update",
+			"read_memory",
+			"get_campaign_status",
+			"get_campaign_plan",
+			"propose_campaign_plan",
+			"update_campaign_plan",
+			"propose_calendar_item",
+		],
 		produces: [],
 	},
 	copywriter: {

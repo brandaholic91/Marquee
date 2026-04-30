@@ -118,7 +118,17 @@ export const messages = sqliteTable(
 		agentSessionId: text("agent_session_id"),
 		sender: text("sender").notNull(),
 		type: text("type", {
-			enum: ["chat", "brief_proposal", "memory_proposal", "tool_call", "tool_result", "system"],
+			enum: [
+				"chat",
+				"brief_proposal",
+				"memory_proposal",
+				"plan_proposal",
+				"plan_update_proposal",
+				"calendar_item_proposal",
+				"tool_call",
+				"tool_result",
+				"system",
+			],
 		}).notNull(),
 		contentJson: text("content_json").notNull(),
 		ts: integer("ts").notNull(),
