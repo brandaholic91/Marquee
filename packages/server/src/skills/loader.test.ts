@@ -1,8 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadSkill, loadSkillBody, loadSkillsForRole, listSkillsForRole, loadSkillRecipes } from "./loader.js";
+import matter from "gray-matter";
+import { loadSkill, loadSkillBody, loadSkillsForRole, listSkillsForRole, loadSkillRecipes, loadSkillCatalog, saveSkill, deleteSkill, loadBrandVoiceInstruction } from "./loader.js";
 
 describe("skills loader", () => {
 	let dir: string;
@@ -118,5 +119,106 @@ describe("loadSkillRecipes — _common brand voice injection", () => {
 		rmSync(join(dir, "skills", "_common"), { recursive: true });
 		const result = await loadSkillRecipes(dir, "copywriter");
 		expect(result).toContain("Write a blog post.");
+	});
+});
+
+describe("loadSkillCatalog", () => {
+	let dir: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "marquee-catalog-"));
+		mkdirSync(join(dir, "skills/director"), { recursive: true });
+		writeFileSync(
+			join(dir, "skills/director/brief_parser.md"),
+			"---\nname: brief_parser\ndescription: Parses incoming briefs\n---\n\nBody text here.",
+		);
+		writeFileSync(
+			join(dir, "skills/director/lead_router.md"),
+			"---\nname: lead_router\ndescription: Routes to correct lead\n---\n\nRouter body.",
+		);
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	it("returns XML with name and description only, no body", () => {
+		const out = loadSkillCatalog(dir, "director");
+		expect(out).toContain('<skill name="brief_parser">Parses incoming briefs</skill>');
+		expect(out).toContain('<skill name="lead_router">Routes to correct lead</skill>');
+		expect(out).not.toContain("Body text here");
+		expect(out).not.toContain("Router body");
+	});
+
+	it("wraps in <skills> element", () => {
+		const out = loadSkillCatalog(dir, "director");
+		expect(out).toMatch(/^<skills>/);
+		expect(out).toMatch(/<\/skills>$/);
+	});
+
+	it("returns empty string for unknown role", () => {
+		expect(loadSkillCatalog(dir, "ghost")).toBe("");
+	});
+
+	it("sorts skills alphabetically by filename", () => {
+		const out = loadSkillCatalog(dir, "director");
+		expect(out.indexOf("brief_parser")).toBeLessThan(out.indexOf("lead_router"));
+	});
+});
+
+describe("saveSkill + deleteSkill", () => {
+	let dir: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "marquee-skill-write-"));
+		mkdirSync(join(dir, "skills/copywriter"), { recursive: true });
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	it("saveSkill writes a parseable .md file", () => {
+		saveSkill(dir, "copywriter", "my_skill", "Does something useful", "Step 1: do the thing.");
+		const raw = readFileSync(join(dir, "skills/copywriter/my_skill.md"), "utf8");
+		const parsed = matter(raw);
+		expect(parsed.data.name).toBe("my_skill");
+		expect(parsed.data.description).toBe("Does something useful");
+		expect(parsed.content.trim()).toBe("Step 1: do the thing.");
+	});
+
+	it("saveSkill creates the role directory if missing", () => {
+		saveSkill(dir, "new-role", "a_skill", "desc", "body");
+		expect(existsSync(join(dir, "skills/new-role/a_skill.md"))).toBe(true);
+	});
+
+	it("deleteSkill removes the file", () => {
+		saveSkill(dir, "copywriter", "to_delete", "desc", "body");
+		deleteSkill(dir, "copywriter", "to_delete");
+		expect(existsSync(join(dir, "skills/copywriter/to_delete.md"))).toBe(false);
+	});
+
+	it("deleteSkill is silent for nonexistent skill", () => {
+		expect(() => deleteSkill(dir, "copywriter", "ghost")).not.toThrow();
+	});
+});
+
+describe("loadBrandVoiceInstruction", () => {
+	let dir: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "marquee-bvi-"));
+		mkdirSync(join(dir, "skills/_common"), { recursive: true });
+		writeFileSync(
+			join(dir, "skills/_common/brand_voice_instruction.md"),
+			"---\nname: bvi\n---\n\nFollow brand voice guidelines.",
+		);
+	});
+	afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+	it("returns body (no frontmatter) for non-guardian roles", () => {
+		const out = loadBrandVoiceInstruction(dir, "copywriter");
+		expect(out).toContain("Follow brand voice guidelines.");
+		expect(out).not.toContain("name: bvi");
+	});
+
+	it("returns empty string for brand-voice-guardian", () => {
+		expect(loadBrandVoiceInstruction(dir, "brand-voice-guardian")).toBe("");
+	});
+
+	it("returns empty string when file is missing", () => {
+		rmSync(join(dir, "skills/_common"), { recursive: true });
+		expect(loadBrandVoiceInstruction(dir, "copywriter")).toBe("");
 	});
 });
