@@ -3,9 +3,11 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and, asc, desc, inArray } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { readFile } from 'node:fs/promises';
-import { deliverables, deliverableRevisions, approvals, delegations, briefs } from '../../db/schema.js';
+import { deliverables, deliverableRevisions, approvals, delegations, briefs, deliverableReviews } from '../../db/schema.js';
 import { spawnAgent } from '../../agents/factory.js';
 import { fireDeliverableShipped } from '../../webhooks/n8n-outbound.js';
+import { dispatchReview } from '../../broker/review-dispatcher.js';
+import type { AuthManager } from '../../providers/auth.js';
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker { emit: (e: Record<string, unknown>) => void; }
@@ -15,6 +17,7 @@ export interface DeliverablesRoutesOpts {
   broker: Broker;
   dataDir: string;
   n8nWebhookUrl: string | null;
+  authManager?: AuthManager;
 }
 
 export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = async (app, opts) => {
@@ -135,5 +138,30 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
     });
     broker.emit({ type: 'deliverable_discarded', deliverable_id: d.id });
     return reply.send({ ok: true });
+  });
+
+  app.post<{ Params: { id: string } }>('/api/deliverables/:id/review', async (req, reply) => {
+    const d = (await db.select().from(deliverables).where(eq(deliverables.id, req.params.id)).all())[0];
+    if (!d) return reply.code(404).send({ error: 'not_found' });
+
+    await dispatchReview({
+      db, broker, dataDir, deliverableId: req.params.id, authManager: opts.authManager,
+    }).catch((err) => {
+      broker.emit({ type: 'error', source: 'guardian', message: String(err) });
+    });
+
+    return reply.send({ ok: true });
+  });
+
+  app.get<{ Params: { id: string } }>('/api/deliverables/:id/reviews', async (req, reply) => {
+    const rows = await db.select().from(deliverableReviews)
+      .where(eq(deliverableReviews.deliverableId, req.params.id))
+      .orderBy(desc(deliverableReviews.createdAt))
+      .all();
+    return rows.map((r) => ({
+      ...r,
+      comments: JSON.parse(r.comments),
+      suggestions: JSON.parse(r.suggestions),
+    }));
   });
 };

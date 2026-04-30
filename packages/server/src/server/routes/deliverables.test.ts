@@ -145,4 +145,24 @@ describe('deliverables routes', () => {
     expect(ap[0].note).toBe('irreleváns');
     expect(events.some(e => e.type === 'deliverable_discarded')).toBe(true);
   });
+
+  it('POST /:id/review — 200 + ok:true', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'POST', url: '/api/deliverables/d_1/review' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().ok).toBe(true);
+    expect(events.some((e) => e.type === 'review_started')).toBe(true);
+  });
+
+  it('POST /:id/review — 404 for missing deliverable', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/deliverables/nonexistent/review' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('GET /:id/reviews — returns empty array when no reviews', async () => {
+    await seedDeliverable();
+    const res = await app.inject({ method: 'GET', url: '/api/deliverables/d_1/reviews' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([]);
+  });
 });

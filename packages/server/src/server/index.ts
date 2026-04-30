@@ -66,6 +66,7 @@ export async function buildServer(opts: ServerOpts) {
 		broker: flatBroker,
 		dataDir: opts.dataDir,
 		n8nWebhookUrl: opts.n8nWebhookUrl,
+		authManager: opts.authManager,
 	});
 	await app.register(memoryRoutes, { db, dataDir: opts.dataDir });
 
