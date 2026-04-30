@@ -109,17 +109,29 @@ export function BriefProposalCard({
       <div className="mt-3">
         <label className="text-xs font-medium text-ink-2 uppercase tracking-wide">Kampány</label>
         <input
-          list={`campaigns-${briefId}`}
           className="mt-1 w-full border border-rule rounded-md px-3 py-2 text-sm bg-parchment focus:outline-none focus:border-primary"
           placeholder="Kampány neve (opcionális)…"
           value={campaignInput}
           onChange={(e) => setCampaignInput(e.target.value)}
         />
-        <datalist id={`campaigns-${briefId}`}>
-          {existingCampaigns.map((c) => (
-            <option key={c.id} value={c.title} />
-          ))}
-        </datalist>
+        {existingCampaigns.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {existingCampaigns.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  campaignInput === c.title
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-cream border-rule text-ink-2 hover:bg-primary-soft hover:text-primary-hover hover:border-primary/30'
+                }`}
+                onClick={() => setCampaignInput(campaignInput === c.title ? '' : c.title)}
+              >
+                {c.title}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {contentMd && (
