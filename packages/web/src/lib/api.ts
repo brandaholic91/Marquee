@@ -210,3 +210,63 @@ export const reviewsApi = {
 export const dashboardApi = {
 	activity: (): Promise<DeliverableRow[]> => fetch("/api/deliverables").then(json),
 };
+
+// -------------------------
+// Agents
+// -------------------------
+
+export interface AgentSummary {
+	role: string;
+	name: string;
+	lifecycle: "warm" | "transient";
+	model: string;
+	thinkingLevel: string;
+	tools: string[];
+	skillCount: number;
+	description: string;
+}
+
+export interface AgentSkillMeta {
+	name: string;
+	description: string;
+}
+
+export interface AgentSkillFull extends AgentSkillMeta {
+	body: string;
+}
+
+export interface AgentConfigPayload {
+	model?: string;
+	thinking_level?: string;
+}
+
+export const agentsApi = {
+	list: (): Promise<AgentSummary[]> => fetch("/api/agents").then(json),
+
+	getIdentity: (role: string): Promise<{ body: string }> =>
+		fetch(`/api/agents/${role}/identity`).then(json),
+
+	putIdentity: (role: string, body: string): Promise<{ ok: true }> =>
+		put(`/api/agents/${role}/identity`, { body }),
+
+	listSkills: (role: string): Promise<AgentSkillMeta[]> =>
+		fetch(`/api/agents/${role}/skills`).then(json),
+
+	getSkill: (role: string, name: string): Promise<AgentSkillFull> =>
+		fetch(`/api/agents/${role}/skills/${name}`).then(json),
+
+	putSkill: (role: string, name: string, data: { description: string; body: string }): Promise<{ ok: true }> =>
+		put(`/api/agents/${role}/skills/${name}`, data),
+
+	postSkill: (role: string, data: { name: string; description: string; body: string }): Promise<{ ok: true }> =>
+		post(`/api/agents/${role}/skills`, data),
+
+	deleteSkill: (role: string, name: string): Promise<{ ok: true }> =>
+		fetch(`/api/agents/${role}/skills/${name}`, { method: "DELETE" }).then(json),
+
+	getConfig: (role: string): Promise<AgentConfigPayload> =>
+		fetch(`/api/agents/${role}/config`).then(json),
+
+	putConfig: (role: string, config: AgentConfigPayload): Promise<{ ok: true }> =>
+		put(`/api/agents/${role}/config`, config),
+};
