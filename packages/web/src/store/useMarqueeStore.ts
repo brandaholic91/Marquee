@@ -263,9 +263,13 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       }));
     });
 
-    // deliverable_submitted: increment counter
-    marqueeEvents.on('deliverable_submitted', () => {
-      set((s) => ({ awaitingApprovalCount: s.awaitingApprovalCount + 1 }));
+    // deliverable_submitted: increment counter + remove specialist from activeAgents
+    marqueeEvents.on<{ type: string; agent_slug?: string }>('deliverable_submitted', (payload) => {
+      set((s) => {
+        const activeAgents = new Set(s.activeAgents);
+        if (payload.agent_slug) activeAgents.delete(payload.agent_slug);
+        return { awaitingApprovalCount: s.awaitingApprovalCount + 1, activeAgents };
+      });
     });
 
     // deliverable_approved / deliverable_discarded: decrement counter
@@ -313,6 +317,15 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
           // ignore
         }
       }
+    });
+
+    // review_completed: remove brand-voice-guardian from activeAgents
+    marqueeEvents.on('review_completed', () => {
+      set((s) => {
+        const activeAgents = new Set(s.activeAgents);
+        activeAgents.delete('brand-voice-guardian');
+        return { activeAgents };
+      });
     });
 
     // No-op registrations for completeness (SSE spec requires all 12 handled)

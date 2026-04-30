@@ -11,6 +11,7 @@ export type SseEventType =
   | 'memory_proposed'
   | 'memory_decided'
   | 'memory_edited'
+  | 'review_completed'
   | 'error';
 
 type Handler<T = unknown> = (payload: T) => void;
