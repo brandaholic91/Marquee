@@ -7,6 +7,13 @@ export default {
         cream: 'var(--cream)',
         parchment: 'var(--parchment)',
         'off-white': 'var(--white)',
+        sidebar: {
+          bg: 'var(--sidebar-bg)',
+          border: 'var(--sidebar-border)',
+          active: 'var(--sidebar-active)',
+          text: 'var(--sidebar-text)',
+          muted: 'var(--sidebar-text-muted)',
+        },
         ink: {
           1: 'var(--ink-1)',
           2: 'var(--ink-2)',
@@ -22,10 +29,6 @@ export default {
           soft: 'var(--primary-soft)',
           deep: 'var(--primary-deep)',
         },
-        secondary: {
-          DEFAULT: 'var(--secondary)',
-          soft: 'var(--secondary-soft)',
-        },
         success: {
           soft: 'var(--success-soft)',
           deep: 'var(--success-deep)',
@@ -34,17 +37,13 @@ export default {
           soft: 'var(--danger-soft)',
           deep: 'var(--danger-deep)',
         },
-        bulb: 'var(--bulb)',
-        warning: {
-          deep: 'var(--warning-deep)',
-        },
       },
       fontFamily: {
-        serif: ['var(--font-serif)', 'Georgia', 'serif'],
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
+        composer: 'var(--shadow-composer)',
         card: 'var(--shadow-card)',
       },
       borderRadius: {
