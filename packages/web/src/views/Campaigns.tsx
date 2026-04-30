@@ -169,7 +169,7 @@ export function Campaigns() {
                         <span className="bg-parchment text-ink-2 text-[10px] font-semibold px-2 py-0.5 rounded-chip">
                           {TYPE_LABEL[d.type] ?? d.type}
                         </span>
-                        <span className="text-[13px] text-ink-1 truncate max-w-[180px]">
+                        <span className="text-[13px] text-ink-1">
                           {d.title ?? new Date(d.updatedAt).toLocaleDateString('hu-HU')}
                         </span>
                       </div>
