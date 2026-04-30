@@ -11,6 +11,7 @@ export function BottomNav() {
       <BottomNavItem to="/jovahagyas" label="Jóváhagy" badge={pending > 0 ? pending : undefined} />
       <BottomNavItem to="/kampanyok" label="Kampányok" />
       <BottomNavItem to="/memoria" label="Memória" />
+      <BottomNavItem to="/ugynokseg" label="Ügynökség" />
     </nav>
   );
 }

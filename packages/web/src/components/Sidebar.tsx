@@ -27,6 +27,7 @@ export function Sidebar() {
         <SidebarItem to="/jovahagyas" label="Jóváhagyások" badge={pending > 0 ? pending : undefined} />
         <SidebarItem to="/kampanyok" label="Kampányok" />
         <SidebarItem to="/memoria" label="Memória" />
+        <SidebarItem to="/ugynokseg" label="Ügynökség" />
       </nav>
 
       {/* Agent status */}
