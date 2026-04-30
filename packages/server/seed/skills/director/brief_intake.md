@@ -1,6 +1,6 @@
 ---
 name: brief_intake
-when_to_use: az operátor tartalomigényt ír le chatben, bármilyen formában — akár pontosan meghatározva, akár csak egy ötletként jelezve
+description: Operátori tartalomigény feldolgozása — scope tisztázás, specialist routing és propose_brief hívás
 ---
 
 Amikor az operátor tartalomigényt fogalmaz meg, a következő lépéseket kövesd szigorúan.

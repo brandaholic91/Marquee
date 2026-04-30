@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { agentsApi, type AgentConfigPayload, type AgentSkillMeta, type AgentSkillFull } from '../lib/api.js';
+import { MarkdownView } from '../components/MarkdownView.js';
 
 type Tab = 'identity' | 'skills' | 'settings';
 
@@ -72,6 +73,7 @@ export function AgentConfig() {
 function IdentityTab({ role }: { role: string }) {
   const [body, setBody] = useState('');
   const [saved, setSaved] = useState('');
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -84,12 +86,18 @@ function IdentityTab({ role }: { role: string }) {
     try {
       await agentsApi.putIdentity(role, body);
       setSaved(body);
+      setEditing(false);
     } catch {
       setToast('Mentés sikertelen.');
       setTimeout(() => setToast(null), 3000);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setBody(saved);
+    setEditing(false);
   };
 
   const dirty = body !== saved;
@@ -101,26 +109,49 @@ function IdentityTab({ role }: { role: string }) {
           {toast}
         </div>
       )}
-      <p className="text-xs text-ink-3 mb-3">
-        Az agent személyisége és szerepe. Ez a system prompt első blokkjaként töltődik be.
-      </p>
-      <textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        rows={20}
-        placeholder={`Te vagy a ${role} agentje ennek az AI marketing ügynökségnek.\n\nÍrd le a szerepét, feladatait és döntéshozatali stílusát.`}
-        className="w-full font-mono text-xs bg-white border border-rule rounded-lg p-3 text-ink-1 placeholder:text-ink-3 resize-y focus:outline-none focus:border-primary/50"
-      />
-      <div className="flex items-center gap-3 mt-3">
-        <button
-          onClick={() => void handleSave()}
-          disabled={saving || !dirty}
-          className="text-xs font-medium px-4 py-2 rounded-lg bg-primary text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
-        >
-          {saving ? 'Mentés…' : 'Mentés'}
-        </button>
-        {dirty && <span className="text-xs text-ink-3">Nem mentett változások</span>}
-      </div>
+
+      {editing ? (
+        <>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={22}
+            autoFocus
+            placeholder={`Te vagy a ${role} agentje ennek az AI marketing ügynökségnek.\n\nÍrd le a szerepét, feladatait és döntéshozatali stílusát.`}
+            className="w-full font-mono text-xs bg-white border border-rule rounded-lg p-3 text-ink-1 placeholder:text-ink-3 resize-y focus:outline-none focus:border-primary/50"
+          />
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() => void handleSave()}
+              disabled={saving || !dirty}
+              className="text-xs font-medium px-4 py-2 rounded-lg bg-primary text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
+            >
+              {saving ? 'Mentés…' : 'Mentés'}
+            </button>
+            <button
+              onClick={handleCancel}
+              className="text-xs px-4 py-2 rounded-lg border border-rule text-ink-3 hover:text-ink-1 transition-colors"
+            >
+              Mégse
+            </button>
+            {dirty && <span className="text-xs text-ink-3">Nem mentett változások</span>}
+          </div>
+        </>
+      ) : (
+        <div className="relative group">
+          <button
+            onClick={() => setEditing(true)}
+            title="Szerkesztés"
+            className="absolute top-0 right-0 p-1.5 rounded text-ink-3 opacity-0 group-hover:opacity-100 hover:text-ink-1 hover:bg-parchment transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <MarkdownView content={body} />
+        </div>
+      )}
     </div>
   );
 }

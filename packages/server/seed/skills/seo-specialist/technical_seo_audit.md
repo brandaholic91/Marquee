@@ -1,6 +1,6 @@
 ---
 name: technical_seo_audit
-when_to_use: Egy weboldal technikai SEO auditját kell elvégezni és strukturált checklist-et adni
+description: Technikai SEO audit — crawlability, sebesség, struktúra és indexelési problémák priorizált checklistje
 ---
 
 A technikai SEO audit **MAGYAR NYELVŰ**.

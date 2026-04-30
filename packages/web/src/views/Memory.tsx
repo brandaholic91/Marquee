@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkBreaks from 'remark-breaks';
 import { memoryApi } from '../lib/api.js';
 import { MemoryFileList } from '../components/MemoryFileList.js';
+import { MarkdownView } from '../components/MarkdownView.js';
 import { SidebarPanel, SidebarPanelHeader, SidebarPanelBody } from '../components/SidebarPanel.js';
 import { MemoryProposalCard } from '../components/MemoryProposalCard.js';
 
@@ -192,11 +191,7 @@ export function Memory() {
                 </div>
               )}
               {/* Renderelt markdown */}
-              <div className="prose prose-sm max-w-none text-ink-1">
-                <ReactMarkdown remarkPlugins={[remarkBreaks]}>
-                  {fileMeta?.body ?? ''}
-                </ReactMarkdown>
-              </div>
+              <MarkdownView content={fileMeta?.body ?? ''} />
             </div>
           ) : (
             <div className="flex flex-col gap-2 max-w-2xl">

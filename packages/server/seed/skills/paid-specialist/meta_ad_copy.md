@@ -1,6 +1,6 @@
 ---
 name: meta_ad_copy
-when_to_use: ad_copy típusú brief érkezik Meta (Facebook/Instagram) platformra — fizetett hirdetés szövegezése szükséges
+description: Meta hirdetésszövegek — primary text, headline és CTA variánsok Facebook és Instagram kampányokhoz
 ---
 
 A hirdetési szöveg **MAGYAR NYELVŰ**. Minden esetben.

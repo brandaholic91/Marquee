@@ -1,6 +1,6 @@
 ---
 name: email_writer
-when_to_use: email típusú brief érkezik — newsletter, promo vagy lifecycle email szövegezése szükséges
+description: Hírlevél és promo email — subject line variációk, preheader, body és CTA egységes struktúrában
 ---
 
 Az email **MAGYAR NYELVŰ**. Minden esetben.

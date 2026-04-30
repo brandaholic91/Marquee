@@ -1,6 +1,6 @@
 ---
 name: on_page_seo_recommendation
-when_to_use: Egy meglévő landing page vagy blogcikk on-page SEO-ját kell elemezni és javítani
+description: On-page SEO elemzés — title tag, meta description, H-struktúra, belső linking és tartalmi javaslatok
 ---
 
 Az on-page SEO recommendation **MAGYAR NYELVŰ**.

@@ -3,6 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { agentsApi, type AgentSummary } from '../lib/api.js';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 
+const TOOL_LABELS: Record<string, string> = {
+  propose_brief: 'Brief javaslat',
+  propose_memory_update: 'Memória frissítés',
+  read_memory: 'Memória olvasás',
+  get_campaign_status: 'Kampány státusz',
+  submit_deliverable: 'Deliverable leadás',
+  submit_review: 'Review leadás',
+  tavily_search: 'Web keresés',
+  web_fetch: 'Web olvasás',
+};
+
 export function Agency() {
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +99,7 @@ function AgentCard({
       <div className="mt-2">
         <p className="text-[10px] text-ink-3 leading-relaxed">
           <span className="text-ink-3 mr-1">Tools:</span>
-          {agent.tools.join(', ')}
+          {agent.tools.map((t) => TOOL_LABELS[t] ?? t).join(', ')}
         </p>
       </div>
     </button>

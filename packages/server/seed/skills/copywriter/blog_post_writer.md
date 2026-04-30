@@ -1,6 +1,6 @@
 ---
 name: blog_post_writer
-when_to_use: blog_post típusú brief érkezik — hosszabb formátumú, SEO-tudatos cikket kell írni
+description: SEO-tudatos blog post — strukturált cikk H1-H3 hierarchiával, meta description-nel és slug-gal
 ---
 
 A blog poszt **MAGYAR NYELVŰ**. Minden esetben.

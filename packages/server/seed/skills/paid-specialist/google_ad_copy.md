@@ -1,6 +1,6 @@
 ---
 name: google_ad_copy
-when_to_use: ad_copy típusú brief érkezik Google Ads platformra — Responsive Search Ad (RSA) szövegezése szükséges
+description: Google RSA hirdetésszövegek — 15 headline és 4 description karakterlimiten belül, tesztelésre kész variánsokban
 ---
 
 A hirdetési szöveg **MAGYAR NYELVŰ**. Minden esetben.

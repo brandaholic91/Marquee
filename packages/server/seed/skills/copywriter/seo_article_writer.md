@@ -1,6 +1,6 @@
 ---
 name: seo_article_writer
-when_to_use: SEO-orientált cikk írása — csak akkor, ha a brief kontextusában van egy === FORRÁS DELIVERABLE === blokk (SEO Specialist által készített content_brief_seo)
+description: SEO cikk content brief alapján — long-form szöveg a SEO Specialist által elkészített brief struktúrája szerint
 ---
 
 ## Előfeltétel ellenőrzés

@@ -1,6 +1,6 @@
 ---
 name: social_post_writer
-when_to_use: social_post típusú brief érkezik — Instagram, LinkedIn, Twitter vagy Threads posztot kell készíteni
+description: Csatornanatív social poszt — hook, body és CTA Instagram, LinkedIn, Twitter és Threads formátumban
 ---
 
 A social poszt **MAGYAR NYELVŰ**. Minden esetben.

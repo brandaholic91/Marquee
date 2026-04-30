@@ -68,11 +68,11 @@ export function getRoleConfig(slug: RoleSlug): RoleConfig {
 }
 
 export const ROLE_DISPLAY_NAMES: Record<RoleSlug, string> = {
-	director: "Director",
-	copywriter: "Copywriter",
-	"social-manager": "Social Manager",
-	"paid-specialist": "Paid Specialist",
-	"email-marketer": "Email Marketer",
-	"seo-specialist": "SEO Specialist",
-	"brand-voice-guardian": "Brand Voice Guardian",
+	director: "Drake · Director",
+	copywriter: "Clara · Copywriter",
+	"social-manager": "Stella · Social Manager",
+	"paid-specialist": "Paige · Paid Specialist",
+	"email-marketer": "Ethan · Email Marketer",
+	"seo-specialist": "Seth · SEO Specialist",
+	"brand-voice-guardian": "Brook · Brand Voice Guardian",
 };

@@ -56,7 +56,7 @@ export function listSkillsForRole(dataDir: string, role: string): SkillMeta[] {
 		const parsed = matter(raw);
 		return {
 			name: (parsed.data.name as string) ?? f.replace(/\.md$/, ""),
-			description: (parsed.data.description as string) ?? "",
+			description: (parsed.data.description as string) ?? (parsed.data.when_to_use as string) ?? "",
 		};
 	});
 }

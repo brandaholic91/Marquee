@@ -1,6 +1,6 @@
 ---
 name: newsletter_writer
-when_to_use: Egyetlen standalone hírlevelet kell írni — termékbejelentés, edukáció, akció, vagy bármilyen egyszeri küldés
+description: Egyszeri hírlevél írása — subject line variációk, preheader, body és CTA A/B teszthez
 ---
 
 A hírlevél **MAGYAR NYELVŰ**. Minden esetben.

@@ -6,6 +6,15 @@ const AGENTS = [
   'paid-specialist', 'email-marketer', 'seo-specialist',
 ];
 
+const AGENT_LABELS: Record<string, string> = {
+  director: 'Drake (Dir.)',
+  copywriter: 'Clara (Copy.)',
+  'social-manager': 'Stella (Social)',
+  'paid-specialist': 'Paige (Paid)',
+  'email-marketer': 'Ethan (Email)',
+  'seo-specialist': 'Seth (SEO)',
+};
+
 export function Sidebar() {
   const pending = useMarqueeStore((s) => s.awaitingApprovalCount);
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
@@ -44,7 +53,7 @@ export function Sidebar() {
                 <span className="bulb-idle" />
               )}
               <span className="font-mono text-[10px] text-sidebar-muted truncate">
-                {role}
+                {AGENT_LABELS[role] ?? role}
               </span>
             </div>
           ))}

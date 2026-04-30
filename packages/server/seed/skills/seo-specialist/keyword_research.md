@@ -1,6 +1,6 @@
 ---
 name: keyword_research
-when_to_use: Adott témára magyar nyelvű kulcsszó-kutatást kell végezni search intent analízissel
+description: Magyar kulcsszókutatás — primary, secondary és long-tail kulcsszavak search intent analízissel
 ---
 
 A kulcsszó-kutatás output **MAGYAR NYELVŰ**.

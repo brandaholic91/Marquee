@@ -1,6 +1,6 @@
 ---
 name: drip_sequence_planning
-when_to_use: Több emailes sorozatot kell tervezni — onboarding, nurture, re-engagement, vagy bármilyen automatizált flow
+description: Email sorozat tervezése — onboarding, nurture és re-engagement flow subject line variációkkal
 ---
 
 A drip sorozat **MAGYAR NYELVŰ**. Minden email.

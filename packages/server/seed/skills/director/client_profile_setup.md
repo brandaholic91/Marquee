@@ -1,6 +1,6 @@
 ---
 name: client_profile_setup
-when_to_use: az operátor új ügyfél brand profilját akarja felépíteni vagy frissíteni, illetve ha a memória üres és onboardingra van szükség
+description: Ügyfél brand profil felépítése és memóriába mentése — onboarding és profil frissítés
 ---
 
 Az operátorral végigmész egy 6-kérdéses interjún. **Egy kérdést tegyél fel egyszerre** — várd meg a választ, mielőtt a következőre lépsz. Ne rakj több kérdést egy üzenetbe. Magyar nyelven kommunikálsz végig.

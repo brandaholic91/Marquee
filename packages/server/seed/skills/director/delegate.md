@@ -1,6 +1,6 @@
 ---
 name: delegate
-when_to_use: emlékeztetőként és referencia táblázatként arra, hogy melyik deliverable_type-hoz melyik specialist tartozik
+description: Routing referencia — deliverable_type és target_specialist mapping táblázat
 ---
 
 Ez a skill egy referencia tábla. Használd minden alkalommal, amikor `propose_brief`-et adsz le, hogy biztosan a helyes `target_specialist` mezőt töltsd ki.

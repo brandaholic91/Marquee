@@ -49,14 +49,14 @@ export function saveAgentConfig(dataDir: string, role: string, config: AgentConf
 }
 
 export function loadAgentDescription(dataDir: string, role: string): string {
-	const identity = loadAgentIdentity(dataDir, role);
-	if (!identity) return "";
-	const firstPara = identity.split(/\n\n+/).find((p) => p.trim()) ?? "";
-	const text = firstPara
-		.replace(/^#+\s*/gm, "")
-		.replace(/\n/g, " ")
-		.trim();
-	return text.length > 100 ? `${text.slice(0, 97)}…` : text;
+	const path = join(agentsDir(dataDir), role, "identity.md");
+	try {
+		const parsed = matter(readFileSync(path, "utf8"));
+		if (typeof parsed.data.description === "string" && parsed.data.description.trim()) {
+			return parsed.data.description.trim();
+		}
+	} catch { /* fall through */ }
+	return "";
 }
 
 export function seedDefaultAgents(dataDir: string): void {

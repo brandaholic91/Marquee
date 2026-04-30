@@ -1,6 +1,6 @@
 ---
 name: content_brief_seo
-when_to_use: SEO-orientált content briefet kell készíteni Copywriter-nek — mikor a Director SEO-fókuszú cikket akar íratni
+description: SEO content brief Copywriternek — kulcsszó, javasolt cím, H2 struktúra, szószám és belső link javaslatok
 ---
 
 Az SEO content brief **MAGYAR NYELVŰ**.

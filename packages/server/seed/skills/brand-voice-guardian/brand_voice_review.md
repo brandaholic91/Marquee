@@ -1,6 +1,6 @@
 ---
 name: brand_voice_review
-when_to_use: Egy meglévő deliverable szövegét kell összevetni a brand voice guidelines-szal és strukturált review-t adni
+description: Brand voice audit — deliverable szöveg pontozása guidelines alapján, észrevételekkel és konkrét javítási javaslatokkal
 ---
 
 A brand voice review **MAGYAR NYELVŰ** outputot ad.
