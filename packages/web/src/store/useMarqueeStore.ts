@@ -348,10 +348,20 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 		});
 
 		// No-op registrations for completeness (SSE spec requires all 12 handled)
-		// memory_proposed, memory_decided, deliverable_returned — no state change needed here
+		// memory_proposed, memory_decided, deliverable_returned, plan/calendar events — no state change needed here
 		marqueeEvents.on("memory_proposed", () => {});
 		marqueeEvents.on("memory_decided", () => {});
 		marqueeEvents.on("deliverable_returned", () => {});
+		marqueeEvents.on("plan.proposed", () => {});
+		marqueeEvents.on("plan.updated", () => {});
+		marqueeEvents.on("plan.accepted", () => {});
+		marqueeEvents.on("plan.discarded", () => {});
+		marqueeEvents.on("calendar_item.added", () => {});
+		marqueeEvents.on("calendar_item.updated", () => {});
+		marqueeEvents.on("calendar_item.deleted", () => {});
+		marqueeEvents.on("calendar_item.status_changed", () => {});
+		marqueeEvents.on("proposal.accepted", () => {});
+		marqueeEvents.on("proposal.discarded", () => {});
 	},
 
 	sendMessage: async (text: string) => {
