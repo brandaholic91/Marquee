@@ -50,7 +50,7 @@ export const ROLE_CONFIGS: Record<RoleSlug, RoleConfig> = {
 	"seo-specialist": {
 		slug: "seo-specialist",
 		lifecycle: "transient",
-		tools: ["read_memory", "submit_deliverable"],
+		tools: ["read_memory", "submit_deliverable", "tavily_search", "web_fetch"],
 		produces: ["blog_post", "content_brief_seo", "seo_report"],
 	},
 	"brand-voice-guardian": {

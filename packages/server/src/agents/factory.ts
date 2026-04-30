@@ -11,6 +11,8 @@ import { makeProposeBriefTool } from "../tools/propose-brief.js";
 import { makeProposeMemoryUpdateTool } from "../tools/propose-memory-update.js";
 import { makeSubmitDeliverableTool } from "../tools/submit-deliverable.js";
 import { makeSubmitReviewTool } from "../tools/submit-review.js";
+import { makeTavilySearchTool } from "../tools/tavily-search.js";
+import { makeWebFetchTool } from "../tools/web-fetch.js";
 import { makeGetCampaignStatusTool } from "../tools/get-campaign-status.js";
 import { loadSkillRecipes } from "../skills/loader.js";
 import { renderMemoryContext, renderBrandVoiceBlock } from "./transform-context.js";
@@ -167,6 +169,12 @@ async function buildToolsForRole(role: RoleSlug, input: SpawnInput, sessionId: s
 						deliverableId: input.deliverableId,
 					}) as RawTool,
 				);
+				break;
+			case "tavily_search":
+				tools.push(makeTavilySearchTool() as RawTool);
+				break;
+			case "web_fetch":
+				tools.push(makeWebFetchTool() as RawTool);
 				break;
 		}
 	}
