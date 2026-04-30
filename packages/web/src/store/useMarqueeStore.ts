@@ -215,7 +215,13 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       campaign_name?: string | null;
     }>('brief_proposed', (payload) => {
       const briefId = payload.brief_id ?? payload.briefId ?? '';
-      // SSE replay filter: skip briefs that are already dispatched/done
+      const eventThreadId = (payload as Record<string, unknown>).thread_id as string | undefined;
+
+      // Skip if brief belongs to a different thread than currently active
+      const activeThreadId = get().threadId;
+      if (eventThreadId && activeThreadId && eventThreadId !== activeThreadId) return;
+
+      // Skip briefs that are already dispatched/done
       if (dispatchedBriefIds.has(briefId)) return;
 
       const title = payload.title ?? '';
