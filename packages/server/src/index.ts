@@ -113,6 +113,7 @@ async function main() {
 										typeof c === "object" && c !== null && (c as Record<string, unknown>).type === "text",
 								)
 								.map((c) => c.text)
+								.filter((t, i, arr) => i === 0 || t !== arr[i - 1])
 								.join("");
 						}
 						break;
