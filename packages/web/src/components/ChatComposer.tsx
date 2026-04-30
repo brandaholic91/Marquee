@@ -24,28 +24,32 @@ export function ChatComposer() {
   };
 
   return (
-    <div className="border-t border-rule bg-white px-4 py-3">
+    <div className="mx-4 mb-3 bg-off-white border border-rule rounded-[16px] shadow-composer">
       {directorThinking && (
-        <div className="flex items-center gap-2 mb-2 text-xs text-ink-2">
+        <div className="flex items-center gap-2 px-3 pt-2 text-xs text-ink-2">
           <BulbIndicator active={true} />
           <span>Director gondolkodik...</span>
         </div>
       )}
-      <div className="flex items-end gap-2">
-        <textarea
-          className="flex-1 resize-none border border-rule rounded-lg px-3 py-2 text-sm text-ink-1 placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px] max-h-32"
-          placeholder="Írj egy üzenetet..."
-          value={text}
-          rows={1}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Írj a Directornak…"
+        rows={2}
+        className="textarea-chat w-full min-h-[52px] rounded-t-[16px] resize-none bg-transparent px-3 pt-3 pb-2 text-sm text-ink-1 placeholder:text-ink-3 focus:outline-none"
+        disabled={directorThinking}
+      />
+      <div className="flex items-center justify-end px-3 py-2 border-t border-parchment">
         <button
-          className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-hover disabled:opacity-50 shrink-0 h-[44px]"
           onClick={() => void handleSubmit()}
-          disabled={!text.trim()}
+          disabled={directorThinking || !text.trim()}
+          className="bg-primary text-sidebar-bg text-[13px] font-bold px-[18px] py-2 rounded-btn flex items-center gap-1.5 disabled:opacity-40"
         >
-          Küld
+          Küldés
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
       </div>
     </div>
