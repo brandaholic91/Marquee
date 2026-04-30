@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { campaignsApi, type CampaignRow, type CampaignDetail } from '../lib/api.js';
+import { SidebarPanel, SidebarPanelHeader, SidebarPanelBody, SidebarPanelItem } from '../components/SidebarPanel.js';
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Aktív',
@@ -74,24 +75,17 @@ export function Campaigns() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Kampánylista */}
-      <div className={`${selected ? 'hidden md:flex' : 'flex'} w-full md:w-56 md:shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden`}>
-        <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule shrink-0">
-          <h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Kampányok</h1>
-          <p className="text-[12px] text-ink-3 mt-0.5">{campaigns.length} kampány</p>
-        </div>
-        <div className="flex-1 overflow-auto">
+      <SidebarPanel visible={!selected}>
+        <SidebarPanelHeader title="Kampányok" subtitle={`${campaigns.length} kampány`} />
+        <SidebarPanelBody>
           {campaigns.map((c) => (
-            <button
+            <SidebarPanelItem
               key={c.id}
+              isActive={selected?.id === c.id}
               onClick={() => void selectCampaign(c.id)}
-              className={`w-full text-left px-4 py-2.5 border-l-2 transition-colors ${
-                selected?.id === c.id
-                  ? 'border-primary bg-cream'
-                  : 'border-transparent text-ink-2 hover:bg-cream hover:text-ink-1'
-              }`}
             >
               <div className="flex items-center justify-between gap-2 min-w-0">
-                <span className={`text-sm font-medium truncate ${selected?.id === c.id ? 'text-ink-1' : ''}`}>{c.title}</span>
+                <span className="text-sm font-medium truncate">{c.title}</span>
                 <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_CLASS[c.status] ?? ''}`}>
                   {STATUS_LABEL[c.status] ?? c.status}
                 </span>
@@ -99,10 +93,10 @@ export function Campaigns() {
               <div className="mt-0.5 text-[11px] text-ink-3">
                 {c.deliverableCount} tartalom{c.pendingApprovals > 0 ? ` · ${c.pendingApprovals} vár` : ''}
               </div>
-            </button>
+            </SidebarPanelItem>
           ))}
-        </div>
-      </div>
+        </SidebarPanelBody>
+      </SidebarPanel>
 
       {/* Kampány részletek */}
       <div className={`${selected ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 overflow-hidden`}>

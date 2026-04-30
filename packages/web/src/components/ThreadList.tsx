@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
+import { SidebarPanel, SidebarPanelHeader, SidebarPanelBody, SidebarPanelItem } from './SidebarPanel.js';
 
 export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClose?: () => void }) {
   const threads = useMarqueeStore((s) => s.threads);
@@ -25,42 +26,38 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
     setRenamingId(null);
   }
 
-  return (
-    <aside className={`flex shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden ${fullWidth ? 'w-full' : 'w-56'}`}>
-      <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule flex items-center justify-between">
-        <div>
-          <h2 className="text-[15px] font-bold text-ink-1 tracking-tight">Beszélgetések</h2>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => void createThread()}
-            className="text-xs text-primary hover:text-primary-hover font-medium px-2 py-1 rounded hover:bg-cream"
-            title="Új beszélgetés"
-          >
-            + Új
-          </button>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-ink-2 hover:text-ink-1 text-xl leading-none px-1"
-              aria-label="Bezárás"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
+  const action = (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => void createThread()}
+        className="text-xs text-primary hover:text-primary-hover font-medium px-2 py-1 rounded hover:bg-cream"
+        title="Új beszélgetés"
+      >
+        + Új
+      </button>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="text-ink-2 hover:text-ink-1 text-xl leading-none px-1"
+          aria-label="Bezárás"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
 
-      <div className="flex-1 overflow-y-auto">
+  return (
+    <SidebarPanel fullWidth={fullWidth}>
+      <SidebarPanelHeader title="Beszélgetések" action={action} />
+      <SidebarPanelBody>
         {active.map((t) => {
           const isActive = t.id === threadId;
           return (
-            <div
+            <SidebarPanelItem
               key={t.id}
-              className={`group flex items-center gap-1 px-4 py-2.5 cursor-pointer border-l-2 transition-colors ${
-                isActive ? 'border-primary bg-cream' : 'border-transparent hover:bg-cream'
-              }`}
-              onClick={() => void selectThread(t.id)}
+              isActive={isActive}
+              onClick={() => { if (renamingId !== t.id) void selectThread(t.id); }}
             >
               {renamingId === t.id ? (
                 <input
@@ -73,52 +70,54 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
                     if (e.key === 'Escape') setRenamingId(null);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex-1 text-sm bg-white border border-rule rounded px-1 py-0.5 outline-none"
+                  className="w-full text-sm bg-white border border-rule rounded px-1 py-0.5 outline-none"
                 />
               ) : (
-                <span className={`flex-1 text-sm truncate ${isActive ? 'text-ink-1 font-medium' : 'text-ink-2'}`}>
-                  {t.title ?? 'Új beszélgetés'}
-                </span>
-              )}
-              {isActive && renamingId !== t.id && (
-                <div className="hidden group-hover:flex gap-0.5">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); startRename(t.id, t.title); }}
-                    className="p-0.5 text-ink-2 hover:text-ink-1 rounded"
-                    title="Átnevezés"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); void archiveThread(t.id); }}
-                    className="p-0.5 text-ink-2 hover:text-ink-1 rounded"
-                    title="Archiválás"
-                  >
-                    ↓
-                  </button>
+                <div className="flex items-center gap-1">
+                  <span className="flex-1 text-sm truncate">
+                    {t.title ?? 'Új beszélgetés'}
+                  </span>
+                  {isActive && (
+                    <div className="hidden group-hover:flex gap-0.5">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startRename(t.id, t.title); }}
+                        className="p-0.5 text-ink-2 hover:text-ink-1 rounded"
+                        title="Átnevezés"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); void archiveThread(t.id); }}
+                        className="p-0.5 text-ink-2 hover:text-ink-1 rounded"
+                        title="Archiválás"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </SidebarPanelItem>
           );
         })}
 
         {archived.length > 0 && (
           <details className="mt-2">
-            <summary className="px-3 py-1 text-xs text-ink-2 cursor-pointer select-none hover:text-ink-1">
+            <summary className="px-4 py-1 text-xs text-ink-2 cursor-pointer select-none hover:text-ink-1">
               Archivált ({archived.length})
             </summary>
             {archived.map((t) => (
-              <div
+              <SidebarPanelItem
                 key={t.id}
-                className="px-4 py-2 cursor-pointer hover:bg-cream border-l-2 border-transparent transition-colors"
                 onClick={() => void selectThread(t.id)}
+                dim
               >
-                <span className="text-sm text-ink-3 truncate block">{t.title ?? 'Archivált'}</span>
-              </div>
+                <span className="text-sm truncate block">{t.title ?? 'Archivált'}</span>
+              </SidebarPanelItem>
             ))}
           </details>
         )}
-      </div>
-    </aside>
+      </SidebarPanelBody>
+    </SidebarPanel>
   );
 }

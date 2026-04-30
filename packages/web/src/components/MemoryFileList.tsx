@@ -1,3 +1,5 @@
+import { SidebarPanelItem } from './SidebarPanel.js';
+
 const FILES = [
   { file: 'profile.md',              label: 'Ügyfélprofil' },
   { file: 'brand_voice.md',          label: 'Brand voice' },
@@ -15,29 +17,25 @@ export function MemoryFileList({
   onSelect: (file: string) => void;
 }) {
   return (
-    <ul>
+    <div>
       {FILES.map(({ file, label }) => {
         const exists = fileFlags[file];
-        const isActive = selected === file;
         return (
-          <li key={file}>
-            <button
-              onClick={() => onSelect(file)}
-              className={`w-full text-left flex items-center gap-2 px-4 py-2.5 border-l-2 transition-colors text-sm ${
-                isActive
-                  ? 'border-primary bg-cream text-ink-1 font-medium'
-                  : 'border-transparent text-ink-2 hover:bg-cream hover:text-ink-1'
-              }`}
-            >
+          <SidebarPanelItem
+            key={file}
+            isActive={selected === file}
+            onClick={() => onSelect(file)}
+          >
+            <div className="flex items-center gap-2">
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${exists ? 'bg-success-deep' : 'bg-rule-strong'}`}
                 aria-label={exists ? 'létezik' : 'nem létezik'}
               />
-              <span>{label}</span>
-            </button>
-          </li>
+              <span className="text-sm">{label}</span>
+            </div>
+          </SidebarPanelItem>
         );
       })}
-    </ul>
+    </div>
   );
 }

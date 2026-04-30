@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/StatusBadge.js";
 import { RevisionTabs } from "../components/RevisionTabs.js";
 import { BrandVoiceReviewPanel } from "../components/BrandVoiceReviewPanel.js";
 import { MarkdownView } from "../components/MarkdownView.js";
+import { SidebarPanel, SidebarPanelHeader, SidebarPanelBody, SidebarPanelItem, SidebarPanelDivider } from "../components/SidebarPanel.js";
 import { SendBackModal } from "../components/SendBackModal.js";
 
 interface Revision {
@@ -101,43 +102,28 @@ export function Approvals() {
 	return (
 		<div className="flex flex-1 h-screen overflow-hidden">
 			{/* Lista panel */}
-			<div
-				className={`${selectedId ? "hidden md:flex" : "flex"} w-full md:w-56 md:shrink-0 border-r border-rule flex-col bg-parchment`}
-			>
-				<div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule">
-					<h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Jóváhagyások</h1>
-					<p className="text-[12px] text-ink-3 mt-0.5">
-						{pendingCount} vár · {shippedToday.length} ma kiszállítva
-					</p>
-				</div>
-
-				<div className="flex-1 overflow-auto">
+			<SidebarPanel visible={!selectedId}>
+				<SidebarPanelHeader
+					title="Jóváhagyások"
+					subtitle={`${pendingCount} vár · ${shippedToday.length} ma kiszállítva`}
+				/>
+				<SidebarPanelBody>
 					{pending.map((d) => (
 						<DeliverableListItem key={d.id} d={d} isActive={d.id === selectedId} onClick={() => selectItem(d.id)} />
 					))}
-
 					{pending.length === 0 && (
 						<p className="text-[12px] text-ink-3 px-4 py-6 text-center">Nincs várakozó jóváhagyás.</p>
 					)}
-
 					{shippedToday.length > 0 && (
 						<>
-							<div className="px-4 py-2 bg-parchment border-y border-rule">
-								<span className="text-[10px] font-semibold text-ink-3 tracking-[0.08em] uppercase">Ma kiszállítva</span>
-							</div>
+							<SidebarPanelDivider label="Ma kiszállítva" />
 							{shippedToday.map((d) => (
-								<DeliverableListItem
-									key={d.id}
-									d={d}
-									isActive={d.id === selectedId}
-									onClick={() => selectItem(d.id)}
-									dim
-								/>
+								<DeliverableListItem key={d.id} d={d} isActive={d.id === selectedId} onClick={() => selectItem(d.id)} dim />
 							))}
 						</>
 					)}
-				</div>
-			</div>
+				</SidebarPanelBody>
+			</SidebarPanel>
 
 			{/* Detail panel */}
 			<div className={`${selectedId ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0 overflow-hidden`}>
@@ -283,21 +269,10 @@ function DeliverableListItem({
 	dim?: boolean;
 }) {
 	return (
-		<button
-			onClick={onClick}
-			className={`w-full text-left px-4 py-3 border-b border-rule transition-colors ${
-				isActive
-					? "bg-cream border-l-2 border-l-primary"
-					: "border-l-2 border-l-transparent hover:bg-cream"
-			} ${dim ? "opacity-70" : ""}`}
-		>
+		<SidebarPanelItem isActive={isActive} onClick={onClick} dim={dim}>
 			<div className="flex items-start justify-between gap-2">
 				<div className="min-w-0">
-					<span
-						className={`text-[13px] leading-snug block truncate ${
-							isActive ? "font-semibold text-ink-1" : "font-medium text-ink-1"
-						}`}
-					>
+					<span className="text-[13px] leading-snug block truncate font-medium">
 						{d.title ?? d.type}
 					</span>
 					{d.title && <span className="text-[10px] text-ink-3">{d.type}</span>}
@@ -310,7 +285,7 @@ function DeliverableListItem({
 					minute: "2-digit",
 				})}
 			</p>
-		</button>
+		</SidebarPanelItem>
 	);
 }
 

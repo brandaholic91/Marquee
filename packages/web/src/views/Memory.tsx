@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import { memoryApi } from '../lib/api.js';
 import { MemoryFileList } from '../components/MemoryFileList.js';
+import { SidebarPanel, SidebarPanelHeader, SidebarPanelBody } from '../components/SidebarPanel.js';
 import { MemoryProposalCard } from '../components/MemoryProposalCard.js';
 
 const SLUG = 'default';
@@ -111,28 +112,23 @@ export function Memory() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Fájllista */}
-      <div className={`${mobileView === 'detail' ? 'hidden md:flex' : 'flex'} w-full md:w-56 md:shrink-0 bg-parchment border-r border-rule flex-col`}>
-        <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule">
-          <h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Memória</h1>
-          <p className="text-[12px] text-ink-3 mt-0.5">
-            {Object.keys(fileFlags).length} fájl
-            {proposals.length > 0 ? ` · ${proposals.length} javaslat` : ''}
-          </p>
-        </div>
-
+      <SidebarPanel visible={mobileView !== 'detail'}>
+        <SidebarPanelHeader
+          title="Memória"
+          subtitle={`${Object.keys(fileFlags).length} fájl${proposals.length > 0 ? ` · ${proposals.length} javaslat` : ''}`}
+        />
         {proposals.length > 0 && (
-          <div className="mx-2 mt-2">
+          <div className="mx-3 mt-3">
             <button className="w-full flex items-center gap-2 bg-primary-soft border border-primary rounded-[6px] px-2.5 py-1.5 text-[11px] font-semibold text-primary-deep">
               <span className="bulb" />
               {proposals.length} függő javaslat
             </button>
           </div>
         )}
-
-        <div className="flex-1 overflow-auto p-2">
+        <SidebarPanelBody>
           <MemoryFileList fileFlags={fileFlags} selected={selected} onSelect={(f) => { setSelected(f); setMobileView('detail'); }} />
-        </div>
-      </div>
+        </SidebarPanelBody>
+      </SidebarPanel>
 
       {/* Editor panel */}
       <div className={`${mobileView === 'detail' ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 overflow-hidden`}>
