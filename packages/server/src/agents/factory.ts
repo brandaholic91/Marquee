@@ -10,6 +10,7 @@ import { makeReadMemoryTool } from '../tools/read-memory.js';
 import { makeProposeBriefTool } from '../tools/propose-brief.js';
 import { makeProposeMemoryUpdateTool } from '../tools/propose-memory-update.js';
 import { makeSubmitDeliverableTool } from '../tools/submit-deliverable.js';
+import { makeGetCampaignStatusTool } from '../tools/get-campaign-status.js';
 import { loadSkillRecipes } from '../skills/loader.js';
 import { renderMemoryContext } from './transform-context.js';
 import { AuthManager } from '../providers/auth.js';
@@ -127,6 +128,9 @@ async function buildToolsForRole(
         break;
       case 'propose_memory_update':
         tools.push(makeProposeMemoryUpdateTool({ db: input.db, broker: input.broker, clientSlug: input.clientSlug, agentSessionId: sessionId }) as RawTool);
+        break;
+      case 'get_campaign_status':
+        tools.push(makeGetCampaignStatusTool({ db: input.db, clientSlug: input.clientSlug }) as RawTool);
         break;
       case 'submit_deliverable':
         if (!input.delegationId || !input.deliverableType) throw new Error('submit_deliverable needs delegationId and deliverableType');

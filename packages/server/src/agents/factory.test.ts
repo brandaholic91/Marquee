@@ -36,7 +36,7 @@ describe('spawnAgent', () => {
     });
     expect(a.session.lifecycle).toBe('warm');
     const tools = (a.agent as any).opts.initialState.tools.map((t: any) => t.name).sort();
-    expect(tools).toEqual(['propose_brief', 'propose_memory_update', 'read_memory']);
+    expect(tools).toEqual(['get_campaign_status', 'propose_brief', 'propose_memory_update', 'read_memory']);
   });
 
   it('spawns transient social-manager bound to a delegation', async () => {

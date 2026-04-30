@@ -19,7 +19,7 @@ describe('agent role config', () => {
 
   it('director tool list', () => {
     expect(getRoleConfig('director').tools.sort())
-      .toEqual(['propose_brief', 'propose_memory_update', 'read_memory']);
+      .toEqual(['get_campaign_status', 'propose_brief', 'propose_memory_update', 'read_memory']);
   });
 
   it('specialist tool list', () => {
