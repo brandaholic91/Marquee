@@ -12,6 +12,8 @@ export function Workshop() {
   const threads = useMarqueeStore((s) => s.threads);
   const threadId = useMarqueeStore((s) => s.threadId);
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
+  const activeThread = threads.find((t) => t.id === threadId);
+  const isCampaignThread = Boolean(activeThread?.campaignId);
 
   const [mobileThreadsOpen, setMobileThreadsOpen] = useState(false);
   const prevThreadId = useRef(threadId);
@@ -60,8 +62,18 @@ export function Workshop() {
           {/* Left spacer mobilon a nav hamburger miatt */}
           <span className="md:hidden w-12 shrink-0" />
           <span className="flex-1 text-[14px] font-bold text-ink-1 truncate">
-            {threads.find((t) => t.id === threadId)?.title ?? 'Új beszélgetés'}
+            {isCampaignThread
+              ? `📅 Kampány tervezés: ${activeThread?.title ?? 'Névtelen kampány'}`
+              : (activeThread?.title ?? 'Új beszélgetés')}
           </span>
+          {isCampaignThread && activeThread?.campaignId && (
+            <a
+              href={`/kampanyok/${activeThread.campaignId}?tab=plan`}
+              className="hidden md:inline text-[11px] text-primary hover:underline"
+            >
+              Terv megnyitása
+            </a>
+          )}
           {activeAgents.has('director') && <span className="bulb shrink-0" />}
           <button
             onClick={() => setMobileThreadsOpen(true)}
@@ -82,7 +94,7 @@ export function Workshop() {
         {/* Sticky composer */}
         <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
           <div className="max-w-4xl mx-auto">
-            <ChatComposer />
+            <ChatComposer placeholder={isCampaignThread ? 'Director tervezi a kampányt…' : 'Írj a Directornak…'} />
           </div>
         </div>
       </div>

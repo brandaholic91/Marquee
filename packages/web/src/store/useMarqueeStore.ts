@@ -13,11 +13,21 @@ import { marqueeEvents } from "../lib/sse.js";
 
 export interface Message {
 	id: string;
-	type: "chat" | "brief_proposal" | "memory_proposal" | "tool_call" | "tool_result" | "system";
+	type:
+		| "chat"
+		| "brief_proposal"
+		| "memory_proposal"
+		| "plan_proposal"
+		| "plan_update_proposal"
+		| "calendar_item_proposal"
+		| "tool_call"
+		| "tool_result"
+		| "system";
 	sender: "user" | "director" | "system";
 	text: string;
 	briefId?: string;
 	toolName?: string;
+	contentJson?: string;
 	ts: number;
 }
 
@@ -29,6 +39,7 @@ export interface ProposedBrief {
 	targetSpecialist: string;
 	platform: string | null;
 	campaignName: string | null;
+	calendarItemId?: string | null;
 	parentDeliverableId?: string | null;
 }
 
@@ -74,6 +85,7 @@ interface MarqueeStore {
 // Helper to turn a raw server message into a Message
 function mapServerMessage(raw: {
 	id: string;
+	type?: string;
 	sender?: string;
 	role?: string;
 	text?: string;
@@ -102,9 +114,10 @@ function mapServerMessage(raw: {
 
 	return {
 		id: raw.id,
-		type: "chat",
+		type: (raw.type as Message["type"]) ?? "chat",
 		sender,
 		text,
+		contentJson: raw.contentJson,
 		ts: raw.ts ?? raw.created_at ?? raw.createdAt ?? Date.now(),
 	};
 }
@@ -222,6 +235,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			targetSpecialist?: string;
 			platform?: string | null;
 			campaign_name?: string | null;
+			calendar_item_id?: string | null;
 		}>("brief_proposed", (payload) => {
 			const briefId = payload.brief_id ?? payload.briefId ?? "";
 			const eventThreadId = (payload as Record<string, unknown>).thread_id as string | undefined;
@@ -239,6 +253,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			const targetSpecialist = payload.target_specialist ?? payload.targetSpecialist ?? "";
 			const platform = payload.platform ?? null;
 			const campaignName = (payload.campaign_name as string | null | undefined) ?? null;
+			const calendarItemId = payload.calendar_item_id ?? null;
 			const parentDeliverableId = ((payload as Record<string, unknown>).parent_deliverable_id as string | null) ?? null;
 
 			const brief: ProposedBrief = {
@@ -249,6 +264,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 				targetSpecialist,
 				platform,
 				campaignName,
+				calendarItemId,
 				parentDeliverableId,
 			};
 
@@ -348,10 +364,20 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 		});
 
 		// No-op registrations for completeness (SSE spec requires all 12 handled)
-		// memory_proposed, memory_decided, deliverable_returned — no state change needed here
+		// memory_proposed, memory_decided, deliverable_returned, plan/calendar events — no state change needed here
 		marqueeEvents.on("memory_proposed", () => {});
 		marqueeEvents.on("memory_decided", () => {});
 		marqueeEvents.on("deliverable_returned", () => {});
+		marqueeEvents.on("plan.proposed", () => {});
+		marqueeEvents.on("plan.updated", () => {});
+		marqueeEvents.on("plan.accepted", () => {});
+		marqueeEvents.on("plan.discarded", () => {});
+		marqueeEvents.on("calendar_item.added", () => {});
+		marqueeEvents.on("calendar_item.updated", () => {});
+		marqueeEvents.on("calendar_item.deleted", () => {});
+		marqueeEvents.on("calendar_item.status_changed", () => {});
+		marqueeEvents.on("proposal.accepted", () => {});
+		marqueeEvents.on("proposal.discarded", () => {});
 	},
 
 	sendMessage: async (text: string) => {

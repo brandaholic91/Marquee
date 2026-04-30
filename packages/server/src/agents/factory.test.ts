@@ -36,7 +36,17 @@ describe('spawnAgent', () => {
     });
     expect(a.session.lifecycle).toBe('warm');
     const tools = (a.agent as any).opts.initialState.tools.map((t: any) => t.name).sort();
-    expect(tools).toEqual(['get_campaign_status', 'load_skill', 'propose_brief', 'propose_memory_update', 'read_memory']);
+    expect(tools).toEqual([
+      'get_campaign_plan',
+      'get_campaign_status',
+      'load_skill',
+      'propose_brief',
+      'propose_calendar_item',
+      'propose_campaign_plan',
+      'propose_memory_update',
+      'read_memory',
+      'update_campaign_plan',
+    ]);
   });
 
   it('spawns transient social-manager bound to a delegation', async () => {

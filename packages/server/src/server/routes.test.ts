@@ -6,12 +6,14 @@ import { openDb, type AgencyDb } from "../db/index.js";
 import { clients, chatThreads } from "../db/schema.js";
 import { Broker } from "../broker/event-bus.js";
 import { buildServer } from "./index.js";
+import { AuthManager } from "../providers/auth.js";
 
 describe("REST routes", () => {
 	let dir: string;
 	let db: AgencyDb;
 	let close: () => void;
 	let app: Awaited<ReturnType<typeof buildServer>>;
+	let authManager: AuthManager;
 
 	beforeEach(async () => {
 		dir = mkdtempSync(join(tmpdir(), "agency-server-"));
@@ -26,7 +28,19 @@ describe("REST routes", () => {
 		// Seed client row
 		db.insert(clients).values({ slug: "default", name: "Default", createdAt: Date.now() }).run();
 		const broker = new Broker(db);
-		app = await buildServer({ db, broker, dataDir: dir, webRoot: "/tmp", n8nWebhookUrl: null });
+		authManager = {
+			getApiKey: () => "test-key",
+			start: async () => {},
+			stop: () => {},
+		} as unknown as AuthManager;
+		app = await buildServer({
+			db,
+			broker,
+			dataDir: dir,
+			webRoot: "/tmp",
+			n8nWebhookUrl: null,
+			authManager,
+		});
 	});
 
 	afterEach(async () => {

@@ -36,3 +36,10 @@ Ez a skill egy referencia tábla. Használd minden alkalommal, amikor `propose_b
 2. Ha az operátor nem adja meg a `deliverable_type`-ot, kérdezz rá a `brief_intake` skill szerint.
 3. Ha a platform nem egyértelmű (`social_post` vagy `ad_copy` esetén), kérdezz rá — a specialist szüksége van rá a megfelelő formátumhoz.
 4. `brand_voice_guardian` soha nem kerülhet `target_specialist`-ként a `propose_brief`-be — ez review role, kizárólag az operátor indítja a UI-ból.
+
+## Plan-chat kontextus (campaign_id scoped thread)
+
+1. Elso lepeskent hivd a `get_campaign_plan` toolt.
+2. Ha nincs terv (`has_plan: false`), javasold a `kampany_tervezes` skill szerinti tervezest.
+3. Ha van terv, brief javaslat elott ellenorizd, hogy a tema illeszkedik-e mar letezo calendar itemhez.
+4. Ad-hoc brief megengedett, de jelezd explicit, hogy nem calendar itembol szarmazik.

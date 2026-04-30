@@ -13,6 +13,7 @@ export function BriefProposalCard({
 	targetSpecialist,
 	platform,
 	campaignName: initialCampaignName,
+	calendarItemId,
 	parentDeliverableId,
 }: {
 	briefId: string;
@@ -22,6 +23,7 @@ export function BriefProposalCard({
 	targetSpecialist: string;
 	platform?: string | null;
 	campaignName?: string | null;
+	calendarItemId?: string | null;
 	parentDeliverableId?: string | null;
 }) {
 	const [busy, setBusy] = useState(false);
@@ -106,6 +108,11 @@ export function BriefProposalCard({
 				</div>
 			)}
 			<div className="border-[1.5px] border-primary rounded-lg p-6 bg-off-white my-3">
+				{calendarItemId && (
+					<div className="mb-2 text-[11px] text-ink-2">
+						📅 Calendar item: <span className="font-mono">{calendarItemId}</span>
+					</div>
+				)}
 				<div className="flex items-center mb-1">
 					<span className="text-[10px] font-bold tracking-widest text-primary uppercase flex items-center gap-1.5">
 						<span className="inline-block w-1 h-3.5 bg-primary rounded-sm" />

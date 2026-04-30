@@ -8,6 +8,7 @@ import { campaignsRoutes } from "./routes/campaigns.js";
 import { deliverablesRoutes } from "./routes/deliverables.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { agentsRoutes } from "./routes/agents.js";
+import { plansRoutes } from "./routes/plans.js";
 import { authMiddleware } from "./auth-middleware.js";
 import { registerSseRoute } from "./sse.js";
 import { AuthManager } from "../providers/auth.js";
@@ -70,6 +71,7 @@ export async function buildServer(opts: ServerOpts) {
 		authManager: opts.authManager,
 	});
 	await app.register(memoryRoutes, { db, dataDir: opts.dataDir });
+	await app.register(plansRoutes, { db, broker: flatBroker });
 	await app.register(agentsRoutes, { dataDir: opts.dataDir });
 
 	// SSE (uses typed AgencyDb + Broker directly)

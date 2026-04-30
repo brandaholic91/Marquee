@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useMarqueeStore, type Message, type ProposedBrief } from "../store/useMarqueeStore.js";
 import { BriefProposalCard } from "./BriefProposalCard.js";
+import { PlanProposalCard, type PlanProposal } from "./PlanProposalCard.js";
+import { CalendarItemProposalCard, type CalendarProposal } from "./CalendarItemProposalCard.js";
 
 function ChatBubble({ message }: { message: Message }) {
 	const isUser = message.sender === "user";
@@ -77,9 +79,26 @@ export function ChatThread() {
 							targetSpecialist={brief.targetSpecialist}
 							platform={brief.platform}
 							campaignName={brief.campaignName}
+							calendarItemId={brief.calendarItemId}
 							parentDeliverableId={brief.parentDeliverableId}
 						/>
 					);
+				}
+				if ((msg.type === "plan_proposal" || msg.type === "plan_update_proposal") && msg.contentJson) {
+					try {
+						const payload = JSON.parse(msg.contentJson) as PlanProposal;
+						return <PlanProposalCard key={msg.id} messageId={msg.id} payload={payload} />;
+					} catch {
+						return <ChatBubble key={msg.id} message={msg} />;
+					}
+				}
+				if (msg.type === "calendar_item_proposal" && msg.contentJson) {
+					try {
+						const payload = JSON.parse(msg.contentJson) as CalendarProposal;
+						return <CalendarItemProposalCard key={msg.id} messageId={msg.id} payload={payload} />;
+					} catch {
+						return <ChatBubble key={msg.id} message={msg} />;
+					}
 				}
 				return <ChatBubble key={msg.id} message={msg} />;
 			})}

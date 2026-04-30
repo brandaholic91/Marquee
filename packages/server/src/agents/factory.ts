@@ -14,6 +14,10 @@ import { makeSubmitReviewTool } from "../tools/submit-review.js";
 import { makeTavilySearchTool } from "../tools/tavily-search.js";
 import { makeWebFetchTool } from "../tools/web-fetch.js";
 import { makeGetCampaignStatusTool } from "../tools/get-campaign-status.js";
+import { makeGetCampaignPlanTool } from "../tools/get-campaign-plan.js";
+import { makeProposeCampaignPlanTool } from "../tools/propose-campaign-plan.js";
+import { makeUpdateCampaignPlanTool } from "../tools/update-campaign-plan.js";
+import { makeProposeCalendarItemTool } from "../tools/propose-calendar-item.js";
 import { loadSkillCatalog, loadSkillBody, loadBrandVoiceInstruction } from "../skills/loader.js";
 import { renderMemoryContext, renderBrandVoiceBlock } from "./transform-context.js";
 import { loadAgentIdentity, loadAgentConfig } from "./loader.js";
@@ -187,6 +191,40 @@ async function buildToolsForRole(role: RoleSlug, input: SpawnInput, sessionId: s
 				break;
 			case "get_campaign_status":
 				tools.push(makeGetCampaignStatusTool({ db: input.db, clientSlug: input.clientSlug }) as RawTool);
+				break;
+			case "get_campaign_plan":
+				tools.push(makeGetCampaignPlanTool({ db: input.db, clientSlug: input.clientSlug }) as RawTool);
+				break;
+			case "propose_campaign_plan":
+				if (!input.threadId) throw new Error("propose_campaign_plan needs threadId");
+				tools.push(
+					makeProposeCampaignPlanTool({
+						db: input.db,
+						broker: input.broker,
+						clientSlug: input.clientSlug,
+						threadId: input.threadId,
+					}) as RawTool,
+				);
+				break;
+			case "update_campaign_plan":
+				if (!input.threadId) throw new Error("update_campaign_plan needs threadId");
+				tools.push(
+					makeUpdateCampaignPlanTool({
+						db: input.db,
+						broker: input.broker,
+						threadId: input.threadId,
+					}) as RawTool,
+				);
+				break;
+			case "propose_calendar_item":
+				if (!input.threadId) throw new Error("propose_calendar_item needs threadId");
+				tools.push(
+					makeProposeCalendarItemTool({
+						db: input.db,
+						broker: input.broker,
+						threadId: input.threadId,
+					}) as RawTool,
+				);
 				break;
 			case "submit_deliverable":
 				if (!input.delegationId || !input.deliverableType)

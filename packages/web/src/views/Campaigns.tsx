@@ -93,6 +93,11 @@ export function Campaigns() {
               <div className="mt-0.5 text-[11px] text-ink-3">
                 {c.deliverableCount} tartalom{c.pendingApprovals > 0 ? ` · ${c.pendingApprovals} vár` : ''}
               </div>
+              <div className="mt-0.5 text-[11px] text-ink-3">
+                {c.plan_summary?.has_plan && c.plan_summary.calendar_progress
+                  ? `📋 ${c.plan_summary.calendar_progress.planned + c.plan_summary.calendar_progress.brief_created} tervezett, ${c.plan_summary.calendar_progress.delivered} kész`
+                  : 'Tervezés'}
+              </div>
             </SidebarPanelItem>
           ))}
         </SidebarPanelBody>
@@ -118,6 +123,12 @@ export function Campaigns() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => navigate(`/kampanyok/${selected.id}`)}
+                  className="text-xs px-3 py-1.5 rounded border border-rule text-ink-2 hover:bg-parchment"
+                >
+                  Terv nézet
+                </button>
                 {selected.status !== 'completed' && (
                   <button
                     onClick={() => void setStatus(selected.id, 'completed')}

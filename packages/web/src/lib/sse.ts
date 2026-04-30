@@ -12,6 +12,16 @@ export type SseEventType =
   | 'memory_decided'
   | 'memory_edited'
   | 'review_completed'
+  | 'plan.proposed'
+  | 'plan.updated'
+  | 'plan.accepted'
+  | 'plan.discarded'
+  | 'calendar_item.added'
+  | 'calendar_item.updated'
+  | 'calendar_item.deleted'
+  | 'calendar_item.status_changed'
+  | 'proposal.accepted'
+  | 'proposal.discarded'
   | 'error';
 
 type Handler<T = unknown> = (payload: T) => void;

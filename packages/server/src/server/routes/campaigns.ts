@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and, sql } from 'drizzle-orm';
 import { campaigns, deliverables } from '../../db/schema.js';
+import { getPlanByCampaignId, listCalendarItems } from '../../db/queries.js';
 
 type Db = ReturnType<typeof drizzle>;
 export interface CampaignsRoutesOpts { db: Db; }
@@ -28,6 +29,13 @@ export const campaignsRoutes: FastifyPluginAsync<CampaignsRoutesOpts> = async (a
     const countMap = new Map(counts.map((c) => [c.campaignId, c]));
 
     return rows.map((c) => ({
+      ...(() => {
+        const plan = getPlanByCampaignId(db, c.id);
+        if (!plan) return { plan_summary: { has_plan: false, calendar_progress: null } };
+        const progress = { planned: 0, brief_created: 0, delivered: 0, cancelled: 0 };
+        for (const item of listCalendarItems(db, plan.id)) progress[item.status] += 1;
+        return { plan_summary: { has_plan: true, calendar_progress: progress } };
+      })(),
       id: c.id,
       title: c.title,
       status: c.status,
@@ -46,8 +54,16 @@ export const campaignsRoutes: FastifyPluginAsync<CampaignsRoutesOpts> = async (a
       .where(eq(deliverables.campaignId, req.params.id))
       .orderBy(sql`${deliverables.updatedAt} DESC`)
       .all();
+    const plan = getPlanByCampaignId(db, campaign.id);
+    const progress = plan
+      ? (() => {
+          const p = { planned: 0, brief_created: 0, delivered: 0, cancelled: 0 };
+          for (const item of listCalendarItems(db, plan.id)) p[item.status] += 1;
+          return { has_plan: true, calendar_progress: p };
+        })()
+      : { has_plan: false, calendar_progress: null };
 
-    return { ...campaign, deliverables: deliverableRows };
+    return { ...campaign, plan_summary: progress, deliverables: deliverableRows };
   });
 
   app.patch<{ Params: { id: string }; Body: { title?: string; status?: string } }>(

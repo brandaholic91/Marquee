@@ -15,6 +15,8 @@ beforeEach(async () => {
   db = drizzle(sqlite, { schema });
   await migrate(db, { migrationsFolder: 'drizzle' });
   await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
+  await db.insert(schema.campaigns).values({ id: 'c1', clientSlug: 'default', title: 'Campaign 1', status: 'active', createdAt: Date.now() });
+  await db.insert(schema.campaigns).values({ id: 'c2', clientSlug: 'default', title: 'Campaign 2', status: 'active', createdAt: Date.now() });
   app = Fastify();
   await app.register(threadsRoutes, { db });
 });
@@ -93,5 +95,30 @@ describe('threads routes', () => {
     const activeInResult = body.filter(t => t.archivedAt === null);
     expect(activeInResult).toHaveLength(1);
     expect(activeInResult[0].id).toBe(id2);
+  });
+
+  it('GET /api/threads?campaign_id filters by campaign', async () => {
+    await db.insert(schema.chatThreads).values([
+      { id: 't1', clientSlug: 'default', campaignId: 'c1', title: 'Plan 1', archivedAt: null },
+      { id: 't2', clientSlug: 'default', campaignId: 'c2', title: 'Plan 2', archivedAt: null },
+      { id: 't3', clientSlug: 'default', campaignId: null, title: 'General', archivedAt: null },
+    ]);
+    const res = await app.inject({ method: 'GET', url: '/api/threads?campaign_id=c1' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ id: string }[]>();
+    expect(body).toHaveLength(1);
+    expect(body[0].id).toBe('t1');
+  });
+
+  it('POST /api/threads accepts campaign_id in body', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/threads',
+      payload: { title: 'Plan chat', campaign_id: 'c1' },
+    });
+    expect(res.statusCode).toBe(201);
+    const id = res.json<{ thread_id: string }>().thread_id;
+    const row = (await db.select().from(schema.chatThreads).where(eq(schema.chatThreads.id, id)).all())[0];
+    expect(row.campaignId).toBe('c1');
   });
 });

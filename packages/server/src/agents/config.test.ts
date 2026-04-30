@@ -21,8 +21,15 @@ describe('agent role config', () => {
   });
 
   it('director tool list', () => {
-    expect(getRoleConfig('director').tools.sort())
-      .toEqual(['get_campaign_status', 'propose_brief', 'propose_memory_update', 'read_memory']);
+    const tools = getRoleConfig('director').tools;
+    expect(tools).toContain('get_campaign_status');
+    expect(tools).toContain('propose_brief');
+    expect(tools).toContain('propose_memory_update');
+    expect(tools).toContain('read_memory');
+    expect(tools).toContain('get_campaign_plan');
+    expect(tools).toContain('propose_campaign_plan');
+    expect(tools).toContain('update_campaign_plan');
+    expect(tools).toContain('propose_calendar_item');
   });
 
   it('specialist tool list', () => {
