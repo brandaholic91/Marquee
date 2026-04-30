@@ -1,12 +1,39 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { deliverablesApi, type DeliverableRow } from '../lib/api.js';
+import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { StatusBadge } from '../components/StatusBadge.js';
 import { TypeBadge } from '../components/TypeBadge.js';
 import { RevisionTabs } from '../components/RevisionTabs.js';
 import { DeliverableActions } from '../components/DeliverableActions.js';
 import { MarkdownView } from '../components/MarkdownView.js';
 import { BrandVoiceReviewPanel } from '../components/BrandVoiceReviewPanel.js';
+
+function DraftingActions({ deliverableId }: { deliverableId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const navigate = useNavigate();
+  const discard = useMarqueeStore((s) => s.discardDeliverable);
+
+  return (
+    <div className="flex items-center gap-3 mt-6">
+      <span className="text-sm text-ink-2 italic">Javítás folyamatban…</span>
+      <button
+        className="px-3 py-2 rounded-md text-ink-2 hover:bg-cream disabled:opacity-50 text-sm"
+        disabled={busy || done}
+        onClick={async () => {
+          if (!confirm('Biztosan eldobod ezt a deliverable-t?')) return;
+          setBusy(true);
+          await discard(deliverableId);
+          setDone(true);
+          setTimeout(() => navigate('/jovahagyas'), 900);
+        }}
+      >
+        {done ? 'Eldobva ✓' : 'Eldob'}
+      </button>
+    </div>
+  );
+}
 
 interface Revision {
   id: string;
@@ -97,6 +124,9 @@ export function DeliverableDetail() {
 
       {deliverable.status === 'awaiting_approval' && (
         <DeliverableActions deliverableId={deliverable.id} />
+      )}
+      {deliverable.status === 'drafting' && (
+        <DraftingActions deliverableId={deliverable.id} />
       )}
       <BrandVoiceReviewPanel deliverableId={deliverable.id} />
     </div>
