@@ -1,5 +1,5 @@
 ---
-name: drip_sorozat_tervezes
+name: drip_sequence_planning
 when_to_use: Több emailes sorozatot kell tervezni — onboarding, nurture, re-engagement, vagy bármilyen automatizált flow
 ---
 

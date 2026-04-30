@@ -1,5 +1,5 @@
 ---
-name: brand_voice_ellenorzes
+name: brand_voice_review
 when_to_use: Egy meglévő deliverable szövegét kell összevetni a brand voice guidelines-szal és strukturált review-t adni
 ---
 

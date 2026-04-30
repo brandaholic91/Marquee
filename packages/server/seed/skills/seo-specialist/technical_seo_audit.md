@@ -1,5 +1,5 @@
 ---
-name: technikai_seo_audit
+name: technical_seo_audit
 when_to_use: Egy weboldal technikai SEO auditját kell elvégezni és strukturált checklist-et adni
 ---
 

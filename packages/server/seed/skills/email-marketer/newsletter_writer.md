@@ -1,5 +1,5 @@
 ---
-name: hirlevel_iras
+name: newsletter_writer
 when_to_use: Egyetlen standalone hírlevelet kell írni — termékbejelentés, edukáció, akció, vagy bármilyen egyszeri küldés
 ---
 

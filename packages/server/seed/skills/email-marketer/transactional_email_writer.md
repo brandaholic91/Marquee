@@ -1,5 +1,5 @@
 ---
-name: transactional_email_szoveg
+name: transactional_email_writer
 when_to_use: Tranzakciós emailt kell írni — welcome, abandoned cart, order confirmation, password reset, trial expiry, vagy bármilyen esemény-alapú email
 ---
 

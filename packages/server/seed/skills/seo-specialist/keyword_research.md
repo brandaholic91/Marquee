@@ -1,5 +1,5 @@
 ---
-name: kulcsszo_kutatas
+name: keyword_research
 when_to_use: Adott témára magyar nyelvű kulcsszó-kutatást kell végezni search intent analízissel
 ---
 
