@@ -74,33 +74,30 @@ export function Campaigns() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Kampánylista */}
-      <div className={`${selected ? 'hidden md:flex' : 'flex'} w-full md:w-72 md:shrink-0 border-r border-rule flex-col bg-cream overflow-hidden`}>
-        <div className="pl-14 md:pl-4 pr-4 py-4 border-b border-rule shrink-0">
-          <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Kampányok</h1>
+      <div className={`${selected ? 'hidden md:flex' : 'flex'} w-full md:w-56 md:shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden`}>
+        <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule shrink-0">
+          <h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Kampányok</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">{campaigns.length} kampány</p>
         </div>
-        <div className="flex-1 overflow-auto p-3 space-y-2">
+        <div className="flex-1 overflow-auto">
           {campaigns.map((c) => (
             <button
               key={c.id}
               onClick={() => void selectCampaign(c.id)}
-              className={`w-full text-left rounded-lg border-l-[3px] p-4 transition-colors ${
+              className={`w-full text-left px-4 py-2.5 border-l-2 transition-colors ${
                 selected?.id === c.id
-                  ? 'border-primary border-l-primary bg-primary-soft'
-                  : 'border-rule border-l-transparent bg-off-white hover:bg-parchment'
+                  ? 'border-primary bg-cream'
+                  : 'border-transparent text-ink-2 hover:bg-cream hover:text-ink-1'
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-sm text-ink-1 leading-snug">{c.title}</span>
-                <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASS[c.status] ?? ''}`}>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <span className={`text-sm font-medium truncate ${selected?.id === c.id ? 'text-ink-1' : ''}`}>{c.title}</span>
+                <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_CLASS[c.status] ?? ''}`}>
                   {STATUS_LABEL[c.status] ?? c.status}
                 </span>
               </div>
-              <div className="mt-2 flex gap-3 text-xs text-ink-2">
-                <span>{c.deliverableCount} tartalom</span>
-                {c.pendingApprovals > 0 && (
-                  <span className="text-amber-700 font-medium">{c.pendingApprovals} vár</span>
-                )}
+              <div className="mt-0.5 text-[11px] text-ink-3">
+                {c.deliverableCount} tartalom{c.pendingApprovals > 0 ? ` · ${c.pendingApprovals} vár` : ''}
               </div>
             </button>
           ))}

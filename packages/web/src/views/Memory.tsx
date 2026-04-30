@@ -111,9 +111,9 @@ export function Memory() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Fájllista */}
-      <div className={`${mobileView === 'detail' ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] md:shrink-0 bg-parchment border-r border-rule flex-col`}>
-        <div className="pl-14 md:pl-3.5 pr-3.5 py-4 border-b border-rule">
-          <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Memória</h1>
+      <div className={`${mobileView === 'detail' ? 'hidden md:flex' : 'flex'} w-full md:w-56 md:shrink-0 bg-parchment border-r border-rule flex-col`}>
+        <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule">
+          <h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Memória</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">
             {Object.keys(fileFlags).length} fájl
             {proposals.length > 0 ? ` · ${proposals.length} javaslat` : ''}

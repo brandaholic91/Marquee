@@ -26,13 +26,15 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
   }
 
   return (
-    <aside className={`flex shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden ${fullWidth ? 'w-full' : 'w-[200px]'}`}>
-      <div className="px-3 pt-4 pb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Beszélgetések</span>
+    <aside className={`flex shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden ${fullWidth ? 'w-full' : 'w-56'}`}>
+      <div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule flex items-center justify-between">
+        <div>
+          <h2 className="text-[15px] font-bold text-ink-1 tracking-tight">Beszélgetések</h2>
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => void createThread()}
-            className="text-xs text-primary-hover hover:text-primary px-2 py-1 rounded hover:bg-cream"
+            className="text-xs text-primary hover:text-primary-hover font-medium px-2 py-1 rounded hover:bg-cream"
             title="Új beszélgetés"
           >
             + Új
@@ -55,8 +57,8 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
           return (
             <div
               key={t.id}
-              className={`group flex items-center gap-1 px-3 py-2 cursor-pointer ${
-                isActive ? 'bg-primary-soft' : 'hover:bg-cream'
+              className={`group flex items-center gap-1 px-4 py-2.5 cursor-pointer border-l-2 transition-colors ${
+                isActive ? 'border-primary bg-cream' : 'border-transparent hover:bg-cream'
               }`}
               onClick={() => void selectThread(t.id)}
             >
@@ -74,7 +76,7 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
                   className="flex-1 text-sm bg-white border border-rule rounded px-1 py-0.5 outline-none"
                 />
               ) : (
-                <span className={`flex-1 text-sm truncate ${isActive ? 'text-primary-hover font-medium' : 'text-ink-1'}`}>
+                <span className={`flex-1 text-sm truncate ${isActive ? 'text-ink-1 font-medium' : 'text-ink-2'}`}>
                   {t.title ?? 'Új beszélgetés'}
                 </span>
               )}
@@ -108,10 +110,10 @@ export function ThreadList({ fullWidth, onClose }: { fullWidth?: boolean; onClos
             {archived.map((t) => (
               <div
                 key={t.id}
-                className="px-3 py-1.5 cursor-pointer hover:bg-cream"
+                className="px-4 py-2 cursor-pointer hover:bg-cream border-l-2 border-transparent transition-colors"
                 onClick={() => void selectThread(t.id)}
               >
-                <span className="text-sm text-ink-2 truncate block">{t.title ?? 'Archivált'}</span>
+                <span className="text-sm text-ink-3 truncate block">{t.title ?? 'Archivált'}</span>
               </div>
             ))}
           </details>

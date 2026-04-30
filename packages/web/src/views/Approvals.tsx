@@ -102,10 +102,10 @@ export function Approvals() {
 		<div className="flex flex-1 h-screen overflow-hidden">
 			{/* Lista panel */}
 			<div
-				className={`${selectedId ? "hidden md:flex" : "flex"} w-full md:w-[260px] md:shrink-0 border-r border-rule flex-col bg-cream`}
+				className={`${selectedId ? "hidden md:flex" : "flex"} w-full md:w-56 md:shrink-0 border-r border-rule flex-col bg-parchment`}
 			>
-				<div className="pl-14 md:pl-4 pr-4 py-4 border-b border-rule">
-					<h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Jóváhagyások</h1>
+				<div className="pl-14 md:pl-4 pr-4 pt-4 pb-3 border-b border-rule">
+					<h1 className="text-[15px] font-bold text-ink-1 tracking-tight">Jóváhagyások</h1>
 					<p className="text-[12px] text-ink-3 mt-0.5">
 						{pendingCount} vár · {shippedToday.length} ma kiszállítva
 					</p>
@@ -287,8 +287,8 @@ function DeliverableListItem({
 			onClick={onClick}
 			className={`w-full text-left px-4 py-3 border-b border-rule transition-colors ${
 				isActive
-					? "bg-off-white border-l-[3px] border-l-primary"
-					: "border-l-[3px] border-l-transparent hover:bg-parchment"
+					? "bg-cream border-l-2 border-l-primary"
+					: "border-l-2 border-l-transparent hover:bg-cream"
 			} ${dim ? "opacity-70" : ""}`}
 		>
 			<div className="flex items-start justify-between gap-2">
