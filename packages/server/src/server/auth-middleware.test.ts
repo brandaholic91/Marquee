@@ -10,6 +10,7 @@ beforeEach(async () => {
   await app.register(authMiddleware);
   app.get('/api/get', async () => ({ ok: true }));
   app.post('/api/post', async () => ({ ok: true }));
+  app.post('/api/briefs', async () => ({ ok: true }));
 });
 
 afterEach(() => {
@@ -34,15 +35,34 @@ describe('auth middleware', () => {
     expect(r.statusCode).toBe(200);
   });
 
-  it('rejects POST with 401 when token is set and header missing', async () => {
+  it('allows POST to non-protected routes even when token is set', async () => {
     process.env.MARQUEE_API_TOKEN = 'secret';
     const r = await app.inject({ method: 'POST', url: '/api/post' });
+    expect(r.statusCode).toBe(200);
+  });
+
+  it('rejects POST /api/briefs with 401 when token is set and header missing', async () => {
+    process.env.MARQUEE_API_TOKEN = 'secret';
+    const r = await app.inject({ method: 'POST', url: '/api/briefs' });
     expect(r.statusCode).toBe(401);
   });
 
-  it('rejects POST with 401 when token does not match', async () => {
+  it('rejects POST /api/briefs with 401 when token does not match', async () => {
     process.env.MARQUEE_API_TOKEN = 'secret';
-    const r = await app.inject({ method: 'POST', url: '/api/post', headers: { authorization: 'Bearer wrong' } });
+    const r = await app.inject({ method: 'POST', url: '/api/briefs', headers: { authorization: 'Bearer wrong' } });
     expect(r.statusCode).toBe(401);
   });
+
+  it('allows POST /api/briefs when token matches', async () => {
+    process.env.MARQUEE_API_TOKEN = 'secret';
+    const r = await app.inject({ method: 'POST', url: '/api/briefs', headers: { authorization: 'Bearer secret' } });
+    expect(r.statusCode).toBe(200);
+  });
+
+  it('allows POST /api/briefs/:id without auth', async () => {
+    process.env.MARQUEE_API_TOKEN = 'secret';
+    const r = await app.inject({ method: 'POST', url: '/api/briefs/123' });
+    expect(r.statusCode).toBe(404);
+  });
+
 });

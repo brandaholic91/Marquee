@@ -87,21 +87,20 @@ describe("loadAgentDescription", () => {
 	});
 	afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-	it("returns first non-empty paragraph, max 100 chars", () => {
+	it("returns description from frontmatter when present", () => {
 		writeFileSync(
 			join(dir, "agents/director/identity.md"),
-			"\n\nYou are the Director agent. You orchestrate everything.\n\nMore details here.",
+			"---\ndescription: You are the Director agent.\n---\n\nLong body that should not be used.",
 		);
 		const desc = loadAgentDescription(dir, "director");
 		expect(desc).toContain("You are the Director agent.");
-		expect(desc.length).toBeLessThanOrEqual(100);
-		expect(desc).not.toContain("More details here.");
+		expect(desc).not.toContain("Long body");
 	});
 
-	it("strips markdown headings from description", () => {
+	it("returns empty string when frontmatter description is missing", () => {
 		writeFileSync(join(dir, "agents/director/identity.md"), "## Role\n\nYou are the Director.");
 		const desc = loadAgentDescription(dir, "director");
-		expect(desc).not.toContain("##");
+		expect(desc).toBe("");
 	});
 
 	it("returns empty string when identity.md missing", () => {
