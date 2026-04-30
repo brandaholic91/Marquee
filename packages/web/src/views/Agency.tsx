@@ -46,9 +46,6 @@ function AgentCard({
   isActive: boolean;
   onClick: () => void;
 }) {
-  const visibleTools = agent.tools.slice(0, 3);
-  const hiddenCount = agent.tools.length - visibleTools.length;
-
   return (
     <button
       onClick={onClick}
@@ -91,8 +88,7 @@ function AgentCard({
       <div className="mt-2">
         <p className="text-[10px] text-ink-3 leading-relaxed">
           <span className="text-ink-3 mr-1">Tools:</span>
-          {visibleTools.join(', ')}
-          {hiddenCount > 0 && <span className="text-ink-3 opacity-60"> +{hiddenCount}</span>}
+          {agent.tools.join(', ')}
         </p>
       </div>
     </button>
