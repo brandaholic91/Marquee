@@ -9,7 +9,6 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 ## Branch állapot
 
 - **`master`** — aktív fejlesztési branch. `v0.2-final` tag archív referencia.
-- Nincs worktree, nincs külön fejlesztési branch. Minden munka közvetlenül `master`-en.
 
 ## Jelenlegi állapot (2026-04-30)
 
