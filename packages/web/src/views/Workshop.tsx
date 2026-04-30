@@ -44,12 +44,12 @@ export function Workshop() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto flex flex-col min-h-0 pb-24">
           <ChatThread />
         </div>
 
         {/* Sticky composer */}
-        <div className="shrink-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
+        <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
           <ChatComposer />
         </div>
       </div>
