@@ -52,7 +52,7 @@ export function HQ() {
   return (
     <div className="flex flex-col h-full">
       {/* Topbar */}
-      <div className="px-6 py-4 border-b border-rule flex items-center justify-between bg-cream">
+      <div className="pl-14 md:pl-6 pr-6 py-4 border-b border-rule flex items-center justify-between bg-cream">
         <div>
           <h1 className="text-[22px] font-extrabold text-ink-1 tracking-tight">Headquarters</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">{today}</p>

@@ -16,7 +16,7 @@ export function Agency() {
   }, []);
 
   return (
-    <div className="flex-1 overflow-auto p-6 md:p-8">
+    <div className="flex-1 overflow-auto p-6 md:p-8 pl-14 md:pl-8">
       <h1 className="text-xl font-bold text-ink-1 mb-6">Ügynökség</h1>
 
       {loading ? (

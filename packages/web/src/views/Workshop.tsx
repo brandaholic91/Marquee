@@ -58,7 +58,7 @@ export function Workshop() {
         {/* Chat header */}
         <div className="px-4 py-3.5 border-b border-rule bg-cream flex items-center gap-2">
           {/* Left spacer mobilon a nav hamburger miatt */}
-          <span className="md:hidden w-10 shrink-0" />
+          <span className="md:hidden w-12 shrink-0" />
           <span className="flex-1 text-[14px] font-bold text-ink-1 truncate">
             {threads.find((t) => t.id === threadId)?.title ?? 'Új beszélgetés'}
           </span>

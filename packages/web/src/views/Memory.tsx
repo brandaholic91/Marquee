@@ -112,7 +112,7 @@ export function Memory() {
 
       {/* Fájllista */}
       <div className={`${mobileView === 'detail' ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] md:shrink-0 bg-parchment border-r border-rule flex-col`}>
-        <div className="px-3.5 py-4 border-b border-rule">
+        <div className="pl-14 md:pl-3.5 pr-3.5 py-4 border-b border-rule">
           <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Memória</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">
             {Object.keys(fileFlags).length} fájl

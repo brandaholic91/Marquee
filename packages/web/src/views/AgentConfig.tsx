@@ -29,7 +29,7 @@ export function AgentConfig() {
   return (
     <div className="flex-1 overflow-auto flex flex-col">
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-rule bg-parchment shrink-0">
+      <div className="flex items-center gap-3 pl-14 md:pl-6 pr-6 py-4 border-b border-rule bg-parchment shrink-0">
         <button
           onClick={() => navigate('/ugynokseg')}
           className="text-xs text-ink-3 hover:text-ink-1 transition-colors"

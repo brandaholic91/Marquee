@@ -104,7 +104,7 @@ export function Approvals() {
 			<div
 				className={`${selectedId ? "hidden md:flex" : "flex"} w-full md:w-[260px] md:shrink-0 border-r border-rule flex-col bg-cream`}
 			>
-				<div className="px-4 py-4 border-b border-rule">
+				<div className="pl-14 md:pl-4 pr-4 py-4 border-b border-rule">
 					<h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Jóváhagyások</h1>
 					<p className="text-[12px] text-ink-3 mt-0.5">
 						{pendingCount} vár · {shippedToday.length} ma kiszállítva

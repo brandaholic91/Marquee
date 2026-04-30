@@ -75,7 +75,7 @@ export function Campaigns() {
 
       {/* Kampánylista */}
       <div className={`${selected ? 'hidden md:flex' : 'flex'} w-full md:w-72 md:shrink-0 border-r border-rule flex-col bg-cream overflow-hidden`}>
-        <div className="px-4 py-4 border-b border-rule shrink-0">
+        <div className="pl-14 md:pl-4 pr-4 py-4 border-b border-rule shrink-0">
           <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Kampányok</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">{campaigns.length} kampány</p>
         </div>
