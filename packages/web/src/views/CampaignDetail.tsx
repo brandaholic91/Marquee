@@ -29,6 +29,7 @@ export function CampaignDetail() {
 	const [chatThreadId, setChatThreadId] = useState<string | null>(null);
 	const [chatMessages, setChatMessages] = useState<MessageRow[]>([]);
 	const [chatInput, setChatInput] = useState("");
+	const keyMessageById = new Map((plan?.keyMessages ?? []).map((km) => [km.id, km.text]));
 
 	async function reload() {
 		const [campaignDetail, planResponse] = await Promise.all([campaignsApi.get(id), plansApi.get(id)]);
@@ -150,9 +151,11 @@ export function CampaignDetail() {
 									<CalendarItemCard
 										key={item.id}
 										item={item}
+										keyMessageText={item.keyMessageRef ? keyMessageById.get(item.keyMessageRef) ?? null : null}
 										onEdit={(current) => setEditingItem(current)}
 										onDeriveBrief={(itemId) => void plansApi.deriveBrief(id, itemId)}
 										onDelete={(itemId) => void plansApi.deleteCalendarItem(id, itemId).then(() => reload())}
+										onOpenApprovals={() => window.location.assign("/jovahagyas")}
 									/>
 								))
 							)}
@@ -205,6 +208,7 @@ export function CampaignDetail() {
 			{(addingItem || editingItem) && (
 				<CalendarItemEditModal
 					initial={editingItem}
+					keyMessages={plan?.keyMessages ?? []}
 					onClose={() => {
 						setAddingItem(false);
 						setEditingItem(null);

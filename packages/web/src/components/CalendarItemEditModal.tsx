@@ -3,16 +3,19 @@ import type { CalendarItem } from "../lib/api.js";
 
 export function CalendarItemEditModal({
 	initial,
+	keyMessages,
 	onClose,
 	onSave,
 }: {
 	initial: CalendarItem | null;
+	keyMessages: Array<{ id: string; text: string }>;
 	onClose: () => void;
 	onSave: (payload: {
 		channel: CalendarItem["channel"];
 		deliverable_type: string | null;
 		target_date: number;
 		intent: string;
+		key_message_ref: string | null;
 	}) => Promise<void>;
 }) {
 	const [channel, setChannel] = useState<CalendarItem["channel"]>(initial?.channel ?? "linkedin");
@@ -21,6 +24,7 @@ export function CalendarItemEditModal({
 		initial ? new Date(initial.targetDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
 	);
 	const [intent, setIntent] = useState(initial?.intent ?? "");
+	const [keyMessageRef, setKeyMessageRef] = useState(initial?.keyMessageRef ?? "");
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -56,6 +60,18 @@ export function CalendarItemEditModal({
 					value={intent}
 					onChange={(e) => setIntent(e.target.value)}
 				/>
+				<select
+					className="w-full border border-rule rounded-md px-3 py-2 text-sm bg-off-white"
+					value={keyMessageRef}
+					onChange={(e) => setKeyMessageRef(e.target.value)}
+				>
+					<option value="">Nincs key message ref</option>
+					{keyMessages.map((km) => (
+						<option key={km.id} value={km.id}>
+							{km.text}
+						</option>
+					))}
+				</select>
 				<div className="flex gap-2 justify-end">
 					<button className="px-4 py-2 rounded-md text-sm text-ink-2 hover:bg-cream" onClick={onClose}>
 						Mégse
@@ -68,6 +84,7 @@ export function CalendarItemEditModal({
 								deliverable_type: deliverableType.trim() || null,
 								target_date: new Date(`${targetDate}T00:00:00`).getTime(),
 								intent,
+								key_message_ref: keyMessageRef || null,
 							})
 						}
 					>
