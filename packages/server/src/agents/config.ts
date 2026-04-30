@@ -66,3 +66,13 @@ export function getRoleConfig(slug: RoleSlug): RoleConfig {
 	if (!c) throw new Error(`unknown role: ${slug}`);
 	return c;
 }
+
+export const ROLE_DISPLAY_NAMES: Record<RoleSlug, string> = {
+	director: "Director",
+	copywriter: "Copywriter",
+	"social-manager": "Social Manager",
+	"paid-specialist": "Paid Specialist",
+	"email-marketer": "Email Marketer",
+	"seo-specialist": "SEO Specialist",
+	"brand-voice-guardian": "Brand Voice Guardian",
+};
