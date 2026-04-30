@@ -1,23 +1,24 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { TopNav } from './components/TopNav.js';
+import { Sidebar } from './components/Sidebar.js';
+import { HQ } from './views/HQ.js';
 import { Workshop } from './views/Workshop.js';
 import { Approvals } from './views/Approvals.js';
-import { DeliverableDetail } from './views/DeliverableDetail.js';
 import { Memory } from './views/Memory.js';
 import { Campaigns } from './views/Campaigns.js';
 
 export function App() {
   return (
-    <div className="min-h-screen bg-cream text-ink-1">
-      <TopNav />
-      <main className="max-w-screen-xl mx-auto px-8 py-6">
+    <div className="flex min-h-screen bg-cream">
+      <Sidebar />
+      <main className="flex-1 flex flex-col min-w-0">
         <Routes>
+          <Route path="/hq" element={<HQ />} />
           <Route path="/" element={<Workshop />} />
           <Route path="/jovahagyas" element={<Approvals />} />
-          <Route path="/jovahagyas/:id" element={<DeliverableDetail />} />
+          <Route path="/jovahagyas/:id" element={<Approvals />} />
           <Route path="/kampanyok" element={<Campaigns />} />
           <Route path="/memoria" element={<Memory />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/hq" replace />} />
         </Routes>
       </main>
     </div>
