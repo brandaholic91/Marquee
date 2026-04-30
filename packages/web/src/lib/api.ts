@@ -212,3 +212,11 @@ export const reviewsApi = {
   list: (deliverableId: string): Promise<ReviewRow[]> =>
     fetch(`/api/deliverables/${deliverableId}/reviews`).then(json),
 };
+
+// -------------------------
+// Dashboard
+// -------------------------
+export const dashboardApi = {
+  activity: (): Promise<DeliverableRow[]> =>
+    fetch('/api/deliverables').then(json),
+};
