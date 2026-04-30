@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and } from 'drizzle-orm';
 import { campaigns, briefs, deliverables } from '../db/schema.js';
+import { getPlanByCampaignId, listCalendarItems } from '../db/queries.js';
 
 type Db = ReturnType<typeof drizzle>;
 
@@ -48,6 +49,15 @@ export function makeGetCampaignStatusTool(ctx: GetCampaignStatusContext) {
           awaiting_approval: byStatus['awaiting_approval'] ?? 0,
           shipped: byStatus['shipped'] ?? 0,
           drafting: byStatus['drafting'] ?? 0,
+          plan: (() => {
+            const plan = getPlanByCampaignId(ctx.db, campaign.id);
+            if (!plan) return { has_plan: false };
+            const items = listCalendarItems(ctx.db, plan.id);
+            const progress = { planned: 0, brief_created: 0, delivered: 0, cancelled: 0 };
+            for (const item of items) progress[item.status] += 1;
+            const summary = `${plan.goalType} ${plan.audience}, ${plan.keyMessages.length} fo uzenet`;
+            return { has_plan: true, summary, calendar_progress: progress };
+          })(),
         };
       }));
 

@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { AgencyDb } from "../db/index.js";
 import { events } from "../db/schema.js";
+import { applyCalendarEvent } from "./calendar-state-machine.js";
 
 export interface PersistedEvent {
 	id: number;
@@ -26,7 +27,7 @@ export class Broker {
 		this.ee.setMaxListeners(0);
 	}
 
-	emit(type: string, payload: Record<string, unknown>, meta: EmitMeta = {}): PersistedEvent {
+		emit(type: string, payload: Record<string, unknown>, meta: EmitMeta = {}): PersistedEvent {
 		const ts = Date.now();
 		const insert = this.db
 			.insert(events)
@@ -52,6 +53,21 @@ export class Broker {
 			payload,
 		};
 		this.ee.emit("event", evt);
+
+		const transition = applyCalendarEvent(this.db, type, payload);
+		if (transition) {
+			this.emit(
+				"calendar_item.status_changed",
+				{
+					item_id: transition.itemId,
+					plan_id: transition.planId,
+					prev_status: transition.prevStatus,
+					new_status: transition.newStatus,
+					brief_id: transition.briefId ?? null,
+				},
+				meta,
+			);
+		}
 		return evt;
 	}
 
