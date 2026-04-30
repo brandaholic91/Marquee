@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { briefs } from '../../db/schema.js';
+import { briefs, campaigns } from '../../db/schema.js';
 import { dispatchBrief } from '../../broker/router.js';
 import { AuthManager } from '../../providers/auth.js';
 
@@ -45,7 +45,7 @@ export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, op
     return all;
   });
 
-  app.patch<{ Params: { id: string }; Body: { title?: string; content_md?: string } }>(
+  app.patch<{ Params: { id: string }; Body: { title?: string; content_md?: string; campaign_name?: string | null } }>(
     '/api/briefs/:id',
     async (req, reply) => {
       const rows = await db.select().from(briefs).where(eq(briefs.id, req.params.id)).all();
@@ -56,7 +56,26 @@ export const briefsRoutes: FastifyPluginAsync<BriefsRoutesOpts> = async (app, op
       if (req.body?.title) current.title = req.body.title;
       if (req.body?.content_md) current.body = req.body.content_md;
 
-      await db.update(briefs).set({ contentMd: JSON.stringify(current) }).where(eq(briefs.id, req.params.id));
+      const updates: Record<string, unknown> = { contentMd: JSON.stringify(current) };
+
+      if (req.body?.campaign_name !== undefined) {
+        const name = req.body.campaign_name?.trim() ?? '';
+        if (name) {
+          const tentativeId = createId();
+          await db.insert(campaigns).values({
+            id: tentativeId, clientSlug: 'default', title: name,
+            status: 'active', createdAt: Date.now(),
+          }).onConflictDoNothing();
+          const found = await db.select().from(campaigns)
+            .where(and(eq(campaigns.clientSlug, 'default'), eq(campaigns.title, name)))
+            .limit(1).all();
+          updates.campaignId = found[0]?.id ?? null;
+        } else {
+          updates.campaignId = null;
+        }
+      }
+
+      await db.update(briefs).set(updates as never).where(eq(briefs.id, req.params.id));
       return { ok: true };
     },
   );

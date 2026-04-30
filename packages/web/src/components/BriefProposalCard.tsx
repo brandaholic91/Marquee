@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
+import { briefsApi, campaignsApi, type CampaignRow } from '../lib/api.js';
 import { MarkdownView } from './MarkdownView.js';
 import { MarkdownEditor } from './MarkdownEditor.js';
 import { roleLabel } from '../lib/roles.js';
@@ -11,6 +12,7 @@ export function BriefProposalCard({
   deliverableType,
   targetSpecialist,
   platform,
+  campaignName: initialCampaignName,
 }: {
   briefId: string;
   title: string;
@@ -18,17 +20,35 @@ export function BriefProposalCard({
   deliverableType: string;
   targetSpecialist: string;
   platform?: string | null;
+  campaignName?: string | null;
 }) {
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [editContent, setEditContent] = useState(contentMd);
+  const [campaignInput, setCampaignInput] = useState(initialCampaignName ?? '');
+  const [existingCampaigns, setExistingCampaigns] = useState<CampaignRow[]>([]);
   const dispatchBrief = useMarqueeStore((s) => s.dispatchBrief);
   const discardBrief = useMarqueeStore((s) => s.discardBrief);
   const updateBrief = useMarqueeStore((s) => s.updateBrief);
 
   useEffect(() => { setEditTitle(title); setEditContent(contentMd); }, [title, contentMd]);
+  useEffect(() => {
+    campaignsApi.list().then((rows) => setExistingCampaigns(rows.filter((c) => c.status === 'active')));
+  }, []);
+
+  const handleDispatch = async () => {
+    setBusy(true);
+    // Ha a kampány megváltozott, frissítjük dispatch előtt
+    const trimmed = campaignInput.trim();
+    const original = initialCampaignName ?? '';
+    if (trimmed !== original) {
+      await briefsApi.update(briefId, { campaign_name: trimmed || null });
+    }
+    await dispatchBrief(briefId);
+    setBusy(false);
+  };
 
   return (
     <>
@@ -85,6 +105,23 @@ export function BriefProposalCard({
         Specialista: <strong>{roleLabel(targetSpecialist)}</strong>
       </div>
 
+      {/* Kampány hozzárendelés */}
+      <div className="mt-3">
+        <label className="text-xs font-medium text-ink-2 uppercase tracking-wide">Kampány</label>
+        <input
+          list={`campaigns-${briefId}`}
+          className="mt-1 w-full border border-rule rounded-md px-3 py-2 text-sm bg-parchment focus:outline-none focus:border-primary"
+          placeholder="Kampány neve (opcionális)…"
+          value={campaignInput}
+          onChange={(e) => setCampaignInput(e.target.value)}
+        />
+        <datalist id={`campaigns-${briefId}`}>
+          {existingCampaigns.map((c) => (
+            <option key={c.id} value={c.title} />
+          ))}
+        </datalist>
+      </div>
+
       {contentMd && (
         <div className="mt-3">
           <button
@@ -105,11 +142,7 @@ export function BriefProposalCard({
         <button
           className="bg-primary text-white px-4 py-2 rounded-md disabled:opacity-50 hover:bg-primary-hover"
           disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            await dispatchBrief(briefId);
-            setBusy(false);
-          }}
+          onClick={handleDispatch}
         >
           Jóváhagy &amp; dispatch
         </button>

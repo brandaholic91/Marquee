@@ -104,6 +104,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
         deliverable_type: input.deliverable_type,
         target_specialist: input.target_specialist,
         platform: input.platform ?? null,
+        campaign_name: input.campaign_name ?? null,
       });
       return { brief_id: id };
     },

@@ -20,6 +20,7 @@ export interface ProposedBrief {
   deliverableType: string;
   targetSpecialist: string;
   platform: string | null;
+  campaignName: string | null;
 }
 
 export type Deliverable = DeliverableRow;
@@ -202,6 +203,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       target_specialist?: string;
       targetSpecialist?: string;
       platform?: string | null;
+      campaign_name?: string | null;
     }>('brief_proposed', (payload) => {
       const briefId = payload.brief_id ?? payload.briefId ?? '';
       const title = payload.title ?? '';
@@ -209,8 +211,9 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       const deliverableType = payload.deliverable_type ?? payload.deliverableType ?? '';
       const targetSpecialist = payload.target_specialist ?? payload.targetSpecialist ?? '';
       const platform = payload.platform ?? null;
+      const campaignName = (payload.campaign_name as string | null | undefined) ?? null;
 
-      const brief: ProposedBrief = { briefId, title, contentMd, deliverableType, targetSpecialist, platform };
+      const brief: ProposedBrief = { briefId, title, contentMd, deliverableType, targetSpecialist, platform, campaignName };
 
       const cardMsg: Message = {
         id: `brief_card_${briefId}`,

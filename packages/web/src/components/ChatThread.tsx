@@ -80,6 +80,7 @@ export function ChatThread() {
               deliverableType={brief.deliverableType}
               targetSpecialist={brief.targetSpecialist}
               platform={brief.platform}
+              campaignName={brief.campaignName}
             />
           );
         }
