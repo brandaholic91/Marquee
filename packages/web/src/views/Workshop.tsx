@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChatThread } from '../components/ChatThread.js';
 import { ChatComposer } from '../components/ChatComposer.js';
 import { EmptyState } from '../components/EmptyState.js';
@@ -13,9 +13,20 @@ export function Workshop() {
   const threadId = useMarqueeStore((s) => s.threadId);
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
 
+  const [mobileThreadsOpen, setMobileThreadsOpen] = useState(false);
+  const prevThreadId = useRef(threadId);
+
   useEffect(() => {
     void fetchInitialState();
   }, [fetchInitialState]);
+
+  // Automatikusan bezárja a drawert ha thread változott
+  useEffect(() => {
+    if (prevThreadId.current !== threadId) {
+      setMobileThreadsOpen(false);
+      prevThreadId.current = threadId;
+    }
+  }, [threadId]);
 
   if (memoryEmpty) {
     return (
@@ -30,17 +41,39 @@ export function Workshop() {
 
   return (
     <div className="flex flex-1 h-screen overflow-hidden">
-      {/* Thread sidebar */}
-      <ThreadList />
+      {/* Desktop thread sidebar */}
+      <div className="hidden md:flex">
+        <ThreadList />
+      </div>
+
+      {/* Mobile thread drawer */}
+      {mobileThreadsOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileThreadsOpen(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-14 w-64 shadow-xl overflow-hidden">
+            <ThreadList />
+          </div>
+        </div>
+      )}
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Chat header */}
         <div className="px-4 py-3.5 border-b border-rule bg-cream flex items-center gap-2">
-          <span className="text-[14px] font-bold text-ink-1">
+          <button
+            onClick={() => setMobileThreadsOpen(true)}
+            className="md:hidden text-ink-2 text-[20px] leading-none mr-1 px-1"
+            aria-label="Beszélgetések"
+          >
+            ☰
+          </button>
+          <span className="text-[14px] font-bold text-ink-1 truncate">
             {threads.find((t) => t.id === threadId)?.title ?? 'Új beszélgetés'}
           </span>
-          {activeAgents.has('director') && <span className="bulb ml-1" />}
+          {activeAgents.has('director') && <span className="bulb ml-1 shrink-0" />}
         </div>
 
         {/* Messages */}
@@ -52,7 +85,7 @@ export function Workshop() {
         <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
           <ChatComposer />
         </div>
-        {/* Bottom nav spacer — mobilon a fixed bottom nav ne takarja a composer-t */}
+        {/* Bottom nav spacer mobilon */}
         <div className="h-14 md:hidden shrink-0" />
       </div>
     </div>
