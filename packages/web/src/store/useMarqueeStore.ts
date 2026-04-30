@@ -100,6 +100,9 @@ function mapServerMessage(raw: {
 }
 
 
+// Brief IDs that are no longer draft — used to filter SSE replay of brief_proposed events.
+const dispatchedBriefIds = new Set<string>();
+
 export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
   threads: [],
   threadId: null,
@@ -141,13 +144,17 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       set({ memoryEmpty: false });
     }
 
-    // 4. Count awaiting_approval deliverables
+    // 4. Count awaiting_approval deliverables + populate dispatched brief IDs
     try {
       const awaiting = await deliverablesApi.list('awaiting_approval');
       set({ awaitingApprovalCount: awaiting.length });
     } catch {
       set({ awaitingApprovalCount: 0 });
     }
+    try {
+      const allBriefs = await briefsApi.list() as Array<{ id: string; status: string }>;
+      allBriefs.filter(b => b.status !== 'draft').forEach(b => dispatchedBriefIds.add(b.id));
+    } catch { /* ignore */ }
 
     // 5. Start SSE
     marqueeEvents.start();
@@ -208,6 +215,9 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       campaign_name?: string | null;
     }>('brief_proposed', (payload) => {
       const briefId = payload.brief_id ?? payload.briefId ?? '';
+      // SSE replay filter: skip briefs that are already dispatched/done
+      if (dispatchedBriefIds.has(briefId)) return;
+
       const title = payload.title ?? '';
       const contentMd = payload.content_md ?? payload.contentMd ?? '';
       const deliverableType = payload.deliverable_type ?? payload.deliverableType ?? '';
@@ -227,6 +237,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       };
 
       set((s) => {
+        if (s.proposedBriefs.some(b => b.briefId === briefId)) return s;
         const activeAgents = new Set(s.activeAgents);
         activeAgents.delete('director');
         return {
@@ -237,9 +248,10 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
       });
     });
 
-    // brief_dispatched: remove from proposedBriefs
+    // brief_dispatched: remove from proposedBriefs + mark as dispatched
     marqueeEvents.on<{ type: string; brief_id?: string; briefId?: string }>('brief_dispatched', (payload) => {
       const briefId = payload.brief_id ?? payload.briefId ?? '';
+      dispatchedBriefIds.add(briefId);
       set((s) => ({
         proposedBriefs: s.proposedBriefs.filter((b) => b.briefId !== briefId),
       }));
