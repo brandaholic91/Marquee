@@ -52,16 +52,17 @@ function AgentCard({
   return (
     <button
       onClick={onClick}
-      className="text-left bg-sidebar-bg border border-sidebar-border rounded-lg p-4 hover:border-primary/40 transition-colors group"
+      className="text-left bg-white border border-rule rounded-card p-4 hover:border-rule-strong hover:shadow-card transition-all group"
+      style={{ boxShadow: '0 1px 3px rgba(28,25,23,0.06)' }}
     >
       <div className="flex items-start gap-2 mb-1">
         <span
-          className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-green-500' : 'bg-sidebar-border'}`}
+          className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-green-500' : 'bg-rule-strong'}`}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-sm text-ink-1">{agent.name}</span>
-            <span className="text-sidebar-muted group-hover:text-ink-3 text-xs transition-colors">›</span>
+            <span className="text-ink-3 group-hover:text-ink-2 text-xs transition-colors">›</span>
           </div>
           {agent.description && (
             <p className="text-xs text-ink-3 mt-0.5 leading-relaxed line-clamp-2">
@@ -74,12 +75,12 @@ function AgentCard({
       <div className="flex flex-wrap items-center gap-1.5 mt-3">
         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
           agent.lifecycle === 'warm'
-            ? 'bg-blue-950/40 text-blue-400 border-blue-800/50'
-            : 'bg-green-950/40 text-green-400 border-green-800/50'
+            ? 'bg-primary-soft text-primary-deep border-primary/30'
+            : 'bg-parchment text-ink-3 border-rule'
         }`}>
           {agent.lifecycle}
         </span>
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-sidebar-active text-ink-3 border border-sidebar-border">
+        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-parchment text-ink-2 border border-rule">
           {agent.model}
         </span>
         <span className="text-[10px] text-ink-3">
@@ -89,9 +90,9 @@ function AgentCard({
 
       <div className="mt-2">
         <p className="text-[10px] text-ink-3 leading-relaxed">
-          <span className="text-sidebar-muted mr-1">Tools:</span>
+          <span className="text-ink-3 mr-1">Tools:</span>
           {visibleTools.join(', ')}
-          {hiddenCount > 0 && <span className="text-sidebar-muted"> +{hiddenCount}</span>}
+          {hiddenCount > 0 && <span className="text-ink-3 opacity-60"> +{hiddenCount}</span>}
         </p>
       </div>
     </button>

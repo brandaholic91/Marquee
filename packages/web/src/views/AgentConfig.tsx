@@ -29,19 +29,19 @@ export function AgentConfig() {
   return (
     <div className="flex-1 overflow-auto flex flex-col">
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-sidebar-border bg-sidebar-bg shrink-0">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-rule bg-parchment shrink-0">
         <button
           onClick={() => navigate('/ugynokseg')}
           className="text-xs text-ink-3 hover:text-ink-1 transition-colors"
         >
           ← Ügynökség
         </button>
-        <span className="text-sidebar-border">|</span>
+        <span className="text-rule-strong">|</span>
         <span className="font-semibold text-sm text-ink-1 capitalize">{role}</span>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-sidebar-border bg-sidebar-bg shrink-0 px-6">
+      <div className="flex border-b border-rule bg-parchment shrink-0 px-6">
         {(['identity', 'skills', 'settings'] as Tab[]).map((t) => (
           <button
             key={t}
@@ -97,7 +97,7 @@ function IdentityTab({ role }: { role: string }) {
   return (
     <div className="max-w-2xl">
       {toast && (
-        <div className="mb-3 text-xs text-red-400 bg-red-950/30 border border-red-800/40 rounded px-3 py-2">
+        <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
           {toast}
         </div>
       )}
@@ -109,7 +109,7 @@ function IdentityTab({ role }: { role: string }) {
         onChange={(e) => setBody(e.target.value)}
         rows={20}
         placeholder={`Te vagy a ${role} agentje ennek az AI marketing ügynökségnek.\n\nÍrd le a szerepét, feladatait és döntéshozatali stílusát.`}
-        className="w-full font-mono text-xs bg-sidebar-bg border border-sidebar-border rounded-lg p-3 text-ink-1 placeholder:text-ink-3 resize-y focus:outline-none focus:border-primary/50"
+        className="w-full font-mono text-xs bg-white border border-rule rounded-lg p-3 text-ink-1 placeholder:text-ink-3 resize-y focus:outline-none focus:border-primary/50"
       />
       <div className="flex items-center gap-3 mt-3">
         <button
@@ -158,7 +158,7 @@ function SettingsTab({ role }: { role: string }) {
   return (
     <div className="max-w-sm space-y-4">
       {toast && (
-        <div className="text-xs text-red-400 bg-red-950/30 border border-red-800/40 rounded px-3 py-2">
+        <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
           {toast}
         </div>
       )}
@@ -169,7 +169,7 @@ function SettingsTab({ role }: { role: string }) {
         <select
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          className="w-full text-xs bg-sidebar-bg border border-sidebar-border rounded-lg px-3 py-2 text-ink-1"
+          className="w-full text-xs bg-white border border-rule rounded-lg px-3 py-2 text-ink-1"
         >
           {MODEL_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -183,7 +183,7 @@ function SettingsTab({ role }: { role: string }) {
         <select
           value={thinkingLevel}
           onChange={(e) => setThinkingLevel(e.target.value)}
-          className="w-full text-xs bg-sidebar-bg border border-sidebar-border rounded-lg px-3 py-2 text-ink-1"
+          className="w-full text-xs bg-white border border-rule rounded-lg px-3 py-2 text-ink-1"
         >
           {THINKING_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -252,7 +252,7 @@ function SkillsTab({ role }: { role: string }) {
   return (
     <div>
       {toast && (
-        <div className="mb-3 text-xs text-red-400 bg-red-950/30 border border-red-800/40 rounded px-3 py-2">
+        <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
           {toast}
         </div>
       )}
@@ -260,13 +260,13 @@ function SkillsTab({ role }: { role: string }) {
         {skills.map((s) => (
           <div
             key={s.name}
-            className="bg-sidebar-bg border border-sidebar-border rounded-lg p-3"
+            className="bg-white border border-rule rounded-card p-3"
           >
             <p className="text-xs font-semibold text-ink-1 mb-1">{s.name}</p>
             <p className="text-xs text-ink-3 line-clamp-2 mb-3">{s.description}</p>
             <button
               onClick={() => openEdit(s.name)}
-              className="text-xs font-medium px-3 py-1 rounded bg-sidebar-active text-ink-2 hover:text-ink-1 transition-colors"
+              className="text-xs font-medium px-3 py-1 rounded bg-parchment text-ink-2 hover:text-ink-1 transition-colors border border-rule"
             >
               Szerkesztés
             </button>
@@ -275,7 +275,7 @@ function SkillsTab({ role }: { role: string }) {
         {/* New skill card */}
         <button
           onClick={openNew}
-          className="border border-dashed border-sidebar-border rounded-lg p-3 flex items-center justify-center text-xs text-ink-3 hover:border-primary/40 hover:text-ink-1 transition-colors"
+          className="border border-dashed border-rule rounded-card p-3 flex items-center justify-center text-xs text-ink-3 hover:border-primary/40 hover:text-ink-1 transition-colors"
         >
           + Új skill
         </button>
@@ -323,8 +323,8 @@ function SkillModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-sidebar-bg border border-sidebar-border rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border shrink-0">
+      <div className="bg-white border border-rule rounded-card w-full max-w-lg max-h-[90vh] flex flex-col shadow-card">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-rule shrink-0">
           <h2 className="text-sm font-semibold text-ink-1">
             {isNew ? 'Új skill' : `Szerkesztés: ${initial.name}`}
           </h2>
@@ -341,7 +341,7 @@ function SkillModal({
               onChange={(e) => setName(e.target.value)}
               readOnly={!isNew}
               placeholder="pl. brief_parser"
-              className="w-full text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 font-mono read-only:opacity-60"
+              className="w-full text-xs bg-cream border border-rule rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 font-mono read-only:opacity-60"
             />
           </div>
           <div>
@@ -352,7 +352,7 @@ function SkillModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mikor aktiválja az agent ezt a skillt…"
-              className="w-full text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3"
+              className="w-full text-xs bg-cream border border-rule rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3"
             />
           </div>
           <div>
@@ -364,17 +364,17 @@ function SkillModal({
               onChange={(e) => setBody(e.target.value)}
               rows={12}
               placeholder="Részletes instrukciók az agent számára…"
-              className="w-full font-mono text-xs bg-cream border border-sidebar-border rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 resize-y"
+              className="w-full font-mono text-xs bg-cream border border-rule rounded-lg px-3 py-2 text-ink-1 placeholder:text-ink-3 resize-y"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-4 py-3 border-t border-sidebar-border shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-rule shrink-0">
           <div>
             {onDelete && (
               <button
                 onClick={onDelete}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="text-xs text-red-600 hover:text-red-700 transition-colors"
               >
                 Törlés
               </button>
@@ -383,7 +383,7 @@ function SkillModal({
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="text-xs px-3 py-1.5 rounded-lg border border-sidebar-border text-ink-3 hover:text-ink-1 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg border border-rule text-ink-3 hover:text-ink-1 transition-colors"
             >
               Mégse
             </button>
