@@ -78,14 +78,14 @@ export function Workshop() {
 
         {/* Messages */}
         <div className="flex-1 overflow-auto flex flex-col min-h-0 pb-24">
-          <div className="w-full max-w-2xl mx-auto">
+          <div className="w-full max-w-4xl mx-auto">
             <ChatThread />
           </div>
         </div>
 
         {/* Sticky composer */}
         <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <ChatComposer />
           </div>
         </div>
