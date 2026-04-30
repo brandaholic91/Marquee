@@ -79,6 +79,7 @@ export function ChatThread() {
 							targetSpecialist={brief.targetSpecialist}
 							platform={brief.platform}
 							campaignName={brief.campaignName}
+							calendarItemId={brief.calendarItemId}
 							parentDeliverableId={brief.parentDeliverableId}
 						/>
 					);

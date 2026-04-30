@@ -39,6 +39,7 @@ export interface ProposedBrief {
 	targetSpecialist: string;
 	platform: string | null;
 	campaignName: string | null;
+	calendarItemId?: string | null;
 	parentDeliverableId?: string | null;
 }
 
@@ -234,6 +235,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			targetSpecialist?: string;
 			platform?: string | null;
 			campaign_name?: string | null;
+			calendar_item_id?: string | null;
 		}>("brief_proposed", (payload) => {
 			const briefId = payload.brief_id ?? payload.briefId ?? "";
 			const eventThreadId = (payload as Record<string, unknown>).thread_id as string | undefined;
@@ -251,6 +253,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			const targetSpecialist = payload.target_specialist ?? payload.targetSpecialist ?? "";
 			const platform = payload.platform ?? null;
 			const campaignName = (payload.campaign_name as string | null | undefined) ?? null;
+			const calendarItemId = payload.calendar_item_id ?? null;
 			const parentDeliverableId = ((payload as Record<string, unknown>).parent_deliverable_id as string | null) ?? null;
 
 			const brief: ProposedBrief = {
@@ -261,6 +264,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 				targetSpecialist,
 				platform,
 				campaignName,
+				calendarItemId,
 				parentDeliverableId,
 			};
 

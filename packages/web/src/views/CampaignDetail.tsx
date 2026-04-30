@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
 	campaignsApi,
 	plansApi,
@@ -23,6 +23,7 @@ export function CampaignDetail() {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [activeTab, setActiveTab] = useState<"plan" | "chat">("plan");
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [editingItem, setEditingItem] = useState<CalendarItem | null>(null);
 	const [addingItem, setAddingItem] = useState(false);
 	const [chatThreadId, setChatThreadId] = useState<string | null>(null);
@@ -35,6 +36,19 @@ export function CampaignDetail() {
 		setPlan(planResponse.plan);
 		setItems(planResponse.calendar_items);
 	}
+
+	useEffect(() => {
+		const tab = searchParams.get("tab");
+		if (tab === "plan" || tab === "chat") setActiveTab(tab);
+	}, [searchParams]);
+
+	useEffect(() => {
+		setSearchParams((prev) => {
+			const next = new URLSearchParams(prev);
+			next.set("tab", activeTab);
+			return next;
+		});
+	}, [activeTab, setSearchParams]);
 
 	useEffect(() => {
 		if (!id) return;

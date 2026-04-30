@@ -2,7 +2,7 @@ import { useState, type KeyboardEvent } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { BulbIndicator } from './BulbIndicator.js';
 
-export function ChatComposer() {
+export function ChatComposer({ placeholder = 'Írj a Directornak…' }: { placeholder?: string }) {
   const [text, setText] = useState('');
   const sendMessage = useMarqueeStore((s) => s.sendMessage);
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
@@ -35,7 +35,7 @@ export function ChatComposer() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Írj a Directornak…"
+        placeholder={placeholder}
         rows={2}
         className="textarea-chat w-full min-h-[52px] rounded-t-[16px] resize-none bg-transparent px-3 pt-3 pb-2 text-sm text-ink-1 placeholder:text-ink-3 focus:outline-none"
         disabled={directorThinking}

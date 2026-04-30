@@ -22,6 +22,8 @@ export function App() {
           <Route path="/jovahagyas/:id" element={<Approvals />} />
           <Route path="/kampanyok" element={<Campaigns />} />
           <Route path="/kampanyok/:id" element={<CampaignDetail />} />
+          <Route path="/campaigns" element={<Campaigns />} />
+          <Route path="/campaigns/:id" element={<CampaignDetail />} />
           <Route path="/memoria" element={<Memory />} />
           <Route path="/ugynokseg" element={<Agency />} />
           <Route path="/ugynokseg/:role" element={<AgentConfig />} />

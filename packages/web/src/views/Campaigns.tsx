@@ -93,6 +93,11 @@ export function Campaigns() {
               <div className="mt-0.5 text-[11px] text-ink-3">
                 {c.deliverableCount} tartalom{c.pendingApprovals > 0 ? ` · ${c.pendingApprovals} vár` : ''}
               </div>
+              <div className="mt-0.5 text-[11px] text-ink-3">
+                {c.plan_summary?.has_plan && c.plan_summary.calendar_progress
+                  ? `📋 ${c.plan_summary.calendar_progress.planned + c.plan_summary.calendar_progress.brief_created} tervezett, ${c.plan_summary.calendar_progress.delivered} kész`
+                  : 'Tervezés'}
+              </div>
             </SidebarPanelItem>
           ))}
         </SidebarPanelBody>
