@@ -1,7 +1,10 @@
 const FILES = [
-  { file: 'profile.md',           label: 'Ügyfélprofil' },
-  { file: 'brand_voice.md',       label: 'Brand voice' },
-  { file: 'ongoing_campaigns.md', label: 'Aktív kampányok' },
+  { file: 'profile.md',              label: 'Ügyfélprofil' },
+  { file: 'brand_voice.md',          label: 'Brand voice' },
+  { file: 'ongoing_campaigns.md',    label: 'Aktív kampányok' },
+  { file: 'email_list_segments.md',  label: 'Email szegmensek' },
+  { file: 'seo_keyword_bank.md',     label: 'SEO kulcsszó-bank' },
+  { file: 'brand_voice_guidelines.md', label: 'Brand voice guidelines' },
 ];
 
 export function MemoryFileList({
