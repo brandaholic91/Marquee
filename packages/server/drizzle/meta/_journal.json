@@ -50,6 +50,13 @@
 			"when": 1746388900000,
 			"tag": "0006_handoff_index",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "6",
+			"when": 1777595100000,
+			"tag": "0007_campaign_plans",
+			"breakpoints": true
 		}
 	]
 }

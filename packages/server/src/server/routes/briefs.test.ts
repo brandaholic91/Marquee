@@ -8,11 +8,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { briefsRoutes } from './briefs.js';
 import * as schema from '../../db/schema.js';
+import { AuthManager } from '../../providers/auth.js';
 
 let app: FastifyInstance;
 let db: ReturnType<typeof drizzle>;
 let baseDir: string;
 const broker = { emit: () => {} };
+const authManager = {
+  getApiKey: () => 'test-key',
+  start: async () => {},
+  stop: () => {},
+} as unknown as AuthManager;
 
 beforeEach(async () => {
   baseDir = mkdtempSync(join(tmpdir(), 'marquee-routes-'));
@@ -21,7 +27,7 @@ beforeEach(async () => {
   await migrate(db, { migrationsFolder: 'drizzle' });
   await db.insert(schema.clients).values({ slug: 'default', name: 'D', createdAt: Date.now() });
   app = Fastify();
-  await app.register(briefsRoutes, { db, broker, dataDir: baseDir });
+  await app.register(briefsRoutes, { db, broker, dataDir: baseDir, authManager });
 });
 
 describe('briefs routes', () => {

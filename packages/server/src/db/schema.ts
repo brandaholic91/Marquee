@@ -27,11 +27,84 @@ export const campaigns = sqliteTable(
 	}),
 );
 
+export const campaignPlans = sqliteTable(
+	"campaign_plans",
+	{
+		id: text("id").primaryKey(),
+		campaignId: text("campaign_id")
+			.notNull()
+			.references(() => campaigns.id),
+		clientSlug: text("client_slug")
+			.notNull()
+			.references(() => clients.slug),
+		goal: text("goal").notNull().default(""),
+		goalType: text("goal_type", {
+			enum: ["lead-gen", "awareness", "nurture", "activation", "retention", "other"],
+		})
+			.notNull()
+			.default("other"),
+		audience: text("audience").notNull().default(""),
+		keyMessages: text("key_messages", { mode: "json" })
+			.$type<Array<{ id: string; text: string }>>()
+			.notNull()
+			.default([]),
+		channelMix: text("channel_mix", { mode: "json" })
+			.$type<Array<{ channel: string; weight: number; note?: string }>>()
+			.notNull()
+			.default([]),
+		timelineStart: integer("timeline_start"),
+		timelineEnd: integer("timeline_end"),
+		kpi: text("kpi").notNull().default(""),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(t) => ({
+		uniqueCampaign: uniqueIndex("uq_campaign_plans_campaign").on(t.campaignId),
+	}),
+);
+
+export const campaignCalendarItems = sqliteTable(
+	"campaign_calendar_items",
+	{
+		id: text("id").primaryKey(),
+		planId: text("plan_id")
+			.notNull()
+			.references(() => campaignPlans.id),
+		campaignId: text("campaign_id")
+			.notNull()
+			.references(() => campaigns.id),
+		clientSlug: text("client_slug")
+			.notNull()
+			.references(() => clients.slug),
+		channel: text("channel", {
+			enum: ["linkedin", "email", "blog", "landing", "ad", "other"],
+		}).notNull(),
+		deliverableType: text("deliverable_type", {
+			enum: ["social_post", "email", "blog_post", "ad_copy", "content_brief_seo", "seo_report"],
+		}),
+		targetDate: integer("target_date").notNull(),
+		intent: text("intent").notNull().default(""),
+		keyMessageRef: text("key_message_ref"),
+		status: text("status", {
+			enum: ["planned", "brief_created", "delivered", "cancelled"],
+		})
+			.notNull()
+			.default("planned"),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(t) => ({
+		byPlanStatus: index("idx_calendar_plan_status").on(t.planId, t.status, t.targetDate),
+		byCampaign: index("idx_calendar_campaign").on(t.campaignId, t.targetDate),
+	}),
+);
+
 export const chatThreads = sqliteTable("chat_threads", {
 	id: text("id").primaryKey(),
 	clientSlug: text("client_slug")
 		.notNull()
 		.references(() => clients.slug),
+	campaignId: text("campaign_id").references(() => campaigns.id),
 	title: text("title"),
 	archivedAt: integer("archived_at"),
 });
@@ -62,11 +135,12 @@ export const briefs = sqliteTable("briefs", {
 		.references(() => clients.slug),
 	sourceThreadId: text("source_thread_id").references(() => chatThreads.id),
 	campaignId: text("campaign_id").references(() => campaigns.id),
+	calendarItemId: text("calendar_item_id").references(() => campaignCalendarItems.id),
 	contentMd: text("content_md").notNull(),
 	status: text("status", { enum: ["draft", "dispatched", "done"] }).notNull(),
 	createdAt: integer("created_at").notNull(),
 	dispatchedAt: integer("dispatched_at"),
-	parentDeliverableId: text("parent_deliverable_id").references(() => deliverables.id),
+	parentDeliverableId: text("parent_deliverable_id"),
 });
 
 export const delegations = sqliteTable(

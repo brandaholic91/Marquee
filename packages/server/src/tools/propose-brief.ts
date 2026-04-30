@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq, and } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
-import { briefs, campaigns } from "../db/schema.js";
+import { briefs, campaignCalendarItems, campaigns } from "../db/schema.js";
 
 type Db = ReturnType<typeof drizzle>;
 interface Broker {
@@ -24,6 +24,7 @@ export interface ProposeBriefInput {
 	platform?: string;
 	campaign_name?: string;
 	skill?: string;
+	calendar_item_id?: string;
 }
 
 export interface ProposeBriefContext {
@@ -60,6 +61,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 						"Opcionális kampánynév. Ha meg van adva, a brief egy kampányhoz tartozik. Azonos névvel több brief is kerülhet egy kampányba.",
 				},
 				skill: { type: "string" },
+				calendar_item_id: { type: "string" },
 			},
 			required: ["title", "content_md", "deliverable_type", "target_specialist"],
 		},
@@ -71,6 +73,34 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 
 			// Find or create campaign — INSERT OR IGNORE + SELECT handles concurrent parallel tool calls
 			let campaignId: string | null = null;
+			if (input.calendar_item_id) {
+				const item = await ctx.db
+					.select()
+					.from(campaignCalendarItems)
+					.where(eq(campaignCalendarItems.id, input.calendar_item_id))
+					.limit(1)
+					.all();
+				const row = item[0];
+				if (!row) throw new Error("calendar item not found");
+				if (row.status !== "planned") throw new Error("calendar item must be planned");
+				const activeBrief = await ctx.db
+					.select({ id: briefs.id })
+					.from(briefs)
+					.where(and(eq(briefs.calendarItemId, row.id), eq(briefs.clientSlug, ctx.clientSlug)))
+					.all();
+				if (activeBrief.some((b) => b.id)) {
+					const linked = await ctx.db
+						.select({ status: briefs.status })
+						.from(briefs)
+						.where(and(eq(briefs.calendarItemId, row.id), eq(briefs.clientSlug, ctx.clientSlug)))
+						.all();
+					if (linked.some((b) => b.status === "draft" || b.status === "dispatched")) {
+						throw new Error("calendar item already has an active brief");
+					}
+				}
+				campaignId = row.campaignId;
+			}
+			
 			if (input.campaign_name) {
 				const tentativeId = createId();
 				await ctx.db
@@ -90,7 +120,11 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 					.where(and(eq(campaigns.clientSlug, ctx.clientSlug), eq(campaigns.title, input.campaign_name)))
 					.limit(1)
 					.all();
-				campaignId = rows[0]?.id ?? null;
+				const namedCampaignId = rows[0]?.id ?? null;
+				if (campaignId && namedCampaignId && campaignId !== namedCampaignId) {
+					throw new Error("calendar item campaign mismatch");
+				}
+				campaignId = namedCampaignId;
 			}
 
 			const id = createId();
@@ -99,6 +133,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 				clientSlug: ctx.clientSlug,
 				sourceThreadId: ctx.threadId,
 				campaignId,
+				calendarItemId: input.calendar_item_id ?? null,
 				contentMd: JSON.stringify({
 					title: input.title,
 					body: input.content_md,
@@ -106,6 +141,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 					target_specialist: input.target_specialist,
 					platform: input.platform ?? null,
 					skill: input.skill ?? null,
+					calendar_item_id: input.calendar_item_id ?? null,
 				}),
 				status: "draft",
 				createdAt: Date.now(),
@@ -123,6 +159,7 @@ export function makeProposeBriefTool(ctx: ProposeBriefContext) {
 				platform: input.platform ?? null,
 				campaign_name: input.campaign_name ?? null,
 				skill: input.skill ?? null,
+				calendar_item_id: input.calendar_item_id ?? null,
 			});
 			return { brief_id: id };
 		},

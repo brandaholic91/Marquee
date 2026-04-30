@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchBrief, composePrompt } from "./router.js";
 import * as schema from "../db/schema.js";
+import { AuthManager } from "../providers/auth.js";
 
 vi.mock("@mariozechner/pi-agent-core", () => ({
 	Agent: class FakeAgent {
@@ -20,6 +21,11 @@ vi.mock("@mariozechner/pi-agent-core", () => ({
 let db: ReturnType<typeof drizzle>;
 let baseDir: string;
 const broker = { emit: vi.fn() };
+const authManager = {
+	getApiKey: () => "test-key",
+	start: async () => {},
+	stop: () => {},
+} as unknown as AuthManager;
 
 beforeEach(async () => {
 	baseDir = mkdtempSync(join(tmpdir(), "marquee-rt-"));
@@ -47,7 +53,7 @@ beforeEach(async () => {
 
 describe("dispatchBrief", () => {
 	it("marks brief dispatched, creates delegation, spawns specialist", async () => {
-		await dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1" });
+		await dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1", authManager });
 		const briefs = await db.select().from(schema.briefs).all();
 		expect(briefs[0].status).toBe("dispatched");
 		expect(briefs[0].dispatchedAt).not.toBeNull();
@@ -60,8 +66,8 @@ describe("dispatchBrief", () => {
 	});
 
 	it("throws on already-dispatched brief", async () => {
-		await dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1" });
-		await expect(dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1" })).rejects.toThrow(
+		await dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1", authManager });
+		await expect(dispatchBrief({ db, broker, dataDir: baseDir, briefId: "br_1", authManager })).rejects.toThrow(
 			/already dispatched/,
 		);
 	});
