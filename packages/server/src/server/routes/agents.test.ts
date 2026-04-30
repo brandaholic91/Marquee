@@ -37,6 +37,16 @@ describe("GET /api/agents", () => {
     expect(Array.isArray(director!.tools)).toBe(true);
     expect(typeof director!.skillCount).toBe("number");
   });
+
+  it("each entry has thinkingLevel, name, and description fields", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/agents" });
+    const body = res.json<Record<string, unknown>[]>();
+    const director = body.find((a) => a.role === "director");
+    expect(director).toBeDefined();
+    expect(typeof director!.thinkingLevel).toBe("string");
+    expect(typeof director!.name).toBe("string");
+    expect(typeof director!.description).toBe("string");
+  });
 });
 
 describe("GET /api/agents/:role/identity", () => {
@@ -72,6 +82,15 @@ describe("PUT /api/agents/:role/identity", () => {
     const get = await app.inject({ method: "GET", url: "/api/agents/director/identity" });
     expect(get.json<{ body: string }>().body).toContain("New identity text.");
   });
+
+  it("returns 404 for unknown role", async () => {
+    const res = await app.inject({
+      method: "PUT",
+      url: "/api/agents/ghost-role/identity",
+      payload: { body: "Should not save." },
+    });
+    expect(res.statusCode).toBe(404);
+  });
 });
 
 describe("GET /api/agents/:role/config", () => {
@@ -79,6 +98,11 @@ describe("GET /api/agents/:role/config", () => {
     const res = await app.inject({ method: "GET", url: "/api/agents/director/config" });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({});
+  });
+
+  it("returns 404 for unknown role", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/agents/ghost-role/config" });
+    expect(res.statusCode).toBe(404);
   });
 });
 
@@ -97,5 +121,77 @@ describe("PUT /api/agents/:role/config", () => {
       model: "gpt-5.4",
       thinking_level: "low",
     });
+  });
+
+  it("returns 404 for unknown role", async () => {
+    const res = await app.inject({
+      method: "PUT",
+      url: "/api/agents/ghost-role/config",
+      payload: { model: "gpt-5.4" },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it("partial update merges with existing config, not overwrite", async () => {
+    // First, save a config with model
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { model: "gpt-5.4" },
+    });
+
+    // Then, update with only thinking_level
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { thinking_level: "low" },
+    });
+
+    // Both should be present in the merged result
+    const get = await app.inject({ method: "GET", url: "/api/agents/director/config" });
+    expect(get.json()).toEqual({
+      model: "gpt-5.4",
+      thinking_level: "low",
+    });
+  });
+
+  it("empty model string is removed from config", async () => {
+    // Save a config with model
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { model: "gpt-5.4" },
+    });
+
+    // Clear it by sending empty string
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { model: "" },
+    });
+
+    // Model key should be gone
+    const get = await app.inject({ method: "GET", url: "/api/agents/director/config" });
+    expect(get.json()).toEqual({});
+  });
+
+  it("thinking_level 'off' is removed from config", async () => {
+    // Save a config with thinking_level
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { thinking_level: "low" },
+    });
+
+    // Set it to "off"
+    await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/config",
+      payload: { thinking_level: "off" },
+    });
+
+    // thinking_level key should be gone
+    const get = await app.inject({ method: "GET", url: "/api/agents/director/config" });
+    expect(get.json()).toEqual({});
   });
 });
