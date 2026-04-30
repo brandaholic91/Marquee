@@ -6,3 +6,4 @@ dist/
 ~/.marquee/state.db*
 .DS_Store
 .worktrees
+.superpowers/
