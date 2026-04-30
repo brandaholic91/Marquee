@@ -118,6 +118,12 @@ export function Campaigns() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => navigate(`/kampanyok/${selected.id}`)}
+                  className="text-xs px-3 py-1.5 rounded border border-rule text-ink-2 hover:bg-parchment"
+                >
+                  Terv nézet
+                </button>
                 {selected.status !== 'completed' && (
                   <button
                     onClick={() => void setStatus(selected.id, 'completed')}

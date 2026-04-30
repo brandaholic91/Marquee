@@ -112,11 +112,16 @@ export interface ThreadRow {
 	clientSlug: string;
 	title: string | null;
 	archivedAt: number | null;
+	campaignId?: string | null;
 }
 
 export const threadsApi = {
-	list: (): Promise<ThreadRow[]> => fetch("/api/threads").then(json),
-	create: (title?: string): Promise<{ thread_id: string }> => post("/api/threads", { title }),
+	list: (opts?: { campaignId?: string }): Promise<ThreadRow[]> => {
+		const qs = opts?.campaignId ? `?campaign_id=${encodeURIComponent(opts.campaignId)}` : "";
+		return fetch(`/api/threads${qs}`).then(json);
+	},
+	create: (title?: string, campaignId?: string | null): Promise<{ thread_id: string }> =>
+		post("/api/threads", { title, campaign_id: campaignId ?? null }),
 	rename: (id: string, title: string): Promise<{ ok: true }> =>
 		fetch(`/api/threads/${id}`, {
 			method: "PATCH",
@@ -136,10 +141,48 @@ export interface CampaignRow {
 	createdAt: number;
 	deliverableCount: number;
 	pendingApprovals: number;
+	plan_summary?: {
+		has_plan: boolean;
+		calendar_progress: null | {
+			planned: number;
+			brief_created: number;
+			delivered: number;
+			cancelled: number;
+		};
+	};
 }
 
 export interface CampaignDetail extends CampaignRow {
 	deliverables: DeliverableRow[];
+}
+
+export interface CampaignPlan {
+	id: string;
+	campaignId: string;
+	goal: string;
+	goalType: "lead-gen" | "awareness" | "nurture" | "activation" | "retention" | "other";
+	audience: string;
+	keyMessages: Array<{ id: string; text: string }>;
+	channelMix: Array<{ channel: string; weight: number; note?: string }>;
+	timelineStart: number | null;
+	timelineEnd: number | null;
+	kpi: string;
+	createdAt: number;
+	updatedAt: number;
+}
+
+export interface CalendarItem {
+	id: string;
+	planId: string;
+	campaignId: string;
+	channel: "linkedin" | "email" | "blog" | "landing" | "ad" | "other";
+	deliverableType: string | null;
+	targetDate: number;
+	intent: string;
+	keyMessageRef: string | null;
+	status: "planned" | "brief_created" | "delivered" | "cancelled";
+	createdAt: number;
+	updatedAt: number;
 }
 
 export const campaignsApi = {
@@ -151,6 +194,54 @@ export const campaignsApi = {
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(body),
 		}).then(json),
+};
+
+export const plansApi = {
+	get: (campaignId: string): Promise<{ plan: CampaignPlan | null; calendar_items: CalendarItem[] }> =>
+		fetch(`/api/campaigns/${campaignId}/plan`).then(json),
+	put: (
+		campaignId: string,
+		body: {
+			goal?: string;
+			goal_type?: CampaignPlan["goalType"];
+			audience?: string;
+			key_messages?: Array<{ id: string; text: string }>;
+			channel_mix?: Array<{ channel: string; weight: number; note?: string }>;
+			timeline_start?: number | null;
+			timeline_end?: number | null;
+			kpi?: string;
+		},
+	): Promise<{ ok: true; plan_id: string }> => put(`/api/campaigns/${campaignId}/plan`, body),
+	createCalendarItem: (
+		campaignId: string,
+		body: {
+			channel: CalendarItem["channel"];
+			deliverable_type?: string | null;
+			target_date: number;
+			intent: string;
+			key_message_ref?: string | null;
+		},
+	): Promise<{ item_id: string }> => post(`/api/campaigns/${campaignId}/plan/calendar-items`, body),
+	updateCalendarItem: (
+		campaignId: string,
+		itemId: string,
+		body: Partial<{
+			channel: CalendarItem["channel"];
+			deliverable_type: string | null;
+			target_date: number;
+			intent: string;
+			key_message_ref: string | null;
+		}>,
+	): Promise<{ ok: true }> =>
+		fetch(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}`, {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		}).then(json),
+	deleteCalendarItem: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
+		fetch(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}`, { method: "DELETE" }).then(json),
+	deriveBrief: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
+		post(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}/derive-brief`),
 };
 
 // -------------------------
