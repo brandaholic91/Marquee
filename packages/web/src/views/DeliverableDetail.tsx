@@ -6,6 +6,7 @@ import { TypeBadge } from '../components/TypeBadge.js';
 import { RevisionTabs } from '../components/RevisionTabs.js';
 import { DeliverableActions } from '../components/DeliverableActions.js';
 import { MarkdownView } from '../components/MarkdownView.js';
+import { BrandVoiceReviewPanel } from '../components/BrandVoiceReviewPanel.js';
 
 interface Revision {
   id: string;
@@ -97,6 +98,7 @@ export function DeliverableDetail() {
       {deliverable.status === 'awaiting_approval' && (
         <DeliverableActions deliverableId={deliverable.id} />
       )}
+      <BrandVoiceReviewPanel deliverableId={deliverable.id} />
     </div>
   );
 }

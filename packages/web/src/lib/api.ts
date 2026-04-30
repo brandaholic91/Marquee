@@ -179,3 +179,36 @@ export const messagesApi = {
   ): Promise<{ message_id: string }> =>
     post('/api/messages', { thread_id: threadId, content }),
 };
+
+// -------------------------
+// Reviews
+// -------------------------
+export interface ReviewComment {
+  quote: string;
+  issue: string;
+  severity: 'info' | 'warn' | 'error';
+}
+
+export interface ReviewSuggestion {
+  original: string;
+  suggested: string;
+  reasoning: string;
+}
+
+export interface ReviewRow {
+  id: string;
+  deliverableId: string;
+  reviewerRole: string;
+  score: number;
+  comments: ReviewComment[];
+  suggestions: ReviewSuggestion[];
+  summary: string;
+  createdAt: number;
+}
+
+export const reviewsApi = {
+  trigger: (deliverableId: string): Promise<{ ok: true }> =>
+    post(`/api/deliverables/${deliverableId}/review`),
+  list: (deliverableId: string): Promise<ReviewRow[]> =>
+    fetch(`/api/deliverables/${deliverableId}/reviews`).then(json),
+};
