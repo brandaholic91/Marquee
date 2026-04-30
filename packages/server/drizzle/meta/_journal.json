@@ -1,41 +1,48 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1777482821483,
-      "tag": "0000_rare_multiple_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1746000000000,
-      "tag": "0001_campaigns",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1746060000000,
-      "tag": "0002_campaign_unique",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1746216000000,
-      "tag": "0003_deliverable_reviews",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1746302400000,
-      "tag": "0004_deliverable_title",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1777482821483,
+			"tag": "0000_rare_multiple_man",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1746000000000,
+			"tag": "0001_campaigns",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1746060000000,
+			"tag": "0002_campaign_unique",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1746216000000,
+			"tag": "0003_deliverable_reviews",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1746302400000,
+			"tag": "0004_deliverable_title",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1746388800000,
+			"tag": "0005_handoff",
+			"breakpoints": true
+		}
+	]
 }
