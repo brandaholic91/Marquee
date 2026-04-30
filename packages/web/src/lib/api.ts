@@ -244,6 +244,11 @@ export const plansApi = {
 		post(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}/derive-brief`),
 };
 
+export const proposalsApi = {
+	accept: (messageId: string): Promise<{ ok: true }> => post(`/api/proposals/${messageId}/accept`),
+	discard: (messageId: string): Promise<{ ok: true }> => post(`/api/proposals/${messageId}/discard`),
+};
+
 // -------------------------
 // Messages
 // -------------------------

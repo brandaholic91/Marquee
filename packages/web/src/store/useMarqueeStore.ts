@@ -13,11 +13,21 @@ import { marqueeEvents } from "../lib/sse.js";
 
 export interface Message {
 	id: string;
-	type: "chat" | "brief_proposal" | "memory_proposal" | "tool_call" | "tool_result" | "system";
+	type:
+		| "chat"
+		| "brief_proposal"
+		| "memory_proposal"
+		| "plan_proposal"
+		| "plan_update_proposal"
+		| "calendar_item_proposal"
+		| "tool_call"
+		| "tool_result"
+		| "system";
 	sender: "user" | "director" | "system";
 	text: string;
 	briefId?: string;
 	toolName?: string;
+	contentJson?: string;
 	ts: number;
 }
 
@@ -74,6 +84,7 @@ interface MarqueeStore {
 // Helper to turn a raw server message into a Message
 function mapServerMessage(raw: {
 	id: string;
+	type?: string;
 	sender?: string;
 	role?: string;
 	text?: string;
@@ -102,9 +113,10 @@ function mapServerMessage(raw: {
 
 	return {
 		id: raw.id,
-		type: "chat",
+		type: (raw.type as Message["type"]) ?? "chat",
 		sender,
 		text,
+		contentJson: raw.contentJson,
 		ts: raw.ts ?? raw.created_at ?? raw.createdAt ?? Date.now(),
 	};
 }
