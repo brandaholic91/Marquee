@@ -29,6 +29,7 @@ export function Memory() {
   const [editMode, setEditMode] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadAll = async () => {
     const [files, props] = await Promise.all([
@@ -71,24 +72,36 @@ export function Memory() {
   };
 
   const handleSave = async () => {
-    const r = await memoryApi.put(SLUG, selected, editValue) as { ok?: true; error?: string };
-    if (r?.ok) {
-      await loadFile(selected);
-      await loadAll();
-    } else {
-      setSaveError(r?.error ?? 'Mentés sikertelen.');
+    setIsSaving(true);
+    try {
+      const r = await memoryApi.put(SLUG, selected, editValue) as { ok?: true; error?: string };
+      if (r?.ok) {
+        await loadFile(selected);
+        await loadAll();
+      } else {
+        setSaveError(r?.error ?? 'Mentés sikertelen.');
+      }
+    } catch {
+      setSaveError('Hálózati hiba.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleApprove = async (id: string) => {
-    await memoryApi.approveProposal(id);
-    await loadAll();
-    await loadFile(selected);
+    try {
+      await memoryApi.approveProposal(id);
+      await loadAll();
+      await loadFile(selected);
+    } catch { /* silent */ }
   };
 
   const handleReject = async (id: string) => {
-    await memoryApi.rejectProposal(id);
-    await loadAll();
+    try {
+      await memoryApi.rejectProposal(id);
+      await loadAll();
+      await loadFile(selected);
+    } catch { /* silent */ }
   };
 
   const fm = fileMeta?.frontmatter ?? {};
@@ -136,7 +149,7 @@ export function Memory() {
           ) : (
             <div className="flex gap-2">
               <button onClick={handleCancel} className="text-ink-3 text-[12px] font-medium px-3 py-1.5">Mégse</button>
-              <button onClick={() => void handleSave()} className="bg-primary text-sidebar-bg font-bold text-[12px] px-3 py-1.5 rounded-btn">Mentés</button>
+              <button onClick={() => void handleSave()} disabled={isSaving} className="bg-primary text-sidebar-bg font-bold text-[12px] px-3 py-1.5 rounded-btn disabled:opacity-50">{isSaving ? 'Mentés…' : 'Mentés'}</button>
             </div>
           )}
         </div>
