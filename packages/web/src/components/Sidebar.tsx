@@ -11,7 +11,7 @@ export function Sidebar() {
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
 
   return (
-    <aside className="w-[180px] shrink-0 bg-sidebar-bg flex flex-col border-r border-sidebar-border min-h-screen">
+    <aside className="hidden md:flex w-[180px] shrink-0 bg-sidebar-bg flex-col border-r border-sidebar-border min-h-screen">
       {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
         <div className="w-7 h-7 rounded-[6px] bg-primary flex items-center justify-center shrink-0">

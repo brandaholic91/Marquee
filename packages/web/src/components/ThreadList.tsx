@@ -26,7 +26,7 @@ export function ThreadList() {
   }
 
   return (
-    <aside className="w-[200px] shrink-0 border-r border-rule flex flex-col bg-parchment overflow-hidden">
+    <aside className="hidden md:flex w-[200px] shrink-0 border-r border-rule flex-col bg-parchment overflow-hidden">
       <div className="px-3 pt-4 pb-2 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Beszélgetések</span>
         <button

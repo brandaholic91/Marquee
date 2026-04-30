@@ -24,6 +24,7 @@ interface FileMeta {
 export function Memory() {
   const [fileFlags, setFileFlags] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState('profile.md');
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [fileMeta, setFileMeta] = useState<FileMeta | null>(null);
   const [proposals, setProposals] = useState<ProposalShape[]>([]);
   const [editMode, setEditMode] = useState(false);
@@ -110,7 +111,7 @@ export function Memory() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Fájllista */}
-      <div className="w-[220px] shrink-0 bg-parchment border-r border-rule flex flex-col">
+      <div className={`${mobileView === 'detail' ? 'hidden md:flex' : 'flex'} w-full md:w-[220px] md:shrink-0 bg-parchment border-r border-rule flex-col`}>
         <div className="px-3.5 py-4 border-b border-rule">
           <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Memória</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">
@@ -129,16 +130,22 @@ export function Memory() {
         )}
 
         <div className="flex-1 overflow-auto p-2">
-          <MemoryFileList fileFlags={fileFlags} selected={selected} onSelect={setSelected} />
+          <MemoryFileList fileFlags={fileFlags} selected={selected} onSelect={(f) => { setSelected(f); setMobileView('detail'); }} />
         </div>
       </div>
 
       {/* Editor panel */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className={`${mobileView === 'detail' ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 overflow-hidden`}>
 
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-rule bg-cream flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileView('list')}
+              className="md:hidden text-ink-2 text-[13px] font-medium shrink-0"
+            >
+              ← Vissza
+            </button>
             <span className="font-mono text-[14px] font-bold text-ink-1">{selected}</span>
             {fm.description && (
               <span className="text-[11px] text-ink-3">{fm.description}</span>
@@ -170,7 +177,7 @@ export function Memory() {
         )}
 
         {/* Tartalom */}
-        <div className="flex-1 overflow-auto p-5">
+        <div className="flex-1 overflow-auto p-5 pb-14 md:pb-5">
           {!editMode ? (
             <div className="bg-off-white border border-rule rounded-card p-5 max-w-2xl">
               {/* Frontmatter metaadat-sáv */}

@@ -52,6 +52,8 @@ export function Workshop() {
         <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
           <ChatComposer />
         </div>
+        {/* Bottom nav spacer — mobilon a fixed bottom nav ne takarja a composer-t */}
+        <div className="h-14 md:hidden shrink-0" />
       </div>
     </div>
   );

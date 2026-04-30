@@ -99,7 +99,7 @@ export function Approvals() {
     <div className="flex flex-1 h-screen overflow-hidden">
 
       {/* Lista panel */}
-      <div className="w-[260px] shrink-0 border-r border-rule flex flex-col bg-cream">
+      <div className={`${selectedId ? 'hidden md:flex' : 'flex'} w-full md:w-[260px] md:shrink-0 border-r border-rule flex-col bg-cream`}>
         <div className="px-4 py-4 border-b border-rule">
           <h1 className="text-[16px] font-extrabold text-ink-1 tracking-tight">Jóváhagyások</h1>
           <p className="text-[12px] text-ink-3 mt-0.5">
@@ -145,12 +145,19 @@ export function Approvals() {
       </div>
 
       {/* Detail panel */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className={`${selectedId ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 overflow-hidden`}>
         {detail ? (
           <>
             {/* Header */}
             <div className="px-5 py-4 border-b border-rule flex items-start justify-between gap-3 bg-cream shrink-0">
-              <div>
+              <div className="flex items-start gap-2 min-w-0">
+                <button
+                  onClick={() => { setSelectedId(null); navigate('/jovahagyas', { replace: true }); }}
+                  className="md:hidden shrink-0 text-ink-2 text-[13px] font-medium mt-0.5"
+                >
+                  ← Vissza
+                </button>
+                <div>
                 <p className="text-[15px] font-bold text-ink-1">
                   {detail.deliverable.type} — {detail.deliverable.id.slice(0, 8)}
                 </p>
@@ -162,6 +169,7 @@ export function Approvals() {
                       minute: '2-digit',
                     })}
                   </span>
+                </div>
                 </div>
               </div>
               {canAct && (
@@ -193,7 +201,7 @@ export function Approvals() {
             </div>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-auto p-5">
+            <div className="flex-1 overflow-auto p-5 pb-14 md:pb-5">
               <RevisionTabs
                 revisions={revisions}
                 currentId={detail.deliverable.currentRevisionId ?? undefined}
