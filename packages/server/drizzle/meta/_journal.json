@@ -43,6 +43,13 @@
 			"when": 1746388800000,
 			"tag": "0005_handoff",
 			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1746388900000,
+			"tag": "0006_handoff_index",
+			"breakpoints": true
 		}
 	]
 }
