@@ -164,3 +164,16 @@ export const memoryAudit = sqliteTable('memory_audit', {
 }, (t) => ({
   byFile: index('idx_audit_file_ts').on(t.clientSlug, t.file, t.ts),
 }));
+
+export const deliverableReviews = sqliteTable('deliverable_reviews', {
+  id: text('id').primaryKey(),
+  deliverableId: text('deliverable_id').notNull().references(() => deliverables.id),
+  reviewerRole: text('reviewer_role').notNull(),
+  score: integer('score').notNull(),
+  comments: text('comments').notNull(),
+  suggestions: text('suggestions').notNull(),
+  summary: text('summary').notNull(),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  byDeliverable: index('idx_reviews_deliverable').on(t.deliverableId),
+}));
