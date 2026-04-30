@@ -102,6 +102,7 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
       db, broker, dataDir, clientSlug: brief.clientSlug,
       role: oldDel.toAgent as never,
       delegationId: newDelId, deliverableType: d.type as never,
+      authManager: opts.authManager,
     });
     broker.emit({ type: 'deliverable_returned', deliverable_id: d.id, delegation_id: newDelId });
     broker.emit({ type: 'delegation_started', delegation_id: newDelId, agent_slug: oldDel.toAgent, session_id: session.id });
