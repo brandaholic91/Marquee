@@ -10,6 +10,12 @@ import {
 	saveAgentConfig,
 	loadAgentDescription,
 } from "../../agents/loader.js";
+import {
+	listSkillsForRole,
+	loadSkillBody,
+	saveSkill,
+	deleteSkill,
+} from "../../skills/loader.js";
 
 export interface AgentsRoutesOpts {
 	dataDir: string;
@@ -86,5 +92,59 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOpts> = async (app, { 
 		},
 	);
 
-	// Skill routes added in Task 7
+	// GET /api/agents/:role/skills
+	app.get<{ Params: { role: string } }>("/api/agents/:role/skills", async (req, reply) => {
+		const { role } = req.params;
+		if (!isValidRole(role)) return reply.code(404).send({ error: "unknown role" });
+		return listSkillsForRole(dataDir, role);
+	});
+
+	// GET /api/agents/:role/skills/:name
+	app.get<{ Params: { role: string; name: string } }>(
+		"/api/agents/:role/skills/:name",
+		async (req, reply) => {
+			const { role, name } = req.params;
+			if (!isValidRole(role)) return reply.code(404).send({ error: "unknown role" });
+			const metas = listSkillsForRole(dataDir, role);
+			const meta = metas.find((s) => s.name === name);
+			if (!meta) return reply.code(404).send({ error: "skill not found" });
+			const body = loadSkillBody(dataDir, role, name) ?? "";
+			return { ...meta, body };
+		},
+	);
+
+	// PUT /api/agents/:role/skills/:name
+	app.put<{ Params: { role: string; name: string }; Body: { description: string; body: string } }>(
+		"/api/agents/:role/skills/:name",
+		async (req, reply) => {
+			const { role, name } = req.params;
+			if (!isValidRole(role)) return reply.code(404).send({ error: "unknown role" });
+			saveSkill(dataDir, role, name, req.body.description ?? "", req.body.body ?? "");
+			return reply.send({ ok: true });
+		},
+	);
+
+	// POST /api/agents/:role/skills
+	app.post<{ Params: { role: string }; Body: { name: string; description: string; body: string } }>(
+		"/api/agents/:role/skills",
+		async (req, reply) => {
+			const { role } = req.params;
+			if (!isValidRole(role)) return reply.code(404).send({ error: "unknown role" });
+			const { name, description, body } = req.body;
+			if (!name || !description) return reply.code(400).send({ error: "name and description required" });
+			saveSkill(dataDir, role, name, description, body ?? "");
+			return reply.send({ ok: true });
+		},
+	);
+
+	// DELETE /api/agents/:role/skills/:name
+	app.delete<{ Params: { role: string; name: string } }>(
+		"/api/agents/:role/skills/:name",
+		async (req, reply) => {
+			const { role, name } = req.params;
+			if (!isValidRole(role)) return reply.code(404).send({ error: "unknown role" });
+			deleteSkill(dataDir, role, name);
+			return reply.send({ ok: true });
+		},
+	);
 };

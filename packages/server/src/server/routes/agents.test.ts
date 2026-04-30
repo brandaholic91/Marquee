@@ -195,3 +195,109 @@ describe("PUT /api/agents/:role/config", () => {
     expect(get.json()).toEqual({});
   });
 });
+
+describe("GET /api/agents/:role/skills", () => {
+  it("returns empty array when no skills exist", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/agents/director/skills" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([]);
+  });
+
+  it("returns frontmatter-only list when skills exist", async () => {
+    mkdirSync(join(dataDir, "skills/director"), { recursive: true });
+    writeFileSync(
+      join(dataDir, "skills/director/brief_parser.md"),
+      "---\nname: brief_parser\ndescription: Parses briefs\n---\n\nSECRET BODY",
+    );
+    const res = await app.inject({ method: "GET", url: "/api/agents/director/skills" });
+    const body = res.json<{ name: string; description: string }[]>();
+    expect(body).toHaveLength(1);
+    expect(body[0].name).toBe("brief_parser");
+    expect(body[0].description).toBe("Parses briefs");
+    expect(JSON.stringify(body)).not.toContain("SECRET BODY");
+  });
+
+  it("returns 404 for unknown role", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/agents/ghost/skills" });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe("GET /api/agents/:role/skills/:name", () => {
+  it("returns 404 for unknown skill", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/agents/director/skills/ghost" });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it("returns name, description, body for existing skill", async () => {
+    mkdirSync(join(dataDir, "skills/director"), { recursive: true });
+    writeFileSync(
+      join(dataDir, "skills/director/brief_parser.md"),
+      "---\nname: brief_parser\ndescription: Parses briefs\n---\n\nStep 1: parse.",
+    );
+    const res = await app.inject({ method: "GET", url: "/api/agents/director/skills/brief_parser" });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ name: string; description: string; body: string }>();
+    expect(body.name).toBe("brief_parser");
+    expect(body.description).toBe("Parses briefs");
+    expect(body.body).toContain("Step 1: parse.");
+  });
+});
+
+describe("PUT /api/agents/:role/skills/:name", () => {
+  it("creates or updates a skill", async () => {
+    const res = await app.inject({
+      method: "PUT",
+      url: "/api/agents/director/skills/my_skill",
+      payload: { description: "Does something", body: "Step 1: do it." },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<{ ok: boolean }>().ok).toBe(true);
+
+    const get = await app.inject({ method: "GET", url: "/api/agents/director/skills/my_skill" });
+    expect(get.json<{ body: string }>().body).toContain("Step 1: do it.");
+  });
+});
+
+describe("POST /api/agents/:role/skills", () => {
+  it("creates a new skill and returns ok", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/agents/director/skills",
+      payload: { name: "new_skill", description: "A new skill", body: "Do something new." },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<{ ok: boolean }>().ok).toBe(true);
+
+    const list = await app.inject({ method: "GET", url: "/api/agents/director/skills" });
+    const names = list.json<{ name: string }[]>().map((s) => s.name);
+    expect(names).toContain("new_skill");
+  });
+
+  it("returns 400 when name or description missing", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/agents/director/skills",
+      payload: { body: "no name or description" },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe("DELETE /api/agents/:role/skills/:name", () => {
+  it("deletes an existing skill", async () => {
+    mkdirSync(join(dataDir, "skills/director"), { recursive: true });
+    writeFileSync(
+      join(dataDir, "skills/director/to_delete.md"),
+      "---\nname: to_delete\ndescription: d\n---\nbody",
+    );
+    const res = await app.inject({
+      method: "DELETE",
+      url: "/api/agents/director/skills/to_delete",
+    });
+    expect(res.statusCode).toBe(200);
+
+    const list = await app.inject({ method: "GET", url: "/api/agents/director/skills" });
+    expect(list.json<unknown[]>()).toHaveLength(0);
+  });
+});
