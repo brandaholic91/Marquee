@@ -5,7 +5,7 @@ export function BottomNav() {
   const pending = useMarqueeStore((s) => s.awaitingApprovalCount);
 
   return (
-    <nav className="flex md:hidden fixed bottom-0 left-0 right-0 bg-sidebar-bg border-t border-sidebar-border z-50 h-14">
+    <nav className="flex md:hidden fixed bottom-0 left-0 right-0 bg-sidebar-bg border-t border-sidebar-border z-50 h-14 overflow-x-auto scrollbar-none">
       <BottomNavItem to="/hq" label="HQ" end />
       <BottomNavItem to="/" label="Workshop" end />
       <BottomNavItem to="/jovahagyas" label="Jóváhagy" badge={pending > 0 ? pending : undefined} />
@@ -26,7 +26,7 @@ function BottomNavItem({
       to={to}
       end={end}
       className={({ isActive }) =>
-        `relative flex-1 flex items-center justify-center text-[11px] font-medium transition-colors ${
+        `relative flex-none w-[72px] flex items-center justify-center text-[11px] font-medium transition-colors ${
           isActive ? 'text-primary' : 'text-sidebar-text'
         }`
       }
