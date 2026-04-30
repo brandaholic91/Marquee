@@ -11,18 +11,27 @@ export interface ThreadsRoutesOpts { db: Db; }
 export const threadsRoutes: FastifyPluginAsync<ThreadsRoutesOpts> = async (app, opts) => {
   const { db } = opts;
 
-  app.post<{ Body?: { title?: string } }>('/api/threads', async (req, reply) => {
+  app.post<{ Body?: { title?: string; campaign_id?: string | null } }>('/api/threads', async (req, reply) => {
     const id = createId();
     await db.insert(chatThreads).values({
       id,
       clientSlug: 'default',
+      campaignId: req.body?.campaign_id ?? null,
       title: req.body?.title ?? null,
       archivedAt: null,
     });
     return reply.code(201).send({ thread_id: id });
   });
 
-  app.get('/api/threads', async () => {
+  app.get<{ Querystring: { campaign_id?: string } }>('/api/threads', async (req) => {
+    const campaignId = req.query?.campaign_id;
+    if (campaignId) {
+      return db.select().from(chatThreads)
+        .where(and(eq(chatThreads.clientSlug, 'default'), eq(chatThreads.campaignId, campaignId)))
+        .orderBy(sql`rowid DESC`)
+        .all();
+    }
+
     const active = await db.select().from(chatThreads)
       .where(and(eq(chatThreads.clientSlug, 'default'), isNull(chatThreads.archivedAt)))
       .orderBy(sql`rowid DESC`)
