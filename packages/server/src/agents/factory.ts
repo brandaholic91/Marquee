@@ -10,6 +10,7 @@ import { makeReadMemoryTool } from '../tools/read-memory.js';
 import { makeProposeBriefTool } from '../tools/propose-brief.js';
 import { makeProposeMemoryUpdateTool } from '../tools/propose-memory-update.js';
 import { makeSubmitDeliverableTool } from '../tools/submit-deliverable.js';
+import { makeSubmitReviewTool } from '../tools/submit-review.js';
 import { makeGetCampaignStatusTool } from '../tools/get-campaign-status.js';
 import { loadSkillRecipes } from '../skills/loader.js';
 import { renderMemoryContext } from './transform-context.js';
@@ -26,6 +27,7 @@ export interface SpawnInput {
   role: RoleSlug;
   threadId?: string;
   delegationId?: string;
+  deliverableId?: string;    // NEW
   deliverableType?: 'social_post' | 'email' | 'blog_post' | 'ad_copy';
   authManager?: AuthManager;
 }
@@ -138,6 +140,12 @@ async function buildToolsForRole(
           db: input.db, broker: input.broker, dataDir: input.dataDir,
           clientSlug: input.clientSlug, delegationId: input.delegationId,
           agentSlug: role, deliverableType: input.deliverableType,
+        }) as RawTool);
+        break;
+      case 'submit_review':
+        if (!input.deliverableId) throw new Error('submit_review needs deliverableId');
+        tools.push(makeSubmitReviewTool({
+          db: input.db, broker: input.broker, deliverableId: input.deliverableId,
         }) as RawTool);
         break;
     }
