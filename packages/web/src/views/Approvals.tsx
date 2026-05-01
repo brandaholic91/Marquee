@@ -89,11 +89,11 @@ export function Approvals() {
 	const pending = allDeliverables.filter((d) => d.status === "awaiting_approval");
 	const shipped = allDeliverables.filter((d) => d.status === "shipped");
 	const pendingCount = pending.length;
-	const shippedToday = shipped.filter((d) => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		return d.updatedAt >= today.getTime();
-	});
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const todayMs = today.getTime();
+	const shippedToday = shipped.filter((d) => d.updatedAt >= todayMs);
+	const shippedEarlier = shipped.filter((d) => d.updatedAt < todayMs);
 
 	const canAct = detail?.deliverable.status === "awaiting_approval";
 	const revisions = (detail?.revisions as Revision[]) ?? [];
@@ -118,6 +118,14 @@ export function Approvals() {
 						<>
 							<SidebarPanelDivider label="Ma kiszállítva" />
 							{shippedToday.map((d) => (
+								<DeliverableListItem key={d.id} d={d} isActive={d.id === selectedId} onClick={() => selectItem(d.id)} dim />
+							))}
+						</>
+					)}
+					{shippedEarlier.length > 0 && (
+						<>
+							<SidebarPanelDivider label="Korábbi szállítások" />
+							{shippedEarlier.map((d) => (
 								<DeliverableListItem key={d.id} d={d} isActive={d.id === selectedId} onClick={() => selectItem(d.id)} dim />
 							))}
 						</>

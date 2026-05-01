@@ -298,21 +298,25 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			}));
 		});
 
-		// deliverable_submitted: increment counter + remove specialist from activeAgents
+		// deliverable_submitted: increment counter + remove specialist from activeAgents + refresh list
 		marqueeEvents.on<{ type: string; agent_slug?: string }>("deliverable_submitted", (payload) => {
 			set((s) => {
 				const activeAgents = new Set(s.activeAgents);
 				if (payload.agent_slug) activeAgents.delete(payload.agent_slug);
 				return { awaitingApprovalCount: s.awaitingApprovalCount + 1, activeAgents };
 			});
+			// Refresh deliverables list from API to show new item
+			void get().fetchDeliverables("awaiting_approval");
 		});
 
-		// deliverable_approved / deliverable_discarded: decrement counter
+		// deliverable_approved / deliverable_discarded: decrement counter + refresh list
 		marqueeEvents.on("deliverable_approved", () => {
 			set((s) => ({ awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1) }));
+			void get().fetchDeliverables("awaiting_approval");
 		});
 		marqueeEvents.on("deliverable_discarded", () => {
 			set((s) => ({ awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1) }));
+			void get().fetchDeliverables("awaiting_approval");
 		});
 
 		// delegation_started: add agent_slug to activeAgents
