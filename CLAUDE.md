@@ -27,7 +27,7 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 ✅ Brief származtatás calendar item-ből (laza kötés: `briefs.calendar_item_id` opcionális). Calendar item state machine event-driven státusz-átmenetekkel.
 ✅ n8n outbound webhook + inbound (`POST /api/briefs` Bearer tokennel).
 ✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json`.
-⚠️ VM 260 deploy még nem történt meg (Plan v1 sem deployolva).
+✅ VM 260 deploy megtörtént (`master`), service fut (`marquee.service`), DNS + reverse proxy aktív.
 
 ## Agentek (7 role)
 
@@ -94,7 +94,20 @@ PORT=7892
 bash scripts/deploy.sh
 ```
 
-Rsync → VM 260 (192.168.2.60) → `npm install --omit=dev` → `sudo systemctl restart marquee`.
+Az aktuális ajánlott deploy-flow git-clone/pull alapú (`/opt/marquee` git repo), nem rsync workflow.
+
+Javasolt lépések (VM 260):
+
+```bash
+cd /opt/marquee
+git pull --ff-only
+npm ci
+npm run build --workspaces
+sudo systemctl restart marquee
+sudo systemctl status marquee --no-pager
+```
+
+Megjegyzés: `scripts/deploy.sh` jelenleg rsync-alapú legacy script, használható, de hosszú távon a git-pull alapú deploy az elsődleges.
 
 - Live: http://marquee.lab2.home.arpa
 - Service: `marquee.service` (User=balazs, WorkingDirectory=/opt/marquee)
@@ -201,14 +214,27 @@ Friss DB-n (pl. VM 260) az `openDb` automatikusan alkalmazza az összes migráci
 
 ## Production VM 260 állapot (2026-05-01)
 
-Deploy-ready (Wave 1 + Plan v1 lokálisan kész), de még nem deployolva:
-- `marquee.service` **inactive (dead)**
-- **OAuth setup hiányzik** a szerveren:
-  ```bash
-  ssh balazs@192.168.2.60
-  cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
-  ```
-- Friss DB-n a 0007 migration az `openDb`-vel automatikusan alkalmazódik (a `__drizzle_migrations` tracking bug csak meglévő DB-ket érint).
+Deploy státusz:
+- `marquee.service` fut
+- app path: `/opt/marquee`
+- DNS: `marquee.lab2.home.arpa -> 192.168.2.60`
+- UI: `http://marquee.lab2.home.arpa`
+
+Provider setup szerveren (ha OpenAI Codex OAuth provider kell):
+```bash
+ssh balazs@192.168.2.60
+cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
+```
+
+Kulcs runtime env-ek szerveren:
+- `DATA_DIR` (fix path, pl. `/home/balazs/.marquee-prod`)
+- `WEB_ROOT=/opt/marquee/packages/web/dist`
+- `PORT=7892`
+
+Migration megjegyzés:
+- Meglévő DB-nél Drizzle tracking bug miatt előfordulhat state drift (`__drizzle_migrations`).
+- Ha `table already exists` hiba jön startupkor, a migration rekordokat (hash + `created_at` sorrend) kézzel kell szinkronizálni.
+- Friss DB-n a 0007 migration az `openDb`-vel automatikusan alkalmazódik.
 
 ## Homelab kontextus
 
