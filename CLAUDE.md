@@ -46,8 +46,8 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 | Réteg | Technológia |
 |---|---|
 | Backend | Node.js 22 LTS, TypeScript, Fastify 5, better-sqlite3 + Drizzle |
-| Agent | `@mariozechner/pi-agent-core` v0.70.2 + `@mariozechner/pi-ai` v0.70.2 |
-| LLM | **openai-codex** (ChatGPT Pro/Plus OAuth) |
+| Agent | `@mariozechner/pi-agent-core` v0.70.6 + `@mariozechner/pi-ai` v0.70.6 |
+| LLM | **openai-codex** (ChatGPT Pro/Plus OAuth) **OR** **opencode-go** (DeepSeek v4 flash, API key) — fallback via `OPENCODE_API_KEY` env |
 | Frontend | React 19, Vite, Tailwind 3, Zustand, react-router-dom 7 |
 | Monorepo | npm workspaces (`packages/server`, `packages/web`) |
 
@@ -64,19 +64,29 @@ DATA_DIR=~/.marquee-dev npm run dev
 ## .env (repo gyökér, gitignore-olva)
 
 ```
+# Required
 DATA_DIR=/home/balazs/.marquee   # VM-en; lokálisan ~/.marquee-dev
 PORT=7892
-WEB_ROOT=/opt/marquee/packages/web/dist  # csak prod
+
+# LLM provider (choose one):
+# Option A: OpenAI Codex (OAuth, requires login)
+#   (no env var needed — uses ~/.pi/agent/auth.json after login-openai.ts)
+# Option B: OpenCode Go + DeepSeek v4 Flash (API key, no OAuth)
+#   OPENCODE_API_KEY=sk_...
+
 # Optional:
-# MARQUEE_API_TOKEN=<bearer-secret>
+# WEB_ROOT=/opt/marquee/packages/web/dist  # csak prod
+# MARQUEE_API_TOKEN=<bearer-secret>  # protects POST /api/briefs
 # N8N_WEBHOOK_URL=<https://...>
 # PI_AUTH_FILE=/home/balazs/.pi/agent/auth.json
 ```
 
-**OAuth setup kötelező első indulás előtt:**
-```bash
-cd packages/server && npx tsx src/scripts/login-openai.ts
-```
+**Provider setup:**
+- **OpenAI Codex (default):** OAuth setup required
+  ```bash
+  cd packages/server && npx tsx src/scripts/login-openai.ts
+  ```
+- **OpenCode Go:** Simply set `OPENCODE_API_KEY=sk_...` in .env, no script needed
 
 ## Deploy
 
@@ -186,6 +196,8 @@ Friss DB-n (pl. VM 260) az `openDb` automatikusan alkalmazza az összes migráci
 **Plan v1 calendar item state machine.** A `calendar-state-machine.ts` event-driven módon vezeti a státusz-átmeneteket: `brief.created (calendar_item_id-vel)` → `brief_created`, `brief.discarded` → `planned`, `deliverable.approved (link-elt brief-en keresztül)` → `delivered`. UI **nem** írhat státuszt direkt módon — csak `cancel` action-on. A `delivered` státuszú item-ek nem mehetnek vissza más státuszba.
 
 **Plan-chat thread scope.** A kampány-tervezési chat ugyanaz a `chat_threads` tábla, csak `campaign_id` mezővel scope-olva. A Director skill-ek (`kampany_tervezes`, `terv_kontextusu_brief`) a thread `campaign_id`-jéből döntik el, hogy plan-aware módban vannak-e. Ad-hoc Workshop chat (campaign_id NULL) flow változatlan.
+
+**LLM provider fallback.** Ha `OPENCODE_API_KEY` env var van (OpenCode Go API key), az `openai-codex` OAuth helyett az `opencode-go` provider-t használja (DeepSeek v4 Flash minden role-hoz). Párhuzamosan futtatható mindkét provider: csak env var-ral váltogatható. `AuthManager` 0 módosítás szükséges — ha OpenCode aktív, skip OAuth, env key-ből olvass. Factory callback (`getApiKey`) már támogatja mindkét provider-t.
 
 ## Production VM 260 állapot (2026-05-01)
 

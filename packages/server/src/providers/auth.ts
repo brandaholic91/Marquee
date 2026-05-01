@@ -8,10 +8,18 @@ export class AuthManager {
   private cachedApiKey: string | null = null;
   private credentials: OAuthCredentials | null = null;
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private useEnvKeyMode = false;
 
   constructor(private authFilePath: string) {}
 
   async start(): Promise<void> {
+    // OpenCode Go: env key fallback (no OAuth needed)
+    if (process.env.OPENCODE_API_KEY) {
+      this.useEnvKeyMode = true;
+      return;
+    }
+
+    // OpenAI OAuth mode (existing behavior)
     if (!existsSync(this.authFilePath)) {
       throw new Error(
         `openai-subscription mode requires auth credentials. ` +
@@ -57,6 +65,9 @@ export class AuthManager {
   }
 
   getApiKey(provider: string): string | undefined {
+    if (this.useEnvKeyMode && provider === "opencode-go") {
+      return process.env.OPENCODE_API_KEY;
+    }
     if (provider === "openai-codex") return this.cachedApiKey ?? undefined;
     return undefined;
   }

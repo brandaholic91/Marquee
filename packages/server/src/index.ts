@@ -56,7 +56,9 @@ async function main() {
 	const authFile = process.env.PI_AUTH_FILE ?? join(homedir(), ".pi", "agent", "auth.json");
 	const authManager = new AuthManager(authFile);
 	await authManager.start();
+	const providerMode = process.env.OPENCODE_API_KEY ? "opencode-go (deepseek-v4-flash)" : "openai-codex";
 	console.log(`[marquee] auth loaded from ${authFile}`);
+	console.log(`[marquee] provider mode: ${providerMode}`);
 
 	// 5. Recover from any open sessions left by a previous crash
 	recoverState(db);
