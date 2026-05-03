@@ -55,15 +55,19 @@ export function Deliverables() {
   const [periodFilter, setPeriodFilter] = useState<string>("all");
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       deliverablesApi.list(),
       campaignsApi.list(),
-    ]).then(([dels, camps]) => {
-      setRows(Array.isArray(dels) ? dels : []);
-      setCampaigns(Array.isArray(camps) ? camps : []);
-      setLoading(false);
-    }).catch(() => {
-      setError("Nem sikerült betölteni az adatokat.");
+    ]).then(([delsResult, campsResult]) => {
+      if (delsResult.status === "rejected") {
+        setError("Nem sikerült betölteni az adatokat.");
+        setLoading(false);
+        return;
+      }
+      setRows(Array.isArray(delsResult.value) ? delsResult.value : []);
+      if (campsResult.status === "fulfilled") {
+        setCampaigns(Array.isArray(campsResult.value) ? campsResult.value : []);
+      }
       setLoading(false);
     });
   }, []);
@@ -185,7 +189,7 @@ export function Deliverables() {
                   className="border-b border-rule hover:bg-parchment cursor-pointer transition-colors"
                 >
                   <td className="py-2.5 pr-4 text-[13px] font-medium text-ink-1 max-w-[260px] truncate">
-                    {d.title ?? d.type}
+                    {d.title ?? TYPE_LABEL[d.type] ?? d.type}
                   </td>
                   <td className="py-2.5 pr-4">
                     <TypeBadge type={d.type} />
