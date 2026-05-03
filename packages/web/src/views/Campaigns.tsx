@@ -97,7 +97,7 @@ export function Campaigns() {
     return () => unsubs.forEach((u) => u());
   }, [expandedId]);
 
-  async function toggleExpand(id: string) {
+  function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
@@ -203,26 +203,32 @@ export function Campaigns() {
                         onStartPlanning={() => navigate("/")}
                         onCreateEmptyPlan={async () => {
                           setSaving(true);
-                          await plansApi.put(c.id, {
-                            goal: "",
-                            goal_type: "other",
-                            audience: "",
-                            key_messages: [],
-                            channel_mix: [],
-                            timeline_start: null,
-                            timeline_end: null,
-                            kpi: "",
-                          });
-                          const r = await plansApi.get(c.id);
-                          setExpandedData((d) => (d ? { ...d, plan: r.plan, items: r.calendar_items } : null));
-                          setSaving(false);
+                          try {
+                            await plansApi.put(c.id, {
+                              goal: "",
+                              goal_type: "other",
+                              audience: "",
+                              key_messages: [],
+                              channel_mix: [],
+                              timeline_start: null,
+                              timeline_end: null,
+                              kpi: "",
+                            });
+                            const r = await plansApi.get(c.id);
+                            setExpandedData((d) => (d ? { ...d, plan: r.plan, items: r.calendar_items } : null));
+                          } finally {
+                            setSaving(false);
+                          }
                         }}
                         onSave={async (form) => {
                           setSaving(true);
-                          await plansApi.put(c.id, form);
-                          const r = await plansApi.get(c.id);
-                          setExpandedData((d) => (d ? { ...d, plan: r.plan } : null));
-                          setSaving(false);
+                          try {
+                            await plansApi.put(c.id, form);
+                            const r = await plansApi.get(c.id);
+                            setExpandedData((d) => (d ? { ...d, plan: r.plan } : null));
+                          } finally {
+                            setSaving(false);
+                          }
                         }}
                       />
                     </div>
@@ -260,7 +266,7 @@ export function Campaigns() {
                                     )
                                   )
                               }
-                              onOpenApprovals={() => window.location.assign("/jovahagyas")}
+                              onOpenApprovals={() => navigate("/jovahagyas")}
                             />
                           ))}
                         </div>
@@ -271,10 +277,10 @@ export function Campaigns() {
                       <div>
                         <h2 className="text-sm font-semibold text-ink-1 mb-3">Tartalmak</h2>
                         <div className="space-y-2">
-                          {expandedData!.detail.deliverables.map((d) => (
+                          {expandedData?.detail.deliverables.map((d) => (
                             <button
                               key={d.id}
-                              onClick={() => window.location.assign(`/jovahagyas/${d.id}`)}
+                              onClick={() => navigate(`/jovahagyas/${d.id}`)}
                               className="w-full text-left border border-rule rounded-[8px] px-3.5 py-3 bg-off-white hover:border-rule-strong hover:bg-parchment flex items-center justify-between transition-colors"
                             >
                               <div className="flex items-center gap-2.5">
