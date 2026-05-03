@@ -30,6 +30,7 @@ export async function fireDeliverableShipped(
   const payload = {
     event: 'deliverable_shipped',
     deliverable_id: d.id,
+    title: d.title,
     deliverable_type: d.type,
     client_slug: d.clientSlug,
     current_revision: rev.revisionNo,
