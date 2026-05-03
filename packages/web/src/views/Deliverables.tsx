@@ -26,20 +26,15 @@ type StatusFilter = "shipped" | "awaiting_approval" | "archived";
 function periodStart(period: string): number {
   const now = new Date();
   if (period === "today") {
-    now.setHours(0, 0, 0, 0);
-    return now.getTime();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   }
   if (period === "week") {
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    now.setDate(diff);
-    now.setHours(0, 0, 0, 0);
-    return now.getTime();
+    return new Date(now.getFullYear(), now.getMonth(), diff).getTime();
   }
   if (period === "month") {
-    now.setDate(1);
-    now.setHours(0, 0, 0, 0);
-    return now.getTime();
+    return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   }
   return 0;
 }
