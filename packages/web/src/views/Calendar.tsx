@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { CalendarGrid } from '../components/CalendarGrid.js';
 import { CalendarSidePanel } from '../components/CalendarSidePanel.js';
@@ -18,9 +18,14 @@ export function Calendar() {
 
   const setCalendarItems = useMarqueeStore((s) => s.setCalendarItems);
   const setSelectedCampaigns = useMarqueeStore((s) => s.setSelectedCampaigns);
-  const setViewMode = useMarqueeStore((s) => s.setViewMode);
+  const storeSetViewMode = useMarqueeStore((s) => s.setViewMode);
   const setSelectedDate = useMarqueeStore((s) => s.setSelectedDate);
   const setEditingItem = useMarqueeStore((s) => s.setEditingItem);
+
+  const setViewMode = useCallback((mode: 'weekly' | 'monthly') => {
+    console.log('[Calendar] Switching to', mode);
+    storeSetViewMode(mode);
+  }, [storeSetViewMode]);
 
   // Fetch campaigns on mount
   useEffect(() => {

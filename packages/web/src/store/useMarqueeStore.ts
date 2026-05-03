@@ -569,7 +569,7 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 	},
 
 	setViewMode: (mode: 'weekly' | 'monthly') => {
-		set(() => ({ viewMode: mode }));
+		set({ viewMode: mode });
 	},
 
 	setSelectedDate: (date: Date) => {
