@@ -27,6 +27,7 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 ✅ Brief származtatás calendar item-ből (laza kötés: `briefs.calendar_item_id` opcionális). Calendar item state machine event-driven státusz-átmenetekkel.
 ✅ n8n outbound webhook + inbound (`POST /api/briefs` Bearer tokennel).
 ✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json`.
+✅ Naptár nézet (Calendar View): Weekly/monthly grid, campaign filter, side panel editing, drag-drop reschedule.
 ⚠️ VM 260 deploy még nem történt meg (Plan v1 sem deployolva).
 
 ## Agentek (7 role)
@@ -198,6 +199,107 @@ Friss DB-n (pl. VM 260) az `openDb` automatikusan alkalmazza az összes migráci
 **Plan-chat thread scope.** A kampány-tervezési chat ugyanaz a `chat_threads` tábla, csak `campaign_id` mezővel scope-olva. A Director skill-ek (`kampany_tervezes`, `terv_kontextusu_brief`) a thread `campaign_id`-jéből döntik el, hogy plan-aware módban vannak-e. Ad-hoc Workshop chat (campaign_id NULL) flow változatlan.
 
 **LLM provider fallback.** Ha `OPENCODE_API_KEY` env var van (OpenCode Go API key), az `openai-codex` OAuth helyett az `opencode-go` provider-t használja (DeepSeek v4 Flash minden role-hoz). Párhuzamosan futtatható mindkét provider: csak env var-ral váltogatható. `AuthManager` 0 módosítás szükséges — ha OpenCode aktív, skip OAuth, env key-ből olvass. Factory callback (`getApiKey`) már támogatja mindkét provider-t.
+
+## Naptár nézet (Calendar View)
+
+**Status:** ✅ Complete (2026-05-03)
+
+A calendar view kampány-ütemezéshez weekly/monthly nézetekkel, drag-drop átütemezéssel, és időslot-kezeléssel. Marketing csapatok naptárként láthatják és kezelhetik a kampány calendar item-eket heteken és hónapokon keresztül.
+
+### Funkciók
+
+- **Weekly view:** 25 időslot (30 perces intervallumok, 08:00–20:00) 7 nap során
+- **Monthly view:** Teljes hónap naptár max 3 item-mel naponta, "+N további" overflow
+- **Kampány szűrés:** Multi-select dropdown szűréshez campaign szerint
+- **Side panel szerkesztés:** Calendar item részletei szerkeszthetők (cím, csatorna, dátum, idő, státusz)
+- **Responsive design:** Desktop/tablet/mobile adaptációk
+
+### Fájlok & Komponensek
+
+| Fájl | Célterület |
+|---|---|
+| `packages/web/src/views/Calendar.tsx` | Fő naptár nézet, kampány lekérés, státusz kezelés |
+| `packages/web/src/components/CalendarGrid.tsx` | Router weekly/monthly nézetek között |
+| `packages/web/src/components/CalendarWeekly.tsx` | Weekly grid megvalósítás (8 oszlop × 25 sor) |
+| `packages/web/src/components/CalendarMonthly.tsx` | Monthly grid megvalósítás (6 sor × 7 oszlop) |
+| `packages/web/src/components/CalendarItemBubble.tsx` | Item megjelenítés csatorna ikonokkal és státusz színekkel |
+| `packages/web/src/components/CampaignFilter.tsx` | Multi-select kampány szűrő dropdown |
+| `packages/web/src/components/CalendarSidePanel.tsx` | Edit form calendar item-ekhez |
+
+### Adatbázis séma
+
+**Tábla:** `campaign_calendar_items` (Task 1-ből)
+- `id` — item ID
+- `campaignId` — idegen kulcs kampányokra
+- `planId` — idegen kulcs campaign_plans-ra
+- `channel` — deliverable csatorna (linkedin, email, blog, landing, ad, other)
+- `deliverableType` — opcionális deliverable típus
+- `targetDate` — Unix timestamp (csak dátum)
+- `startTime` — "HH:MM" formátum (új mező, 30 perces lépések)
+- `intent` — item leírás/cím
+- `keyMessageRef` — opcionális referencia kulcs üzenetre
+- `status` — "planned" | "brief_created" | "delivered" | "cancelled"
+- `createdAt`, `updatedAt` — Unix timestamps
+
+### API végpontok
+
+**GET `/api/campaigns/:campaignId/calendar_items`**
+- Válasz: `{ plan: CampaignPlan | null, items: CalendarItem[] }`
+- Terv és összes calendar item lekérése kampányhoz
+
+**PUT `/api/campaigns/:campaignId/calendar_items/:itemId`**
+- Törzs: `{ startDate?: number; startTime?: string; intent?: string; channel?: string; status?: string }`
+- Válasz: `{ ok: true, item: CalendarItem }`
+- Calendar item frissítés részleges mezőkkel
+
+**DELETE `/api/campaigns/:campaignId/calendar_items/:itemId`**
+- Válasz: `{ ok: true }`
+- Calendar item törlés
+
+### Zustand Store
+
+Calendar state slice-ok `useMarqueeStore`-be adva:
+```typescript
+// State
+calendarItems: CalendarItem[]
+selectedCampaigns: string[]
+viewMode: 'weekly' | 'monthly'
+selectedDate: Date
+editingItem: CalendarItem | null
+
+// Actions
+setCalendarItems(items)
+setSelectedCampaigns(campaignIds)
+setViewMode(mode)
+setSelectedDate(date)
+setEditingItem(item)
+```
+
+### Időslot validáció
+
+Calendar item-ek 30 perces lépéseket kell használjanak:
+- Valid: "08:00", "08:30", "09:00", ..., "20:00"
+- Invalid: "08:15", "09:45" (backend validáció elutasítja a non-30-min időket)
+
+### Routing
+
+**Új route:** `/naptár` (magyar: "calendar")
+- Sidebar navigáció elem: "Naptár"
+- Pozíció: "Kampányok" és "Memória" között
+
+### Fejlesztés
+
+Calendar nézet futtatása lokálisan:
+```bash
+cd ~/Projects/Homelab/marquee
+DATA_DIR=~/.marquee-dev npm run dev
+# Navigálj http://localhost:5173/naptár -ra
+```
+
+### Kapcsolódó Spec-ek & Tervek
+
+- **Design spec:** `docs/superpowers/specs/2026-05-03-marquee-calendar-view-design.md`
+- **Implementation plan:** `docs/superpowers/plans/2026-05-03-marquee-calendar-view.md`
 
 ## Production VM 260 állapot (2026-05-01)
 
