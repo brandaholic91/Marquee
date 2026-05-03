@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { spawnIngestAgent } from "./agent.js";
+import { spawnIngestAgent, runIngestAgent } from "./agent.js";
 import * as schema from "../db/schema.js";
 import { join } from "node:path";
 import os from "node:os";
@@ -12,8 +12,8 @@ import { mkdir } from "node:fs/promises";
 vi.mock("@mariozechner/pi-agent-core", () => ({
 	Agent: class FakeAgent {
 		constructor(public opts: any) {}
-		async prompt(text: string) {
-			return { text };
+		async prompt(text: string | any) {
+			return;
 		}
 		subscribe(fn: any) {
 			return () => {};
@@ -107,5 +107,73 @@ describe("ingest agent", () => {
 		expect(result.agent).toBeDefined();
 		expect(result.session.id).toBeTruthy();
 		expect(result.session.lifecycle).toBe("transient");
+	});
+
+	it("runIngestAgent executes with user message", async () => {
+		const broker = { emit: (e: any) => {} };
+		const spawnResult = await spawnIngestAgent({
+			db,
+			broker,
+			dataDir: tempDir,
+			clientSlug: "test-client",
+			deliverableId: "del-456",
+			evalScore: 4,
+			evalSummary: "Good pattern with improvements",
+			deliverableType: "email",
+			briefTitle: "Test Email",
+		});
+
+		const promptSpy = vi.spyOn(spawnResult.agent, "prompt");
+
+		await runIngestAgent(spawnResult.agent, {
+			db,
+			broker,
+			dataDir: tempDir,
+			clientSlug: "test-client",
+			deliverableId: "del-456",
+			evalScore: 4,
+			evalSummary: "Good pattern with improvements",
+			deliverableType: "email",
+			briefTitle: "Test Email",
+		});
+
+		expect(promptSpy).toHaveBeenCalledOnce();
+		const message = promptSpy.mock.calls[0]?.[0] as string;
+		expect(message).toContain("email");
+		expect(message).toContain("Test Email");
+		expect(message).toContain("4/5");
+	});
+
+	it("runIngestAgent handles execution errors gracefully", async () => {
+		const broker = { emit: (e: any) => {} };
+		const spawnResult = await spawnIngestAgent({
+			db,
+			broker,
+			dataDir: tempDir,
+			clientSlug: "test-client",
+			deliverableId: "del-789",
+			evalScore: 3,
+			evalSummary: "Average pattern",
+			deliverableType: "social_post",
+			briefTitle: "Test Social",
+		});
+
+		const testError = new Error("Agent execution failed");
+		const promptSpy = vi.spyOn(spawnResult.agent, "prompt");
+		promptSpy.mockRejectedValue(testError);
+
+		await expect(
+			runIngestAgent(spawnResult.agent, {
+				db,
+				broker,
+				dataDir: tempDir,
+				clientSlug: "test-client",
+				deliverableId: "del-789",
+				evalScore: 3,
+				evalSummary: "Average pattern",
+				deliverableType: "social_post",
+				briefTitle: "Test Social",
+			})
+		).rejects.toThrow("Agent execution failed");
 	});
 });

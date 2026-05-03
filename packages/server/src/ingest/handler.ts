@@ -32,12 +32,12 @@ export function registerIngestHandlers(broker: Broker, db: AgencyDb, dataDir: st
 			return;
 		}
 
-		// Fire-and-forget: spawn ingest agent without awaiting
+		// Fire-and-forget: spawn and run ingest agent without awaiting
 		// Dynamic import to avoid circular dependencies and allow lazy loading
 		(async () => {
 			try {
-				const { spawnIngestAgent } = await import("./agent.js");
-				await spawnIngestAgent({
+				const { spawnIngestAgent, runIngestAgent } = await import("./agent.js");
+				const spawnInput = {
 					db,
 					broker,
 					dataDir,
@@ -47,9 +47,11 @@ export function registerIngestHandlers(broker: Broker, db: AgencyDb, dataDir: st
 					evalSummary: evalSummary || "",
 					deliverableType: deliverableType as "email" | "blog_post" | "social_post" | "ad_copy",
 					briefTitle,
-				});
+				};
+				const { agent } = await spawnIngestAgent(spawnInput);
+				await runIngestAgent(agent, spawnInput);
 			} catch (err) {
-				console.error("[ingest] Error spawning ingest agent:", err);
+				console.error("[ingest] Error spawning/running ingest agent:", err);
 				const errorMsg = err instanceof Error ? err.message : String(err);
 				broker.emit("ingest_agent_error", {
 					client_slug: clientSlug,

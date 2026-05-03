@@ -174,3 +174,31 @@ Use tools to read wiki, extract insights, and propose_wiki_update. Keep proposal
 
 	return { agent, session: { id: sessionId, lifecycle: "transient" } };
 }
+
+export async function runIngestAgent(
+	agent: Agent,
+	input: SpawnIngestAgentInput
+): Promise<void> {
+	const userMessage = `
+Deliverable: ${input.deliverableType} "${input.briefTitle || "Unknown"}"
+Eval score: ${input.evalScore}/5
+Summary: ${input.evalSummary}
+
+Tasks:
+1. Read current wiki pages
+2. Extract patterns/insights
+3. If score == 5: propose adding to brand-voice-patterns.md
+4. If SEO research: propose updating seo-learnings.md
+5. If any insight: propose updating content-performance.md
+
+Use tools to read wiki and propose updates.
+`;
+
+	try {
+		await agent.prompt(userMessage);
+		console.log(`Ingest agent completed for deliverable ${input.deliverableId}`);
+	} catch (err) {
+		console.error("Ingest agent execution failed:", err);
+		throw err;
+	}
+}
