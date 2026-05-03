@@ -9,6 +9,7 @@ import { Campaigns } from './views/Campaigns.js';
 import { Agency } from './views/Agency.js';
 import { AgentConfig } from './views/AgentConfig.js';
 import { Deliverables } from './views/Deliverables.js';
+import { Calendar } from './views/Calendar.js';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="/kampanyok" element={<Campaigns />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/deliverables" element={<Deliverables />} />
+          <Route path="/naptár" element={<Calendar />} />
           <Route path="/memoria" element={<Memory />} />
           <Route path="/ugynokseg" element={<Agency />} />
           <Route path="/ugynokseg/:role" element={<AgentConfig />} />
