@@ -1,6 +1,7 @@
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { execSync } from 'node:child_process';
 
 export async function readWikiPage(
   dataDir: string,
@@ -28,4 +29,29 @@ export async function writeWikiPage(
 
   await writeFile(tempPath, content, { mode: 0o600 });
   await rename(tempPath, targetPath);
+}
+
+/**
+ * Write a wiki page to disk and commit it to git if available.
+ * Silently continues if git is not available or not a git repo.
+ */
+export async function writeWikiPageWithGit(
+  dataDir: string,
+  pageName: string,
+  content: string,
+  commitMessage: string
+): Promise<void> {
+  // Write the file first
+  await writeWikiPage(dataDir, pageName, content);
+
+  // Try to commit to git (fail gracefully if not a repo)
+  try {
+    const filePath = join('wiki', pageName);
+    execSync(`cd "${dataDir}" && git add "${filePath}" && git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, {
+      stdio: 'pipe',
+    });
+  } catch (err) {
+    // Expected if not in a git repo or if git is not available
+    console.warn('Git commit failed (expected if not in repo):', err instanceof Error ? err.message : err);
+  }
 }
