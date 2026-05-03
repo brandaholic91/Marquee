@@ -139,29 +139,34 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+      {/* Header */}
+      <div className="px-6 py-3 border-b border-rule bg-off-white">
+        <h1 className="text-lg font-bold text-ink-1">Naptár</h1>
+      </div>
+
       {/* Toolbar */}
-      <div className="px-6 py-4 border-b border-rule flex items-center gap-4">
-        <div className="flex gap-2">
+      <div className="px-6 py-4 border-b border-rule flex items-center justify-between gap-4">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setViewMode('weekly')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               viewMode === 'weekly'
-                ? 'bg-primary text-white'
-                : 'bg-off-white text-ink-2 hover:bg-parchment'
+                ? 'bg-primary text-white shadow-sm'
+                : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
             }`}
           >
-            Heti
+            Heti nézet
           </button>
           <button
             onClick={() => setViewMode('monthly')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               viewMode === 'monthly'
-                ? 'bg-primary text-white'
-                : 'bg-off-white text-ink-2 hover:bg-parchment'
+                ? 'bg-primary text-white shadow-sm'
+                : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
             }`}
           >
-            Havi
+            Havi nézet
           </button>
         </div>
 
