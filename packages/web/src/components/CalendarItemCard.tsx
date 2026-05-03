@@ -10,14 +10,12 @@ const STATUS_LABEL: Record<CalendarItem["status"], string> = {
 export function CalendarItemCard({
 	item,
 	keyMessageText,
-	onDeriveBrief,
 	onEdit,
 	onDelete,
 	onOpenApprovals,
 }: {
 	item: CalendarItem;
 	keyMessageText?: string | null;
-	onDeriveBrief: (itemId: string) => void;
 	onEdit: (item: CalendarItem) => void;
 	onDelete: (itemId: string) => void;
 	onOpenApprovals?: () => void;
@@ -46,9 +44,6 @@ export function CalendarItemCard({
 					<>
 						<button className="text-xs px-2 py-1 border border-rule rounded hover:bg-parchment" onClick={() => onEdit(item)}>
 							Szerkeszt
-						</button>
-						<button className="text-xs px-2 py-1 border border-rule rounded hover:bg-parchment" onClick={() => onDeriveBrief(item.id)}>
-							Generate brief
 						</button>
 						<button className="text-xs px-2 py-1 border border-rule rounded hover:bg-parchment" onClick={() => onDelete(item.id)}>
 							Cancel

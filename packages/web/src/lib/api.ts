@@ -240,8 +240,6 @@ export const plansApi = {
 		}).then(json),
 	deleteCalendarItem: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
 		fetch(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}`, { method: "DELETE" }).then(json),
-	deriveBrief: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
-		post(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}/derive-brief`),
 };
 
 export const proposalsApi = {

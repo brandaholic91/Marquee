@@ -254,7 +254,6 @@ export function Campaigns() {
                               keyMessageText={
                                 item.keyMessageRef ? keyMessageById.get(item.keyMessageRef) ?? null : null
                               }
-                              onDeriveBrief={() => {}}
                               onEdit={(current) => setEditingItem(current)}
                               onDelete={(itemId) =>
                                 void plansApi
