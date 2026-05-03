@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderMemoryContext, applyMemoryTemplate, renderBrandVoiceBlock } from "./transform-context.js";
+import { renderMemoryContext, applyMemoryTemplate, renderBrandVoiceBlock, renderWikiContext } from "./transform-context.js";
+import { writeWikiPage } from "../memory/wiki.js";
 
 let dir: string;
 
@@ -138,5 +139,77 @@ describe("renderBrandVoiceBlock", () => {
 		process.env.MARQUEE_BRAND_VOICE_INJECTION = undefined as unknown as string;
 		delete process.env.MARQUEE_BRAND_VOICE_INJECTION;
 		expect(out).toBe("");
+	});
+});
+
+describe("renderWikiContext", () => {
+	it("director gets 3 wiki pages: brand-voice-patterns, seo-learnings, content-performance", async () => {
+		const wikiTarget = join(dir, "wiki", "clients", "default");
+		mkdirSync(wikiTarget, { recursive: true });
+		writeFileSync(join(wikiTarget, "brand-voice-patterns.md"), "# Patterns\nBrand voice patterns");
+		writeFileSync(join(wikiTarget, "seo-learnings.md"), "# SEO Learnings\nSEO insights");
+		writeFileSync(join(wikiTarget, "content-performance.md"), "# Performance\nContent metrics");
+
+		const out = await renderWikiContext(dir, "default", "director");
+		expect(out).toContain("<wiki>");
+		expect(out).toContain("brand-voice-patterns.md");
+		expect(out).toContain("seo-learnings.md");
+		expect(out).toContain("content-performance.md");
+		expect(out).toContain("Brand voice patterns");
+		expect(out).toContain("SEO insights");
+		expect(out).toContain("Content metrics");
+	});
+
+	it("copywriter gets 2 wiki pages: brand-voice-patterns, content-performance (no seo-learnings)", async () => {
+		const wikiTarget = join(dir, "wiki", "clients", "default");
+		mkdirSync(wikiTarget, { recursive: true });
+		writeFileSync(join(wikiTarget, "brand-voice-patterns.md"), "# Patterns\nBrand voice patterns");
+		writeFileSync(join(wikiTarget, "content-performance.md"), "# Performance\nContent metrics");
+
+		const out = await renderWikiContext(dir, "default", "copywriter");
+		expect(out).toContain("<wiki>");
+		expect(out).toContain("brand-voice-patterns.md");
+		expect(out).toContain("content-performance.md");
+		expect(out).not.toContain("seo-learnings.md");
+	});
+
+	it("seo-specialist gets 2 wiki pages in order: seo-learnings, brand-voice-patterns", async () => {
+		const wikiTarget = join(dir, "wiki", "clients", "default");
+		mkdirSync(wikiTarget, { recursive: true });
+		writeFileSync(join(wikiTarget, "seo-learnings.md"), "# SEO Learnings\nSEO insights");
+		writeFileSync(join(wikiTarget, "brand-voice-patterns.md"), "# Patterns\nBrand voice patterns");
+
+		const out = await renderWikiContext(dir, "default", "seo-specialist");
+		expect(out).toContain("<wiki>");
+		expect(out).toContain("seo-learnings.md");
+		expect(out).toContain("brand-voice-patterns.md");
+		// Verify order: seo-learnings should appear before brand-voice-patterns
+		const seoIndex = out.indexOf("seo-learnings.md");
+		const brIndex = out.indexOf("brand-voice-patterns.md");
+		expect(seoIndex).toBeLessThan(brIndex);
+	});
+
+	it("brand-voice-guardian gets 0 wiki pages", async () => {
+		const out = await renderWikiContext(dir, "default", "brand-voice-guardian");
+		expect(out).toBe("");
+	});
+
+	it("returns empty string when wiki pages do not exist", async () => {
+		const out = await renderWikiContext(dir, "default", "director");
+		expect(out).toBe("");
+	});
+
+	it("skips missing wiki files and includes only available ones", async () => {
+		const wikiTarget = join(dir, "wiki", "clients", "default");
+		mkdirSync(wikiTarget, { recursive: true });
+		// Only write one of the three director files
+		writeFileSync(join(wikiTarget, "brand-voice-patterns.md"), "# Patterns\nBrand voice patterns");
+		// seo-learnings.md and content-performance.md are missing
+
+		const out = await renderWikiContext(dir, "default", "director");
+		expect(out).toContain("<wiki>");
+		expect(out).toContain("brand-voice-patterns.md");
+		expect(out).not.toContain("seo-learnings.md");
+		expect(out).not.toContain("content-performance.md");
 	});
 });
