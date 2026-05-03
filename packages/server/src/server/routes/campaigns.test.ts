@@ -48,6 +48,16 @@ describe("campaigns routes", () => {
 		expect(body[0].plan_summary?.calendar_progress?.delivered).toBe(1);
 	});
 
+  it("POST /api/campaigns returns 400 when title is missing", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/campaigns",
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe("title_required");
+  });
+
   it("POST /api/campaigns creates a campaign", async () => {
     const res = await app.inject({
       method: "POST",

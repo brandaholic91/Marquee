@@ -93,22 +93,26 @@ export const campaignsRoutes: FastifyPluginAsync<CampaignsRoutesOpts> = async (a
       if (!title) return reply.code(400).send({ error: 'title_required' });
 
       const id = createId();
+      const createdAt = Date.now();
       try {
         await db.insert(campaigns).values({
           id,
           clientSlug: 'default',
           title,
           status: 'active',
-          createdAt: Date.now(),
+          createdAt,
         });
       } catch (err: unknown) {
-        if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+        if (err instanceof Error && (
+          (err as NodeJS.ErrnoException).code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+          err.message.includes('UNIQUE constraint failed')
+        )) {
           return reply.code(409).send({ error: 'campaign_exists' });
         }
         throw err;
       }
 
-      return reply.code(201).send({ id, title, status: 'active', createdAt: Date.now() });
+      return reply.code(201).send({ id, title, status: 'active', createdAt });
     },
   );
 
