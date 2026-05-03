@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { CalendarGrid } from '../components/CalendarGrid.js';
 import { CalendarSidePanel } from '../components/CalendarSidePanel.js';
@@ -10,9 +10,15 @@ export function Calendar() {
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
   const [campaignsMap, setCampaignsMap] = useState(new Map());
 
-  const calendarItems = useMarqueeStore((s) => s.calendarItems);
+  const calendarItems = useMarqueeStore((s) => {
+    console.log('[Calendar selector] calendarItems:', s.calendarItems.length);
+    return s.calendarItems;
+  });
   const selectedCampaigns = useMarqueeStore((s) => s.selectedCampaigns);
-  const viewMode = useMarqueeStore((s) => s.viewMode);
+  const viewMode = useMarqueeStore((s) => {
+    console.log('[Calendar selector] viewMode:', s.viewMode);
+    return s.viewMode;
+  });
   const selectedDate = useMarqueeStore((s) => s.selectedDate);
   const editingItem = useMarqueeStore((s) => s.editingItem);
 
@@ -22,10 +28,12 @@ export function Calendar() {
   const setSelectedDate = useMarqueeStore((s) => s.setSelectedDate);
   const setEditingItem = useMarqueeStore((s) => s.setEditingItem);
 
-  const setViewMode = useCallback((mode: 'weekly' | 'monthly') => {
-    console.log('[Calendar] Switching to', mode);
+  // Direct dispatch without wrapper to avoid dependency issues
+  const handleSetViewMode = (mode: 'weekly' | 'monthly') => {
+    console.log('[Button] About to call storeSetViewMode with:', mode);
     storeSetViewMode(mode);
-  }, [storeSetViewMode]);
+    console.log('[Button] After calling storeSetViewMode, viewMode is now:', viewMode);
+  };
 
   // Fetch campaigns on mount
   useEffect(() => {
@@ -154,7 +162,7 @@ export function Calendar() {
       <div className="px-6 py-4 border-b border-rule flex items-center justify-between gap-4">
         <div className="flex gap-2 items-center">
           <button
-            onClick={() => setViewMode('weekly')}
+            onClick={() => handleSetViewMode('weekly')}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               viewMode === 'weekly'
                 ? 'bg-primary text-white shadow-sm'
@@ -164,7 +172,7 @@ export function Calendar() {
             Heti nézet
           </button>
           <button
-            onClick={() => setViewMode('monthly')}
+            onClick={() => handleSetViewMode('monthly')}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               viewMode === 'monthly'
                 ? 'bg-primary text-white shadow-sm'
