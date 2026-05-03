@@ -146,16 +146,6 @@ export function Campaigns() {
 
   if (loading) return <p className="text-ink-2 text-sm py-8 px-5">Betöltés…</p>;
 
-  if (campaigns.length === 0) {
-    return (
-      <div className="py-16 text-center px-5">
-        <p className="text-ink-2">Még nincs kampány.</p>
-        <p className="text-ink-2 text-sm mt-1">
-          A Director automatikusan létrehoz egyet, ha kampánynevet adsz egy brief javaslatakor.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 overflow-auto p-5 pb-14 md:pb-5 space-y-3">
@@ -168,6 +158,13 @@ export function Campaigns() {
           + Új kampány
         </button>
       </div>
+
+      {campaigns.length === 0 && (
+        <div className="py-12 text-center">
+          <p className="text-ink-2">Még nincs kampány.</p>
+          <p className="text-ink-2 text-sm mt-1">Kattints az „+ Új kampány" gombra a kezdéshez.</p>
+        </div>
+      )}
 
       {campaigns.map((c) => {
         const isExpanded = expandedId === c.id;
