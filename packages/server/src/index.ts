@@ -9,6 +9,7 @@ import { buildServer } from "./server/index.js";
 import { seedClientIfNeeded } from "./memory/seed.js";
 import { seedDefaultAgents } from "./agents/loader.js";
 import { spawnAgent, type SpawnedAgent } from "./agents/factory.js";
+import { registerIngestHandlers } from "./ingest/handler.js";
 import { messages } from "./db/schema.js";
 import { createId } from "@paralleldrive/cuid2";
 import { AuthManager } from "./providers/auth.js";
@@ -59,6 +60,9 @@ async function main() {
 	const providerMode = process.env.OPENCODE_API_KEY ? "opencode-go (deepseek-v4-flash)" : "openai-codex";
 	console.log(`[marquee] auth loaded from ${authFile}`);
 	console.log(`[marquee] provider mode: ${providerMode}`);
+
+	// 4.7 Register ingest handlers
+	registerIngestHandlers(broker, db, dataDir);
 
 	// 5. Recover from any open sessions left by a previous crash
 	recoverState(db);

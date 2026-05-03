@@ -1,7 +1,6 @@
 import { Agent } from "@mariozechner/pi-agent-core";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import type { TSchema } from "@mariozechner/pi-ai";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { createId } from "@paralleldrive/cuid2";
 import { agentSessions } from "../db/schema.js";
 import { INGEST_CONFIG } from "./config.js";
@@ -12,10 +11,11 @@ import { makeReadMemoryTool } from "../tools/read-memory.js";
 import { loadAgentConfig, loadAgentIdentity } from "../agents/loader.js";
 import { renderMemoryContext } from "../agents/transform-context.js";
 import { AuthManager } from "../providers/auth.js";
+import type { AgencyDb } from "../db/index.js";
 
-type Db = ReturnType<typeof drizzle>;
+type Db = AgencyDb;
 interface Broker {
-	emit: (e: Record<string, unknown>) => void;
+	emit: (type: string, payload: Record<string, unknown>) => void;
 }
 
 export interface SpawnIngestAgentInput {
