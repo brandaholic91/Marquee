@@ -254,30 +254,35 @@ export const plansApi = {
 };
 
 export const calendarsApi = {
-	getItems: (campaignId: string): Promise<{ plan: CampaignPlan | null; items: CalendarItem[] }> =>
-		fetch(`/api/campaigns/${campaignId}/calendar_items`).then(json),
-
 	updateItem: (
 		campaignId: string,
 		itemId: string,
-		updates: {
-			startDate?: number;
-			startTime?: string;
-			intent?: string;
-			channel?: string;
-			status?: string;
-		},
+		updates: Partial<{
+			startDate: number;
+			startTime: string;
+			intent: string;
+			channel: CalendarItem["channel"];
+			status: CalendarItem["status"];
+		}>,
 	): Promise<{ ok: true; item: CalendarItem }> =>
 		fetch(`/api/campaigns/${campaignId}/calendar_items/${itemId}`, {
 			method: "PUT",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(updates),
-		}).then(json),
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body;
+		}),
 
 	deleteItem: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
 		fetch(`/api/campaigns/${campaignId}/calendar_items/${itemId}`, {
 			method: "DELETE",
-		}).then(json),
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body;
+		}),
 };
 
 export const proposalsApi = {
