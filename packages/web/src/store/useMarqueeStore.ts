@@ -372,7 +372,30 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 		marqueeEvents.on("memory_proposed", () => {});
 		marqueeEvents.on("memory_decided", () => {});
 		marqueeEvents.on("deliverable_returned", () => {});
-		marqueeEvents.on("plan.proposed", () => {});
+		marqueeEvents.on<{
+			type: string;
+			proposal_id?: string;
+			message_id?: string;
+			thread_id?: string;
+			content_json?: string;
+		}>("plan.proposed", (payload) => {
+			const activeThreadId = get().threadId;
+			if (payload.thread_id && activeThreadId && payload.thread_id !== activeThreadId) return;
+			const msgId = payload.message_id ?? `plan_proposal_${payload.proposal_id ?? Date.now()}`;
+			const msg = mapServerMessage({
+				id: msgId,
+				sender: "director",
+				type: "plan_proposal",
+				contentJson: payload.content_json,
+				ts: Date.now(),
+			});
+			set((s) => {
+				if (s.messages.some((m) => m.id === msgId)) return s;
+				const activeAgents = new Set(s.activeAgents);
+				activeAgents.delete("director");
+				return { messages: [...s.messages, msg], activeAgents };
+			});
+		});
 		marqueeEvents.on("plan.updated", () => {});
 		marqueeEvents.on("plan.accepted", () => {});
 		marqueeEvents.on("plan.discarded", () => {});

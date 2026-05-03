@@ -138,7 +138,7 @@ export function makeProposeCampaignPlanTool(ctx: ProposeCampaignPlanContext) {
 				contentJson: JSON.stringify({ proposal_id: proposalId, proposal: input, status: "pending" }),
 				ts: Date.now(),
 			});
-			ctx.broker.emit({ type: "plan.proposed", proposal_id: proposalId, campaign_id: input.campaign_id, thread_id: ctx.threadId });
+			ctx.broker.emit({ type: "plan.proposed", proposal_id: proposalId, campaign_id: input.campaign_id, thread_id: ctx.threadId, message_id: messageId, content_json: JSON.stringify({ proposal_id: proposalId, proposal: input, status: "pending" }) });
 			return { proposal_id: proposalId, plan_id: null };
 		},
 	};
