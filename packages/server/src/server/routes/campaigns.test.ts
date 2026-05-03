@@ -47,4 +47,33 @@ describe("campaigns routes", () => {
 		expect(body[0].plan_summary?.has_plan).toBe(true);
 		expect(body[0].plan_summary?.calendar_progress?.delivered).toBe(1);
 	});
+
+  it("POST /api/campaigns creates a campaign", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/campaigns",
+      payload: { title: "Új kampány" },
+    });
+    expect(res.statusCode).toBe(201);
+    const body = res.json();
+    expect(body.id).toBeTruthy();
+    expect(body.title).toBe("Új kampány");
+    expect(body.status).toBe("active");
+
+    const list = await app.inject({ method: "GET", url: "/api/campaigns" });
+    const campaigns = list.json() as Array<{ title: string }>;
+    expect(campaigns.some((c) => c.title === "Új kampány")).toBe(true);
+  });
+
+  it("POST /api/campaigns returns 409 for duplicate title", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/campaigns",
+      payload: { title: "Campaign" }, // already seeded in beforeEach
+    });
+    expect(res.statusCode).toBe(409);
+    const body = res.json();
+    expect(body.error).toBe("campaign_exists");
+  });
+
 });

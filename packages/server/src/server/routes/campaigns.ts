@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and, sql } from 'drizzle-orm';
 import { campaigns, deliverables } from '../../db/schema.js';
 import { getPlanByCampaignId, listCalendarItems } from '../../db/queries.js';
+import { createId } from '@paralleldrive/cuid2';
 
 type Db = ReturnType<typeof drizzle>;
 export interface CampaignsRoutesOpts { db: Db; }
@@ -85,4 +86,31 @@ export const campaignsRoutes: FastifyPluginAsync<CampaignsRoutesOpts> = async (a
       return { ok: true };
     },
   );
+  app.post<{ Body: { title?: string } }>(
+    '/api/campaigns',
+    async (req, reply) => {
+      const title = req.body?.title?.trim();
+      if (!title) return reply.code(400).send({ error: 'title_required' });
+
+      const id = createId();
+      try {
+        await db.insert(campaigns).values({
+          id,
+          clientSlug: 'default',
+          title,
+          status: 'active',
+          createdAt: Date.now(),
+        });
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+          return reply.code(409).send({ error: 'campaign_exists' });
+        }
+        throw err;
+      }
+
+      return reply.code(201).send({ id, title, status: 'active', createdAt: Date.now() });
+    },
+  );
+
+
 };
