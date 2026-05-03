@@ -100,11 +100,11 @@ export function makeProposeCampaignPlanTool(ctx: ProposeCampaignPlanContext) {
 				kpi: { type: "string" },
 				calendar_items: {
 					type: "array",
-					description: "Tervezett tartalmak listaja. Lehet ures tomb is — utobb toltheto fel.",
+					description: "Tervezett tartalmak listaja. 3 honapos kampanynal legalabb 10-12 elem legyen (hetente 1-2 tartalom). Ne hagyj ures tombot — ha a channel mix tartalmaz valamit, az jelenjen meg a kalendarioban is.",
 					items: {
 						type: "object",
 						properties: {
-							channel: { type: "string", description: "linkedin | email | blog | landing | ad | other" },
+							channel: { type: "string", description: "linkedin | email | blog | landing | ad | facebook | instagram | other" },
 							deliverable_type: { type: "string", description: "social_post | email | blog_post | ad_copy | content_brief_seo | seo_report" },
 							target_date: { type: "number", description: "Epoch masodperc (Unix timestamp)" },
 							intent: { type: "string", description: "1-2 mondatos szandek" },
