@@ -3,6 +3,8 @@ const TYPE_LABEL: Record<string, string> = {
   email: 'Email',
   blog_post: 'Blog poszt',
   ad_copy: 'Hirdetés szöveg',
+  content_brief_seo: 'SEO brief',
+  seo_report: 'SEO riport',
 };
 
 export function TypeBadge({ type }: { type: string }) {
