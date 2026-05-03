@@ -13,6 +13,7 @@ import { PlanEditor } from "../components/PlanEditor.js";
 import { CalendarItemCard } from "../components/CalendarItemCard.js";
 import { CalendarItemEditModal } from "../components/CalendarItemEditModal.js";
 import { marqueeEvents } from "../lib/sse.js";
+import { useMarqueeStore } from "../store/useMarqueeStore.js";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Aktív",
@@ -56,6 +57,11 @@ export function Campaigns() {
   const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<CalendarItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
+  const createThread = useMarqueeStore((s) => s.createThread);
+  const [showModal, setShowModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     campaignsApi
@@ -97,6 +103,27 @@ export function Campaigns() {
     return () => unsubs.forEach((u) => u());
   }, [expandedId]);
 
+  async function handleCreate() {
+    const title = newTitle.trim();
+    if (!title) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await campaignsApi.create(title);
+      await createThread();
+      setShowModal(false);
+      navigate('/', { state: { prefilledMessage: `Tervezzük meg a ${title} kampányt` } });
+    } catch (err: unknown) {
+      const body = err as { error?: string };
+      if (body?.error === 'campaign_exists') {
+        setCreateError('Ez a kampánynév már foglalt.');
+      } else {
+        setCreateError('Hiba történt. Próbáld újra.');
+      }
+      setCreating(false);
+    }
+  }
+
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
@@ -132,7 +159,15 @@ export function Campaigns() {
 
   return (
     <div className="flex-1 overflow-auto p-5 pb-14 md:pb-5 space-y-3">
-      <h1 className="text-xl font-bold text-ink-1 mb-4">Kampányok</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-ink-1">Kampányok</h1>
+        <button
+          className="text-xs px-3 py-1.5 rounded border border-rule text-ink-2 hover:bg-parchment"
+          onClick={() => { setNewTitle(''); setCreateError(null); setShowModal(true); }}
+        >
+          + Új kampány
+        </button>
+      </div>
 
       {campaigns.map((c) => {
         const isExpanded = expandedId === c.id;
@@ -305,6 +340,45 @@ export function Campaigns() {
           </div>
         );
       })}
+
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div className="bg-cream border border-rule rounded-lg p-6 w-full max-w-sm shadow-lg">
+            <h2 className="text-sm font-semibold text-ink-1 mb-4">Új kampány</h2>
+            <label className="block text-xs text-ink-2 mb-1">Kampány neve</label>
+            <input
+              autoFocus
+              className="w-full border border-rule rounded px-3 py-2 text-sm text-ink-1 bg-off-white mb-1 focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="pl. GrowthFrame Q3 brand"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleCreate();
+                if (e.key === 'Escape') setShowModal(false);
+              }}
+            />
+            {createError && <p className="text-xs text-red-500 mb-2">{createError}</p>}
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                className="text-xs px-3 py-1.5 rounded border border-rule text-ink-2 hover:bg-parchment"
+                onClick={() => setShowModal(false)}
+              >
+                Mégsem
+              </button>
+              <button
+                disabled={creating || !newTitle.trim()}
+                className="text-xs px-4 py-1.5 rounded bg-primary text-sidebar-bg font-semibold disabled:opacity-50"
+                onClick={() => void handleCreate()}
+              >
+                {creating ? 'Létrehozás…' : 'Létrehozás'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(addingItem || editingItem) && (
         <CalendarItemEditModal
