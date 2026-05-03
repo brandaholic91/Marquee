@@ -20,6 +20,14 @@ export async function seedClientIfNeeded(dataDir: string, seedDir: string, clien
       await copyFile(join(seedDir, 'skills', role, f), target);
     }
   }
+  // 3. Wiki templates → wiki/clients/<slug>/
+  const wikiTarget = join(dataDir, 'wiki', 'clients', clientSlug);
+  await mkdir(wikiTarget, { recursive: true });
+  for (const f of await readdir(join(seedDir, 'wiki'))) {
+    const target = join(wikiTarget, f);
+    if (await exists(target)) continue;
+    await copyFile(join(seedDir, 'wiki', f), target);
+  }
 }
 
 async function exists(path: string): Promise<boolean> {

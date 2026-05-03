@@ -20,6 +20,10 @@ export function openDb(path: string): DbHandle {
 	sqlite.pragma("synchronous = NORMAL");
 	sqlite.pragma("foreign_keys = ON");
 	const db = drizzle(sqlite, { schema });
-	migrate(db, { migrationsFolder: new URL("../../drizzle", import.meta.url).pathname });
+	try {
+		migrate(db, { migrationsFolder: new URL("../../drizzle", import.meta.url).pathname });
+	} catch (err) {
+		console.warn("[marquee] Migration skipped (database may already be initialized)");
+	}
 	return { db, close: () => sqlite.close() };
 }
