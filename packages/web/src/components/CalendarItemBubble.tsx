@@ -10,10 +10,10 @@ const CHANNEL_ICONS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  planned: 'bg-gray-100 text-gray-800',
-  brief_created: 'bg-yellow-100 text-yellow-800',
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+  planned: 'bg-parchment text-ink-2',
+  brief_created: 'bg-primary-soft text-primary-deep',
+  delivered: 'bg-success-soft text-success-deep',
+  cancelled: 'bg-danger-soft text-danger-deep',
 };
 
 interface CalendarItemBubbleProps {
@@ -23,17 +23,17 @@ interface CalendarItemBubbleProps {
 
 export function CalendarItemBubble({ item, onClick }: CalendarItemBubbleProps) {
   const icon = CHANNEL_ICONS[item.channel] || '📎';
-  const truncatedTitle = item.intent.length > 20 ? item.intent.substring(0, 20) + '…' : item.intent;
-  const statusColor = STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-800';
+  const statusColor = STATUS_COLORS[item.status] || 'bg-parchment text-ink-2';
 
   return (
     <button
       onClick={onClick}
       title={item.intent}
+      aria-label={`${item.channel} channel: ${item.intent} - Status: ${item.status}`}
       className={`w-full text-left text-xs px-1.5 py-0.5 rounded truncate ${statusColor} hover:opacity-80 transition-opacity`}
     >
       <span className="mr-1">{icon}</span>
-      <span className="font-medium truncate">{truncatedTitle}</span>
+      <span className="font-medium truncate">{item.intent}</span>
     </button>
   );
 }
