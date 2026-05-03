@@ -100,7 +100,7 @@ export function makeProposeCampaignPlanTool(ctx: ProposeCampaignPlanContext) {
 				kpi: { type: "string" },
 				calendar_items: {
 					type: "array",
-					description: "Tervezett tartalmak listaja. 3 honapos kampanynal legalabb 10-12 elem legyen (hetente 1-2 tartalom). Ne hagyj ures tombot — ha a channel mix tartalmaz valamit, az jelenjen meg a kalendarioban is.",
+					description: "Tervezett tartalmak listaja. Az elso 2-4 hetet reszletesen tervezd meg; a kampany kesőbbi szakaszara eleg 1-2 merfoldko-szintu elem. Minden megbeszelt csatornanak legyen legalabb egy eleme.",
 					items: {
 						type: "object",
 						properties: {

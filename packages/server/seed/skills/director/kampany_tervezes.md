@@ -28,9 +28,9 @@ Aktivald ezt a skillt, ha az operator kampanytervezest ker, vagy egy konkret kam
 - Ha nincs eleg adat, konkretan jelezd melyik mezo hianyzik, majd kerdezz vissza.
 - Magyarul, tegezve, roviden es tisztan fogalmazz.
 
-## Calendar item suruseg
+## Calendar item tervezes
 
-- 3 honapos kampany: legalabb 10-12 elem (hetente 1-2 tartalom)
-- 6 honapos kampany: legalabb 20-24 elem
-- Minden megbeszelt csatorna jelenjen meg a kalendarioban — ha a channel mix tartalmaz facebook-ot, blog-ot stb., ahhoz is kell elem.
-- A suru LinkedIn poszt sorozatok (pl. 3 reszes) 3 kulonallo elemet kapjanak, ne egyet.
+- Az elso 2-4 hetet tervezd reszletesen (konkret datum, szandek, csatorna).
+- A tovabbi idoszakra csak 1-2 merfoldko eleget: jelezze a szandekot, de ne kotod le a datumot het pontossaggal.
+- Minden megbeszelt csatorna jelenjen meg legalabb egyszer — ha a channel mix tartalmaz facebook-ot, blog-ot stb., ahhoz is kell elem.
+- Kevesebb, de konkret elem jobb mint sok bizonytalan placeholder.
