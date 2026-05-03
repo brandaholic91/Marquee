@@ -34,7 +34,7 @@ export function Sidebar() {
         <SidebarItem to="/hq" label="HQ" end />
         <SidebarItem to="/" label="Workshop" end />
         <SidebarItem to="/jovahagyas" label="Jóváhagyások" badge={pending > 0 ? pending : undefined} />
-        <SidebarItem to="/deliverables" label="Deliverables" />
+        <SidebarItem to="/deliverables" label="Tartalmak" />
         <SidebarItem to="/kampanyok" label="Kampányok" />
         <SidebarItem to="/memoria" label="Memória" />
         <SidebarItem to="/ugynokseg" label="Ügynökség" />

@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/hq', label: 'HQ', end: true },
   { to: '/', label: 'Workshop', end: true },
   { to: '/jovahagyas', label: 'Jóváhagy' },
-  { to: '/deliverables', label: 'Deliverables' },
+  { to: '/deliverables', label: 'Tartalmak' },
   { to: '/kampanyok', label: 'Kampányok' },
   { to: '/memoria', label: 'Memória' },
   { to: '/ugynokseg', label: 'Ügynökség' },

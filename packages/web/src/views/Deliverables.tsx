@@ -103,7 +103,7 @@ export function Deliverables() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden p-6">
-      <h1 className="text-[18px] font-bold text-ink-1 mb-4">Deliverables</h1>
+      <h1 className="text-[18px] font-bold text-ink-1 mb-4">Tartalmak</h1>
 
       {/* Szűrősáv */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
