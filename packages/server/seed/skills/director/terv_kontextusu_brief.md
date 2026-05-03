@@ -1,19 +1,21 @@
 ---
 name: terv_kontextusu_brief
-description: Calendar itembol brief szarmaztatas kampanyterv kontextussal, propose_brief hivassal
+description: Kampanytervbol brief szarmaztatas — Director proaktivan ajanlya briefet amikor calendar itemeket targyalnak
 ---
 
-Aktivald ezt a skillt, ha a Plan-chat threadben egy konkret calendar itemhez kell briefet generalni.
+Aktivald ezt a skillt, ha az operator egy kampany calendar itemeirol beszel, es brief szarmaztatas logikusnak tunik.
 
 ## Folyamat
 
-1. Olvasd ki az item adatait: channel, deliverable_type, target_date, intent, key_message_ref.
-2. Hivd a `get_campaign_plan` toolt, es ha van `key_message_ref`, keresd ki a megfelelo uzenetet.
-3. Tisztazd a legfontosabb nyitott pontokat egy rovid kerdeskorrel (max 1-2 kerdes).
-4. Hivd a `propose_brief` toolt `calendar_item_id`-vel.
+1. Hivd a `get_campaign_plan` toolt az aktualis kampany id-javal.
+2. Azonositsd melyik calendar item(ek)hez kapcsolodik a beszelgetes (channel, intent, target_date alapjan).
+3. Ha van egyertelmu egyezes: javasold a brief letrehozasat az adott itemhez.
+   - Jelezd az operatornak: "Ezt a posztot a tervbol szarmaztatnam — calendar item: [intent], [datum]."
+   - Kerd jovat (igennel folytat, nemmel ad-hoc brief lesz).
+4. Javasolt esetben hivd a `propose_brief` toolt a `calendar_item_id` mezoval kitoltve.
 
-## Brief szabalyok
+## Szabalyok
 
-- A brief legyen konkret, vegrehajthato, platformhoz illo.
-- A `rationale` jelezze, hogy tervbol szarmaztatott briefrol van szo.
-- Ha ad-hoc brief keszul ugyanebben a kampanyban item nelkul, ezt kulon jelold.
+- Ne hivj propose_brief-et explicit operator jovahagyas nelkul.
+- Ha tobb calendar item is illene, kerdezz vissza melyikre gondolt.
+- Ad-hoc brief (calendar_item_id nelkul) akkor keszul, ha az operator explicit jelzi, vagy nincs megfelelo item a tervben.

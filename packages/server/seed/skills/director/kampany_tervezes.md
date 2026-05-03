@@ -3,7 +3,7 @@ name: kampany_tervezes
 description: Director-vezetett kampanytervezes top-down kerdessorrenddel es egyetlen propose_campaign_plan hivasban osszegzessel
 ---
 
-Aktivald ezt a skillt, ha a thread kampanyhoz kotott (`campaign_id`), es az operator kampanytervezest ker.
+Aktivald ezt a skillt, ha az operator kampanytervezest ker, vagy egy konkret kampany nevet emliti es tervet szeretne. A kampany kontextusat a `get_campaign_status` es `get_campaign_plan` eszkozokkel szerzed meg — nem szukseges kampany-kotott thread.
 
 ## Folyamat
 
