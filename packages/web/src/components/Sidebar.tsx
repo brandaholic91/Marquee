@@ -38,6 +38,7 @@ export function Sidebar() {
         <SidebarItem to="/kampanyok" label="Kampányok" />
         <SidebarItem to="/naptár" label="Naptár" />
         <SidebarItem to="/memoria" label="Memória" />
+        <SidebarItem to="/wiki" label="Wiki" />
         <SidebarItem to="/ugynokseg" label="Ügynökség" />
       </nav>
 

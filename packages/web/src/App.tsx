@@ -10,6 +10,7 @@ import { Agency } from './views/Agency.js';
 import { AgentConfig } from './views/AgentConfig.js';
 import { Deliverables } from './views/Deliverables.js';
 import { Calendar } from './views/Calendar.js';
+import { Wiki } from './views/Wiki.js';
 
 export function App() {
   return (
@@ -26,6 +27,7 @@ export function App() {
           <Route path="/deliverables" element={<Deliverables />} />
           <Route path="/naptár" element={<Calendar />} />
           <Route path="/memoria" element={<Memory />} />
+          <Route path="/wiki" element={<Wiki />} />
           <Route path="/ugynokseg" element={<Agency />} />
           <Route path="/ugynokseg/:role" element={<AgentConfig />} />
           <Route path="*" element={<Navigate to="/hq" replace />} />
