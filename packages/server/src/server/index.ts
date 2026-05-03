@@ -84,5 +84,17 @@ export async function buildServer(opts: ServerOpts) {
 	// Health check
 	app.get("/api/health", async () => ({ ok: true }));
 
+	// SPA fallback — serve index.html for all non-API routes so React Router works on refresh
+	app.setNotFoundHandler(async (request, reply) => {
+		if (request.url.startsWith("/api") || request.url.startsWith("/sse")) {
+			return reply.code(404).send({ message: `Route ${request.method}:${request.url} not found`, error: "Not Found", statusCode: 404 });
+		}
+		try {
+			return reply.sendFile("index.html");
+		} catch {
+			return reply.code(404).send({ error: "Not Found" });
+		}
+	});
+
 	return app;
 }
