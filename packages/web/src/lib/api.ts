@@ -186,6 +186,16 @@ export interface CalendarItem {
 }
 
 export const campaignsApi = {
+	create: (title: string): Promise<{ id: string; title: string; status: string; createdAt: number }> =>
+		fetch('/api/campaigns', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ title }),
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body as { id: string; title: string; status: string; createdAt: number };
+		}),
 	list: (): Promise<CampaignRow[]> => fetch("/api/campaigns").then(json),
 	get: (id: string): Promise<CampaignDetail> => fetch(`/api/campaigns/${id}`).then(json),
 	patch: (id: string, body: { title?: string; status?: string }): Promise<{ ok: true }> =>

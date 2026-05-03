@@ -4,6 +4,7 @@ import { ChatComposer } from '../components/ChatComposer.js';
 import { EmptyState } from '../components/EmptyState.js';
 import { ThreadList } from '../components/ThreadList.js';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
+import { useLocation } from 'react-router-dom';
 
 export function Workshop() {
   const memoryEmpty = useMarqueeStore((s) => s.memoryEmpty);
@@ -14,6 +15,9 @@ export function Workshop() {
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
   const activeThread = threads.find((t) => t.id === threadId);
   const isCampaignThread = Boolean(activeThread?.campaignId);
+
+  const location = useLocation();
+  const prefilledMessage = (location.state as { prefilledMessage?: string } | null)?.prefilledMessage ?? undefined;
 
   const [mobileThreadsOpen, setMobileThreadsOpen] = useState(false);
   const prevThreadId = useRef(threadId);
@@ -94,7 +98,10 @@ export function Workshop() {
         {/* Sticky composer */}
         <div className="sticky bottom-0 pb-3 bg-gradient-to-t from-cream via-cream to-transparent pt-2">
           <div className="max-w-4xl mx-auto">
-            <ChatComposer placeholder={isCampaignThread ? 'Director tervezi a kampányt…' : 'Írj a Directornak…'} />
+            <ChatComposer
+              placeholder={isCampaignThread ? 'Director tervezi a kampányt…' : 'Írj a Directornak…'}
+              initialText={prefilledMessage}
+            />
           </div>
         </div>
       </div>
