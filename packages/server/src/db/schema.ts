@@ -92,6 +92,7 @@ export const campaignCalendarItems = sqliteTable(
 			.default("planned"),
 		createdAt: integer("created_at").notNull(),
 		updatedAt: integer("updated_at").notNull(),
+		startTime: text("start_time").notNull().default("09:00"),
 	},
 	(t) => ({
 		byPlanStatus: index("idx_calendar_plan_status").on(t.planId, t.status, t.targetDate),
