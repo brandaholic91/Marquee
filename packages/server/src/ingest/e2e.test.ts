@@ -388,7 +388,7 @@ describe("Ingest E2E Flow", () => {
 			.where(eq(schema.wikiProposals.clientSlug, "test"));
 
 		expect(proposals.length).toBeGreaterThan(0);
-		const proposal = proposals.find((p) => p.reason.includes("keyword research"));
+		const proposal = proposals.find((p: typeof proposals[0]) => p.reason.includes("keyword research"));
 		expect(proposal).toBeDefined();
 		expect(proposal?.wikiPage).toBe("seo-learnings.md");
 		expect(proposal?.agentSessionId).toBe(session.id);
