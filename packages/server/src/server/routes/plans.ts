@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { and, eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
-import { campaignCalendarItems, campaignPlans, campaigns, messages } from "../../db/schema.js";
+import { campaignCalendarItems, campaignPlans, campaigns, chatThreads, messages } from "../../db/schema.js";
 import { createCalendarItem, createPlan, getPlanByCampaignId, listCalendarItems, updatePlan } from "../../db/queries.js";
 
 type Db = ReturnType<typeof drizzle>;
@@ -128,29 +128,37 @@ export const plansRoutes: FastifyPluginAsync<PlansRoutesOpts> = async (app, opts
 	});
 
 	app.post<{ Params: { id: string; itemId: string } }>("/api/campaigns/:id/plan/calendar-items/:itemId/derive-brief", async (req, reply) => {
-		const row = await db
+		const item = await db
 			.select()
 			.from(campaignCalendarItems)
 			.where(and(eq(campaignCalendarItems.id, req.params.itemId), eq(campaignCalendarItems.campaignId, req.params.id)))
 			.limit(1)
 			.all();
-		if (row.length === 0) return reply.code(404).send({ error: "not_found" });
-		const thread = await db
+		if (item.length === 0) return reply.code(404).send({ error: "not_found" });
+
+		// Find the Plan-chat thread for this campaign
+		const threads = await db
 			.select()
-			.from(messages)
-			.where(eq(messages.threadId, "thr_1"))
+			.from(chatThreads)
+			.where(and(eq(chatThreads.campaignId, req.params.id), eq(chatThreads.clientSlug, "default")))
 			.limit(1)
 			.all();
+		if (threads.length === 0) return reply.code(400).send({ error: "no_plan_chat_thread" });
+		const threadId = threads[0].id;
+
+		const ci = item[0];
+		const text = `Készíts briefet ehhez a calendar itemhez (id: ${ci.id}): csatorna: ${ci.channel}, típus: ${ci.deliverableType ?? "nincs megadva"}, szándék: ${ci.intent}`;
+		const ts = Date.now();
 		await db.insert(messages).values({
 			id: createId(),
-			threadId: thread[0]?.threadId ?? "thr_1",
+			threadId,
 			agentSessionId: null,
 			sender: "user",
 			type: "chat",
-			contentJson: JSON.stringify({ text: `Keszits briefet ehhez a calendar itemhez: ${row[0].id}` }),
-			ts: Date.now(),
+			contentJson: JSON.stringify({ text }),
+			ts,
 		});
-		broker.emit({ type: "chat_message", thread_id: thread[0]?.threadId ?? "thr_1" });
+		broker.emit({ type: "chat_message", message_id: createId(), thread_id: threadId, sender: "user", text, ts });
 		return reply.code(202).send({ ok: true });
 	});
 
