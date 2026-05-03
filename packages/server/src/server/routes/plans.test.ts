@@ -100,4 +100,11 @@ describe("plans routes", () => {
 		const msg = (await db.select().from(schema.messages).where(eq(schema.messages.id, "m1")).all())[0];
 		expect(JSON.parse(msg.contentJson).status).toBe("accepted");
 	});
+  it("derive-brief endpoint does not exist (removed)", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/campaigns/c1/plan/calendar-items/nonexistent/derive-brief",
+    });
+    expect(res.statusCode).toBe(404);
+  });
 });
