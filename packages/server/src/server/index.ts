@@ -1,4 +1,6 @@
 import Fastify from "fastify";
+import { createReadStream } from "fs";
+import { join } from "path";
 import type { AgencyDb } from "../db/index.js";
 import type { Broker } from "../broker/event-bus.js";
 import { briefsRoutes } from "./routes/briefs.js";
@@ -89,11 +91,7 @@ export async function buildServer(opts: ServerOpts) {
 		if (request.url.startsWith("/api") || request.url.startsWith("/sse")) {
 			return reply.code(404).send({ message: `Route ${request.method}:${request.url} not found`, error: "Not Found", statusCode: 404 });
 		}
-		try {
-			return reply.sendFile("index.html");
-		} catch {
-			return reply.code(404).send({ error: "Not Found" });
-		}
+		return reply.type("text/html").send(createReadStream(join(opts.webRoot, "index.html")));
 	});
 
 	return app;
