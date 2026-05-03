@@ -36,11 +36,11 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 |---|---|---|---|
 | `director` | gpt-5.4 | warm | — |
 | `copywriter` | gpt-5.4 | transient | email, blog_post |
-| `social-manager` | gpt-5.4-mini | transient | social_post |
-| `paid-specialist` | gpt-5.4-mini | transient | ad_copy |
+| `social-manager` | gpt-5.4 | transient | social_post |
+| `paid-specialist` | gpt-5.4 | transient | ad_copy |
 | `email-marketer` | gpt-5.4 | transient | email |
-| `seo-specialist` | gpt-5.4-mini | transient | blog_post |
-| `brand-voice-guardian` | gpt-5.4-mini | transient (review) | — |
+| `seo-specialist` | gpt-5.4 | transient | blog_post |
+| `brand-voice-guardian` | gpt-5.4 | transient (review) | — |
 
 ## Tech stack
 
