@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deliverablesApi, campaignsApi, type DeliverableRow, type CampaignRow } from "../lib/api.js";
+import { TypeBadge } from "../components/TypeBadge.js";
+import { StatusBadge } from "../components/StatusBadge.js";
+import { EmptyState } from "../components/EmptyState.js";
 
 const DELIVERABLE_TYPES = [
   "social_post", "email", "blog_post", "ad_copy", "content_brief_seo", "seo_report",
@@ -43,6 +46,7 @@ export function Deliverables() {
   const [rows, setRows] = useState<DeliverableRow[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("shipped");
@@ -58,7 +62,10 @@ export function Deliverables() {
       setRows(Array.isArray(dels) ? dels : []);
       setCampaigns(Array.isArray(camps) ? camps : []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setError("Nem sikerült betölteni az adatokat.");
+      setLoading(false);
+    });
   }, []);
 
   const campaignName = (id: string | null): string => {
@@ -78,6 +85,14 @@ export function Deliverables() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-[13px] text-ink-3">Betöltés…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-[13px] text-red-500">{error}</p>
       </div>
     );
   }
@@ -144,8 +159,58 @@ export function Deliverables() {
         <span className="text-[11px] text-ink-3 ml-auto">{filtered.length} elem</span>
       </div>
 
-      {/* Táblázat helye — Task 4-ben */}
-      <p className="text-[12px] text-ink-3">{filtered.length} találat</p>
+      {/* Táblázat és üres állapot */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          title="Nincs találat"
+          body="Próbálj más szűrőkombinációt."
+        />
+      ) : (
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-rule">
+                <th className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide pb-2 pr-4">Cím</th>
+                <th className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide pb-2 pr-4">Típus</th>
+                <th className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide pb-2 pr-4">Kampány</th>
+                <th className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide pb-2 pr-4">Státusz</th>
+                <th className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide pb-2">Dátum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((d) => (
+                <tr
+                  key={d.id}
+                  onClick={() => navigate(`/jovahagyas/${d.id}`)}
+                  className="border-b border-rule hover:bg-parchment cursor-pointer transition-colors"
+                >
+                  <td className="py-2.5 pr-4 text-[13px] font-medium text-ink-1 max-w-[260px] truncate">
+                    {d.title ?? d.type}
+                  </td>
+                  <td className="py-2.5 pr-4">
+                    <TypeBadge type={d.type} />
+                  </td>
+                  <td className="py-2.5 pr-4 text-[12px] text-ink-2">
+                    {campaignName(d.campaignId)}
+                  </td>
+                  <td className="py-2.5 pr-4">
+                    <StatusBadge status={d.status} />
+                  </td>
+                  <td className="py-2.5 text-[12px] text-ink-3 whitespace-nowrap">
+                    {new Date(d.updatedAt).toLocaleString("hu-HU", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
