@@ -16,7 +16,8 @@ export type PlanProposal = {
 
 export function PlanProposalCard({ messageId, payload }: { messageId: string; payload: PlanProposal }) {
 	const [busy, setBusy] = useState(false);
-	const status = payload.status ?? "pending";
+	const [localStatus, setLocalStatus] = useState<"pending" | "accepted" | "discarded">(payload.status ?? "pending");
+	const status = localStatus;
 	const isUpdate = Boolean(payload.proposal.patch);
 
 	return (
@@ -39,6 +40,7 @@ export function PlanProposalCard({ messageId, payload }: { messageId: string; pa
 						onClick={async () => {
 							setBusy(true);
 							await proposalsApi.accept(messageId);
+							setLocalStatus("accepted");
 							setBusy(false);
 						}}
 					>
@@ -50,6 +52,7 @@ export function PlanProposalCard({ messageId, payload }: { messageId: string; pa
 						onClick={async () => {
 							setBusy(true);
 							await proposalsApi.discard(messageId);
+							setLocalStatus("discarded");
 							setBusy(false);
 						}}
 					>
