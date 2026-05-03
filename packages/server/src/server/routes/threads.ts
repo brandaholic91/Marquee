@@ -27,13 +27,13 @@ export const threadsRoutes: FastifyPluginAsync<ThreadsRoutesOpts> = async (app, 
     const campaignId = req.query?.campaign_id;
     if (campaignId) {
       return db.select().from(chatThreads)
-        .where(and(eq(chatThreads.clientSlug, 'default'), eq(chatThreads.campaignId, campaignId)))
+        .where(and(eq(chatThreads.clientSlug, 'default'), eq(chatThreads.campaignId, campaignId), isNull(chatThreads.archivedAt)))
         .orderBy(sql`rowid DESC`)
         .all();
     }
 
     const active = await db.select().from(chatThreads)
-      .where(and(eq(chatThreads.clientSlug, 'default'), isNull(chatThreads.archivedAt)))
+      .where(and(eq(chatThreads.clientSlug, 'default'), isNull(chatThreads.archivedAt), isNull(chatThreads.campaignId)))
       .orderBy(sql`rowid DESC`)
       .all();
 
