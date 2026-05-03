@@ -161,26 +161,64 @@ export function Calendar() {
       {/* Toolbar */}
       <div className="px-6 py-4 border-b border-rule flex items-center justify-between gap-4">
         <div className="flex gap-2 items-center">
+          {/* Navigation buttons */}
           <button
-            onClick={() => handleSetViewMode('weekly')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              viewMode === 'weekly'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
-            }`}
+            onClick={() => {
+              const newDate = new Date(selectedDate);
+              if (viewMode === 'weekly') {
+                newDate.setDate(newDate.getDate() - 7);
+              } else {
+                newDate.setMonth(newDate.getMonth() - 1);
+              }
+              setSelectedDate(newDate);
+            }}
+            className="px-3 py-2 rounded-lg font-medium text-sm bg-off-white text-ink-2 hover:bg-parchment border border-rule transition-all"
           >
-            Heti nézet
+            ← Előző
           </button>
+          <span className="text-sm font-semibold text-ink-1 min-w-48 text-center">
+            {viewMode === 'weekly'
+              ? `${selectedDate.getFullYear()}. ${String(selectedDate.getMonth() + 1).padStart(2, '0')}.${String(selectedDate.getDate()).padStart(2, '0')}. (hét)`
+              : `${selectedDate.getFullYear()}. ${String(selectedDate.getMonth() + 1).padStart(2, '0')}. hó`}
+          </span>
           <button
-            onClick={() => handleSetViewMode('monthly')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              viewMode === 'monthly'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
-            }`}
+            onClick={() => {
+              const newDate = new Date(selectedDate);
+              if (viewMode === 'weekly') {
+                newDate.setDate(newDate.getDate() + 7);
+              } else {
+                newDate.setMonth(newDate.getMonth() + 1);
+              }
+              setSelectedDate(newDate);
+            }}
+            className="px-3 py-2 rounded-lg font-medium text-sm bg-off-white text-ink-2 hover:bg-parchment border border-rule transition-all"
           >
-            Havi nézet
+            Következő →
           </button>
+
+          {/* View toggle buttons */}
+          <div className="flex gap-2 items-center ml-4 pl-4 border-l border-rule">
+            <button
+              onClick={() => handleSetViewMode('weekly')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                viewMode === 'weekly'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
+              }`}
+            >
+              Heti nézet
+            </button>
+            <button
+              onClick={() => handleSetViewMode('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                viewMode === 'monthly'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-off-white text-ink-2 hover:bg-parchment border border-rule'
+              }`}
+            >
+              Havi nézet
+            </button>
+          </div>
         </div>
 
         <CampaignFilter
