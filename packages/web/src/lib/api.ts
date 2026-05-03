@@ -178,6 +178,7 @@ export interface CalendarItem {
 	channel: "linkedin" | "email" | "blog" | "landing" | "ad" | "other";
 	deliverableType: string | null;
 	targetDate: number;
+	startTime: string; // HH:MM format
 	intent: string;
 	keyMessageRef: string | null;
 	status: "planned" | "brief_created" | "delivered" | "cancelled";
@@ -186,6 +187,16 @@ export interface CalendarItem {
 }
 
 export const campaignsApi = {
+	create: (title: string): Promise<{ id: string; title: string; status: string; createdAt: number }> =>
+		fetch('/api/campaigns', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ title }),
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body as { id: string; title: string; status: string; createdAt: number };
+		}),
 	list: (): Promise<CampaignRow[]> => fetch("/api/campaigns").then(json),
 	get: (id: string): Promise<CampaignDetail> => fetch(`/api/campaigns/${id}`).then(json),
 	patch: (id: string, body: { title?: string; status?: string }): Promise<{ ok: true }> =>
@@ -240,8 +251,38 @@ export const plansApi = {
 		}).then(json),
 	deleteCalendarItem: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
 		fetch(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}`, { method: "DELETE" }).then(json),
-	deriveBrief: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
-		post(`/api/campaigns/${campaignId}/plan/calendar-items/${itemId}/derive-brief`),
+};
+
+export const calendarsApi = {
+	updateItem: (
+		campaignId: string,
+		itemId: string,
+		updates: Partial<{
+			startDate: number;
+			startTime: string;
+			intent: string;
+			channel: CalendarItem["channel"];
+			status: CalendarItem["status"];
+		}>,
+	): Promise<{ ok: true; item: CalendarItem }> =>
+		fetch(`/api/campaigns/${campaignId}/calendar_items/${itemId}`, {
+			method: "PUT",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(updates),
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body;
+		}),
+
+	deleteItem: (campaignId: string, itemId: string): Promise<{ ok: true }> =>
+		fetch(`/api/campaigns/${campaignId}/calendar_items/${itemId}`, {
+			method: "DELETE",
+		}).then(async (r) => {
+			const body = await r.json();
+			if (!r.ok) throw body;
+			return body;
+		}),
 };
 
 export const proposalsApi = {

@@ -1,5 +1,6 @@
 import { readMemoryFile } from "../memory/read.js";
 import { MEMORY_FILES, type MemoryFile } from "../memory/validate.js";
+import { readWikiPage } from "../memory/wiki.js";
 import type { RoleSlug } from "./config.js";
 
 const FILES_FOR_ROLE: Record<RoleSlug, MemoryFile[]> = {
@@ -10,6 +11,16 @@ const FILES_FOR_ROLE: Record<RoleSlug, MemoryFile[]> = {
 	"email-marketer": ["profile.md", "brand_voice.md", "email_list_segments.md"],
 	"seo-specialist": ["profile.md", "brand_voice.md", "seo_keyword_bank.md"],
 	"brand-voice-guardian": ["profile.md", "brand_voice_guidelines.md"],
+};
+
+const WIKI_FILES_FOR_ROLE: Record<RoleSlug, string[]> = {
+	director: ["brand-voice-patterns.md", "seo-learnings.md", "content-performance.md"],
+	copywriter: ["brand-voice-patterns.md", "content-performance.md"],
+	"social-manager": ["brand-voice-patterns.md", "content-performance.md"],
+	"paid-specialist": ["brand-voice-patterns.md", "content-performance.md"],
+	"email-marketer": ["brand-voice-patterns.md", "content-performance.md"],
+	"seo-specialist": ["seo-learnings.md", "brand-voice-patterns.md"],
+	"brand-voice-guardian": [],
 };
 
 export async function renderMemoryContext(dataDir: string, clientSlug: string, role: RoleSlug): Promise<string> {
@@ -58,4 +69,18 @@ export async function renderBrandVoiceBlock(dataDir: string, clientSlug: string,
 	const r = await readMemoryFile(dataDir, clientSlug, "brand_voice_guidelines.md" as MemoryFile);
 	if (!r) return "";
 	return `=== BRAND VOICE SZABÁLYOK ===\n${r.rawContent.trim()}\n=== / BRAND VOICE SZABÁLYOK VÉGE ===`;
+}
+
+export async function renderWikiContext(dataDir: string, clientSlug: string, role: RoleSlug): Promise<string> {
+	const files = WIKI_FILES_FOR_ROLE[role] || [];
+	const parts: string[] = [];
+
+	for (const f of files) {
+		const content = await readWikiPage(dataDir, `clients/${clientSlug}/${f}`);
+		if (!content) continue;
+		parts.push(`### wiki/${f}\n${content.trim()}`);
+	}
+
+	if (parts.length === 0) return "";
+	return `<wiki>\n${parts.join("\n\n")}\n</wiki>`;
 }

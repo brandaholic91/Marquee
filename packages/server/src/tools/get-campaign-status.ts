@@ -13,7 +13,7 @@ export interface GetCampaignStatusContext {
 export function makeGetCampaignStatusTool(ctx: GetCampaignStatusContext) {
   return {
     name: 'get_campaign_status',
-    description: 'Lekéri az összes aktív kampány aktuális állapotát: hány brief és deliverable tartozik hozzájuk, és mi a státuszuk. Használd ha az operátor kampány haladásáról kérdez.',
+    description: 'Lekéri az összes aktív kampány aktuális állapotát: id, cím, brief/deliverable számok, státuszok. Az id mezőt használd a propose_campaign_plan és get_campaign_plan hívásoknál campaign_id-ként. Használd ha az operátor kampány haladásáról kérdez, vagy kampánytervet akarsz javasolni.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -43,6 +43,7 @@ export function makeGetCampaignStatusTool(ctx: GetCampaignStatusContext) {
         }, {});
 
         return {
+          id: campaign.id,
           campaign: campaign.title,
           briefs_total: campaignBriefs.length,
           deliverables_total: campaignDeliverables.length,

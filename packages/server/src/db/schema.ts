@@ -92,6 +92,7 @@ export const campaignCalendarItems = sqliteTable(
 			.default("planned"),
 		createdAt: integer("created_at").notNull(),
 		updatedAt: integer("updated_at").notNull(),
+		startTime: text("start_time").notNull().default("09:00"),
 	},
 	(t) => ({
 		byPlanStatus: index("idx_calendar_plan_status").on(t.planId, t.status, t.targetDate),
@@ -341,3 +342,29 @@ export const deliverableReviews = sqliteTable(
 		byDeliverable: index("idx_reviews_deliverable").on(t.deliverableId),
 	}),
 );
+
+export const wikiProposals = sqliteTable(
+	"wiki_proposals",
+	{
+		id: text("id").primaryKey(),
+		clientSlug: text("client_slug")
+			.notNull()
+			.references(() => clients.slug),
+		wikiPage: text("wiki_page").notNull(),
+		newContent: text("new_content").notNull(),
+		reason: text("reason").notNull(),
+		agentSessionId: text("agent_session_id").references(() => agentSessions.id),
+		createdAt: integer("created_at").notNull(),
+		approvedAt: integer("approved_at"),
+		rejectedAt: integer("rejected_at"),
+		approvedBy: text("approved_by"),
+		rejectionReason: text("rejection_reason"),
+	},
+	(t) => ({
+		byClientSlug: index("idx_wiki_proposals_client_slug").on(t.clientSlug),
+		byCreatedAt: index("idx_wiki_proposals_created_at").on(t.createdAt),
+	}),
+);
+
+export type WikiProposal = typeof wikiProposals.$inferSelect;
+export type WikiProposalInsert = typeof wikiProposals.$inferInsert;

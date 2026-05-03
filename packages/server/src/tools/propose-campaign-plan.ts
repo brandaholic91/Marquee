@@ -40,16 +40,17 @@ export interface ProposeCampaignPlanContext {
 }
 
 function validate(input: ProposeCampaignPlanInput): void {
-	if (!input.goal.trim()) throw new Error("goal is required");
-	if (!input.audience.trim()) throw new Error("audience is required");
-	if (!input.rationale.trim()) throw new Error("rationale is required");
+	if (typeof input.goal !== "string" || !input.goal.trim()) throw new Error("goal is required");
+	if (typeof input.audience !== "string" || !input.audience.trim()) throw new Error("audience is required");
+	if (typeof input.rationale !== "string" || !input.rationale.trim()) throw new Error("rationale is required");
 	const ids = new Set<string>();
 	for (const km of input.key_messages) {
-		if (!km.id.trim() || !km.text.trim()) throw new Error("key_messages entries must have id and text");
+		if (typeof km.id !== "string" || !km.id.trim() || typeof km.text !== "string" || !km.text.trim())
+			throw new Error("key_messages entries must have id (kebab-case string) and text (string)");
 		if (ids.has(km.id)) throw new Error("key_messages ids must be unique");
 		ids.add(km.id);
 	}
-	const totalWeight = input.channel_mix.reduce((sum, c) => sum + c.weight, 0);
+	const totalWeight = input.channel_mix.reduce((sum, c) => sum + (typeof c.weight === "number" ? c.weight : 0), 0);
 	if (totalWeight > 100) throw new Error("channel_mix total weight must be <= 100");
 	for (const item of input.calendar_items) {
 		if (item.key_message_ref && !ids.has(item.key_message_ref)) {
@@ -65,16 +66,53 @@ export function makeProposeCampaignPlanTool(ctx: ProposeCampaignPlanContext) {
 		inputSchema: {
 			type: "object",
 			properties: {
-				campaign_id: { type: "string" },
+				campaign_id: { type: "string", description: "A kampany DB id-ja — get_campaign_status eszkozbol kapott id mezo erteke" },
 				goal: { type: "string" },
 				goal_type: { type: "string" },
 				audience: { type: "string" },
-				key_messages: { type: "array" },
-				channel_mix: { type: "array" },
+				key_messages: {
+					type: "array",
+					description: "Fo uzenetlista. Minden elem: id (rovid kebab-case, pl. 'tracking-ertek') es text (az uzenet szovege).",
+					items: {
+						type: "object",
+						properties: {
+							id: { type: "string", description: "Rovid kebab-case azonosito, pl. 'tracking-ertek'" },
+							text: { type: "string", description: "Az uzenet szovege" },
+						},
+						required: ["id", "text"],
+					},
+				},
+				channel_mix: {
+					type: "array",
+					description: "Csatorna-mix. Minden elem: channel es weight (0-100 szam, ossz max 100).",
+					items: {
+						type: "object",
+						properties: {
+							channel: { type: "string", description: "Csatorna neve, pl. 'linkedin', 'email', 'blog'" },
+							weight: { type: "number", description: "Suly 0-100 kozott" },
+							note: { type: "string" },
+						},
+						required: ["channel", "weight"],
+					},
+				},
 				timeline_start: { type: "number" },
 				timeline_end: { type: "number" },
 				kpi: { type: "string" },
-				calendar_items: { type: "array" },
+				calendar_items: {
+					type: "array",
+					description: "Tervezett tartalmak listaja. Az elso 2-4 hetet reszletesen tervezd meg; a kampany kesőbbi szakaszara eleg 1-2 merfoldko-szintu elem. Minden megbeszelt csatornanak legyen legalabb egy eleme.",
+					items: {
+						type: "object",
+						properties: {
+							channel: { type: "string", description: "linkedin | email | blog | landing | ad | facebook | instagram | other" },
+							deliverable_type: { type: "string", description: "social_post | email | blog_post | ad_copy | content_brief_seo | seo_report" },
+							target_date: { type: "number", description: "Epoch masodperc (Unix timestamp)" },
+							intent: { type: "string", description: "1-2 mondatos szandek" },
+							key_message_ref: { type: "string", description: "Opcionalis: key_messages[].id-re mutat" },
+						},
+						required: ["channel", "target_date", "intent"],
+					},
+				},
 				rationale: { type: "string" },
 			},
 			required: ["campaign_id", "goal", "goal_type", "audience", "key_messages", "channel_mix", "calendar_items", "rationale"],
@@ -100,7 +138,7 @@ export function makeProposeCampaignPlanTool(ctx: ProposeCampaignPlanContext) {
 				contentJson: JSON.stringify({ proposal_id: proposalId, proposal: input, status: "pending" }),
 				ts: Date.now(),
 			});
-			ctx.broker.emit({ type: "plan.proposed", proposal_id: proposalId, campaign_id: input.campaign_id, thread_id: ctx.threadId });
+			ctx.broker.emit({ type: "plan.proposed", proposal_id: proposalId, campaign_id: input.campaign_id, thread_id: ctx.threadId, message_id: messageId, content_json: JSON.stringify({ proposal_id: proposalId, proposal: input, status: "pending" }) });
 			return { proposal_id: proposalId, plan_id: null };
 		},
 	};

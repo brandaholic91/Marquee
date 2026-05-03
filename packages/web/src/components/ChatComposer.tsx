@@ -2,8 +2,8 @@ import { useState, type KeyboardEvent } from 'react';
 import { useMarqueeStore } from '../store/useMarqueeStore.js';
 import { BulbIndicator } from './BulbIndicator.js';
 
-export function ChatComposer({ placeholder = 'Írj a Directornak…' }: { placeholder?: string }) {
-  const [text, setText] = useState('');
+export function ChatComposer({ placeholder = 'Írj a Directornak…', initialText }: { placeholder?: string; initialText?: string }) {
+  const [text, setText] = useState(initialText ?? '');
   const sendMessage = useMarqueeStore((s) => s.sendMessage);
   const activeAgents = useMarqueeStore((s) => s.activeAgents);
 

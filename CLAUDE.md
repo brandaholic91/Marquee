@@ -27,7 +27,8 @@ Single-tenant AI marketing ügynökség: Director chat → brief proposal → sp
 ✅ Brief származtatás calendar item-ből (laza kötés: `briefs.calendar_item_id` opcionális). Calendar item state machine event-driven státusz-átmenetekkel.
 ✅ n8n outbound webhook + inbound (`POST /api/briefs` Bearer tokennel).
 ✅ Lokális OAuth setup kész: `~/.pi/agent/auth.json`.
-✅ VM 260 deploy megtörtént (`master`), service fut (`marquee.service`), DNS + reverse proxy aktív.
+✅ Naptár nézet (Calendar View): Weekly/monthly grid, campaign filter, side panel editing, drag-drop reschedule.
+⚠️ VM 260 deploy még nem történt meg (Plan v1 sem deployolva).
 
 ## Agentek (7 role)
 
@@ -94,20 +95,7 @@ PORT=7892
 bash scripts/deploy.sh
 ```
 
-Az aktuális ajánlott deploy-flow git-clone/pull alapú (`/opt/marquee` git repo), nem rsync workflow.
-
-Javasolt lépések (VM 260):
-
-```bash
-cd /opt/marquee
-git pull --ff-only
-npm ci
-npm run build --workspaces
-sudo systemctl restart marquee
-sudo systemctl status marquee --no-pager
-```
-
-Megjegyzés: `scripts/deploy.sh` jelenleg rsync-alapú legacy script, használható, de hosszú távon a git-pull alapú deploy az elsődleges.
+Rsync → VM 260 (192.168.2.60) → `npm install --omit=dev` → `sudo systemctl restart marquee`.
 
 - Live: http://marquee.lab2.home.arpa
 - Service: `marquee.service` (User=balazs, WorkingDirectory=/opt/marquee)
@@ -212,29 +200,117 @@ Friss DB-n (pl. VM 260) az `openDb` automatikusan alkalmazza az összes migráci
 
 **LLM provider fallback.** Ha `OPENCODE_API_KEY` env var van (OpenCode Go API key), az `openai-codex` OAuth helyett az `opencode-go` provider-t használja (DeepSeek v4 Flash minden role-hoz). Párhuzamosan futtatható mindkét provider: csak env var-ral váltogatható. `AuthManager` 0 módosítás szükséges — ha OpenCode aktív, skip OAuth, env key-ből olvass. Factory callback (`getApiKey`) már támogatja mindkét provider-t.
 
-## Production VM 260 állapot (2026-05-01)
+## Naptár nézet (Calendar View)
 
-Deploy státusz:
-- `marquee.service` fut
-- app path: `/opt/marquee`
-- DNS: `marquee.lab2.home.arpa -> 192.168.2.60`
-- UI: `http://marquee.lab2.home.arpa`
+**Status:** ✅ Complete (2026-05-03)
 
-Provider setup szerveren (ha OpenAI Codex OAuth provider kell):
-```bash
-ssh balazs@192.168.2.60
-cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
+A calendar view kampány-ütemezéshez weekly/monthly nézetekkel, drag-drop átütemezéssel, és időslot-kezeléssel. Marketing csapatok naptárként láthatják és kezelhetik a kampány calendar item-eket heteken és hónapokon keresztül.
+
+### Funkciók
+
+- **Weekly view:** 25 időslot (30 perces intervallumok, 08:00–20:00) 7 nap során
+- **Monthly view:** Teljes hónap naptár max 3 item-mel naponta, "+N további" overflow
+- **Kampány szűrés:** Multi-select dropdown szűréshez campaign szerint
+- **Side panel szerkesztés:** Calendar item részletei szerkeszthetők (cím, csatorna, dátum, idő, státusz)
+- **Responsive design:** Desktop/tablet/mobile adaptációk
+
+### Fájlok & Komponensek
+
+| Fájl | Célterület |
+|---|---|
+| `packages/web/src/views/Calendar.tsx` | Fő naptár nézet, kampány lekérés, státusz kezelés |
+| `packages/web/src/components/CalendarGrid.tsx` | Router weekly/monthly nézetek között |
+| `packages/web/src/components/CalendarWeekly.tsx` | Weekly grid megvalósítás (8 oszlop × 25 sor) |
+| `packages/web/src/components/CalendarMonthly.tsx` | Monthly grid megvalósítás (6 sor × 7 oszlop) |
+| `packages/web/src/components/CalendarItemBubble.tsx` | Item megjelenítés csatorna ikonokkal és státusz színekkel |
+| `packages/web/src/components/CampaignFilter.tsx` | Multi-select kampány szűrő dropdown |
+| `packages/web/src/components/CalendarSidePanel.tsx` | Edit form calendar item-ekhez |
+
+### Adatbázis séma
+
+**Tábla:** `campaign_calendar_items` (Task 1-ből)
+- `id` — item ID
+- `campaignId` — idegen kulcs kampányokra
+- `planId` — idegen kulcs campaign_plans-ra
+- `channel` — deliverable csatorna (linkedin, email, blog, landing, ad, other)
+- `deliverableType` — opcionális deliverable típus
+- `targetDate` — Unix timestamp (csak dátum)
+- `startTime` — "HH:MM" formátum (új mező, 30 perces lépések)
+- `intent` — item leírás/cím
+- `keyMessageRef` — opcionális referencia kulcs üzenetre
+- `status` — "planned" | "brief_created" | "delivered" | "cancelled"
+- `createdAt`, `updatedAt` — Unix timestamps
+
+### API végpontok
+
+**GET `/api/campaigns/:campaignId/calendar_items`**
+- Válasz: `{ plan: CampaignPlan | null, items: CalendarItem[] }`
+- Terv és összes calendar item lekérése kampányhoz
+
+**PUT `/api/campaigns/:campaignId/calendar_items/:itemId`**
+- Törzs: `{ startDate?: number; startTime?: string; intent?: string; channel?: string; status?: string }`
+- Válasz: `{ ok: true, item: CalendarItem }`
+- Calendar item frissítés részleges mezőkkel
+
+**DELETE `/api/campaigns/:campaignId/calendar_items/:itemId`**
+- Válasz: `{ ok: true }`
+- Calendar item törlés
+
+### Zustand Store
+
+Calendar state slice-ok `useMarqueeStore`-be adva:
+```typescript
+// State
+calendarItems: CalendarItem[]
+selectedCampaigns: string[]
+viewMode: 'weekly' | 'monthly'
+selectedDate: Date
+editingItem: CalendarItem | null
+
+// Actions
+setCalendarItems(items)
+setSelectedCampaigns(campaignIds)
+setViewMode(mode)
+setSelectedDate(date)
+setEditingItem(item)
 ```
 
-Kulcs runtime env-ek szerveren:
-- `DATA_DIR` (fix path, pl. `/home/balazs/.marquee-prod`)
-- `WEB_ROOT=/opt/marquee/packages/web/dist`
-- `PORT=7892`
+### Időslot validáció
 
-Migration megjegyzés:
-- Meglévő DB-nél Drizzle tracking bug miatt előfordulhat state drift (`__drizzle_migrations`).
-- Ha `table already exists` hiba jön startupkor, a migration rekordokat (hash + `created_at` sorrend) kézzel kell szinkronizálni.
-- Friss DB-n a 0007 migration az `openDb`-vel automatikusan alkalmazódik.
+Calendar item-ek 30 perces lépéseket kell használjanak:
+- Valid: "08:00", "08:30", "09:00", ..., "20:00"
+- Invalid: "08:15", "09:45" (backend validáció elutasítja a non-30-min időket)
+
+### Routing
+
+**Új route:** `/naptár` (magyar: "calendar")
+- Sidebar navigáció elem: "Naptár"
+- Pozíció: "Kampányok" és "Memória" között
+
+### Fejlesztés
+
+Calendar nézet futtatása lokálisan:
+```bash
+cd ~/Projects/Homelab/marquee
+DATA_DIR=~/.marquee-dev npm run dev
+# Navigálj http://localhost:5173/naptár -ra
+```
+
+### Kapcsolódó Spec-ek & Tervek
+
+- **Design spec:** `docs/superpowers/specs/2026-05-03-marquee-calendar-view-design.md`
+- **Implementation plan:** `docs/superpowers/plans/2026-05-03-marquee-calendar-view.md`
+
+## Production VM 260 állapot (2026-05-01)
+
+Deploy-ready (Wave 1 + Plan v1 lokálisan kész), de még nem deployolva:
+- `marquee.service` **inactive (dead)**
+- **OAuth setup hiányzik** a szerveren:
+  ```bash
+  ssh balazs@192.168.2.60
+  cd /opt/marquee/packages/server && npx tsx src/scripts/login-openai.ts
+  ```
+- Friss DB-n a 0007 migration az `openDb`-vel automatikusan alkalmazódik (a `__drizzle_migrations` tracking bug csak meglévő DB-ket érint).
 
 ## Homelab kontextus
 

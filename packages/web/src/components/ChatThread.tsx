@@ -1,4 +1,7 @@
 import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { useMarqueeStore, type Message, type ProposedBrief } from "../store/useMarqueeStore.js";
 import { BriefProposalCard } from "./BriefProposalCard.js";
 import { PlanProposalCard, type PlanProposal } from "./PlanProposalCard.js";
@@ -44,7 +47,13 @@ function ChatBubble({ message }: { message: Message }) {
 					isUser ? "bg-primary-soft text-ink-1" : "bg-off-white border border-rule text-ink-1"
 				}`}
 			>
-				{message.text}
+				{isUser ? (
+					message.text
+				) : (
+					<div className="prose prose-sm max-w-none [&>p]:m-0 [&>p+p]:mt-2 prose-strong:font-semibold prose-strong:text-inherit prose-p:text-inherit prose-li:text-inherit prose-ul:my-1 prose-ol:my-1 prose-headings:text-inherit">
+						<ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{message.text}</ReactMarkdown>
+					</div>
+				)}
 			</div>
 		</div>
 	);

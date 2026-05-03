@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
 	briefsApi,
 	deliverablesApi,
+	type CalendarItem,
 	type DeliverableRow,
 	type ThreadRow,
 	memoryApi,
@@ -66,6 +67,13 @@ interface MarqueeStore {
 	// Active agent indicator
 	activeAgents: Set<string>;
 
+	// Calendar state
+	calendarItems: CalendarItem[];
+	selectedCampaigns: string[];
+	viewMode: 'weekly' | 'monthly';
+	selectedDate: Date;
+	editingItem: CalendarItem | null;
+
 	// Actions
 	fetchInitialState: () => Promise<void>;
 	createThread: (title?: string) => Promise<void>;
@@ -80,6 +88,13 @@ interface MarqueeStore {
 	approveDeliverable: (id: string) => Promise<void>;
 	returnDeliverable: (id: string, note: string) => Promise<void>;
 	discardDeliverable: (id: string, note?: string) => Promise<void>;
+
+	// Calendar actions
+	setCalendarItems: (items: CalendarItem[]) => void;
+	setSelectedCampaigns: (campaignIds: string[]) => void;
+	setViewMode: (mode: 'weekly' | 'monthly') => void;
+	setSelectedDate: (date: Date) => void;
+	setEditingItem: (item: CalendarItem | null) => void;
 }
 
 // Helper to turn a raw server message into a Message
@@ -134,6 +149,13 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 	memoryEmpty: false,
 	deliverables: [],
 	activeAgents: new Set<string>(),
+
+	// Calendar state
+	calendarItems: [] as CalendarItem[],
+	selectedCampaigns: [] as string[],
+	viewMode: 'weekly' as 'weekly' | 'monthly',
+	selectedDate: new Date(),
+	editingItem: null as CalendarItem | null,
 
 	fetchInitialState: async () => {
 		// 1. Fetch (or auto-create) threads
@@ -372,7 +394,30 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 		marqueeEvents.on("memory_proposed", () => {});
 		marqueeEvents.on("memory_decided", () => {});
 		marqueeEvents.on("deliverable_returned", () => {});
-		marqueeEvents.on("plan.proposed", () => {});
+		marqueeEvents.on<{
+			type: string;
+			proposal_id?: string;
+			message_id?: string;
+			thread_id?: string;
+			content_json?: string;
+		}>("plan.proposed", (payload) => {
+			const activeThreadId = get().threadId;
+			if (payload.thread_id && activeThreadId && payload.thread_id !== activeThreadId) return;
+			const msgId = payload.message_id ?? `plan_proposal_${payload.proposal_id ?? Date.now()}`;
+			const msg = mapServerMessage({
+				id: msgId,
+				sender: "director",
+				type: "plan_proposal",
+				contentJson: payload.content_json,
+				ts: Date.now(),
+			});
+			set((s) => {
+				if (s.messages.some((m) => m.id === msgId)) return s;
+				const activeAgents = new Set(s.activeAgents);
+				activeAgents.delete("director");
+				return { messages: [...s.messages, msg], activeAgents };
+			});
+		});
 		marqueeEvents.on("plan.updated", () => {});
 		marqueeEvents.on("plan.accepted", () => {});
 		marqueeEvents.on("plan.discarded", () => {});
@@ -512,5 +557,28 @@ export const useMarqueeStore = create<MarqueeStore>((set, get) => ({
 			deliverables: s.deliverables.map((d) => (d.id === id ? { ...d, status: "discarded" } : d)),
 			awaitingApprovalCount: Math.max(0, s.awaitingApprovalCount - 1),
 		}));
+	},
+
+	// Calendar actions
+	setCalendarItems: (items: CalendarItem[]) => {
+		set({ calendarItems: items });
+	},
+
+	setSelectedCampaigns: (campaignIds: string[]) => {
+		set({ selectedCampaigns: campaignIds });
+	},
+
+	setViewMode: (mode: 'weekly' | 'monthly') => {
+		console.log('[Zustand setViewMode] Called with mode:', mode);
+		set({ viewMode: mode });
+		console.log('[Zustand setViewMode] Store updated, new viewMode:', get().viewMode);
+	},
+
+	setSelectedDate: (date: Date) => {
+		set({ selectedDate: date });
+	},
+
+	setEditingItem: (item: CalendarItem | null) => {
+		set({ editingItem: item });
 	},
 }));

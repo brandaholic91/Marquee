@@ -96,6 +96,26 @@ export const deliverablesRoutes: FastifyPluginAsync<DeliverablesRoutesOpts> = as
 			decidedAt: now,
 		});
 		broker.emit({ type: "deliverable_approved", deliverable_id: d.id });
+
+		// Emit deliverable_status_changed with eval score (if available from brand-voice-guardian review)
+		const reviews = await db
+			.select()
+			.from(deliverableReviews)
+			.where(eq(deliverableReviews.deliverableId, d.id))
+			.all();
+		const latestReview = reviews.length > 0 ? reviews[reviews.length - 1] : null;
+
+		broker.emit({
+			type: "deliverable_status_changed",
+			deliverable_id: d.id,
+			client_slug: d.clientSlug,
+			status: "shipped",
+			eval_score: latestReview?.score ?? null,
+			eval_summary: latestReview?.summary ?? null,
+			deliverable_type: d.type,
+			brief_title: d.title,
+		});
+
 		if (n8nWebhookUrl) {
 			void fireDeliverableShipped(n8nWebhookUrl, db, d.id).catch((err) => {
 				broker.emit({ type: "error", source: "n8n_webhook", message: String(err) });

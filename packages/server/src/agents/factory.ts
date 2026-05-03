@@ -19,7 +19,7 @@ import { makeProposeCampaignPlanTool } from "../tools/propose-campaign-plan.js";
 import { makeUpdateCampaignPlanTool } from "../tools/update-campaign-plan.js";
 import { makeProposeCalendarItemTool } from "../tools/propose-calendar-item.js";
 import { loadSkillCatalog, loadSkillBody, loadBrandVoiceInstruction } from "../skills/loader.js";
-import { renderMemoryContext, renderBrandVoiceBlock } from "./transform-context.js";
+import { renderMemoryContext, renderBrandVoiceBlock, renderWikiContext } from "./transform-context.js";
 import { loadAgentIdentity, loadAgentConfig } from "./loader.js";
 import { AuthManager } from "../providers/auth.js";
 
@@ -119,10 +119,11 @@ export async function spawnAgent(input: SpawnInput): Promise<SpawnedAgent> {
 
 	const identityBlock = loadAgentIdentity(input.dataDir, config.slug);
 	const memoryBlock = await renderMemoryContext(input.dataDir, input.clientSlug, config.slug);
+	const wikiContext = await renderWikiContext(input.dataDir, input.clientSlug, config.slug);
 	const brandVoiceBlock = await renderBrandVoiceBlock(input.dataDir, input.clientSlug, config.slug);
 	const brandVoiceInstructionBlock = loadBrandVoiceInstruction(input.dataDir, config.slug);
 	const skillCatalog = loadSkillCatalog(input.dataDir, config.slug);
-	const systemPrompt = [identityBlock, memoryBlock, brandVoiceBlock, brandVoiceInstructionBlock, skillCatalog]
+	const systemPrompt = [identityBlock, memoryBlock, wikiContext, brandVoiceBlock, brandVoiceInstructionBlock, skillCatalog]
 		.filter(Boolean)
 		.join("\n\n");
 

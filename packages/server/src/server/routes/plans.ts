@@ -127,53 +127,48 @@ export const plansRoutes: FastifyPluginAsync<PlansRoutesOpts> = async (app, opts
 		return { ok: true };
 	});
 
-	app.post<{ Params: { id: string; itemId: string } }>("/api/campaigns/:id/plan/calendar-items/:itemId/derive-brief", async (req, reply) => {
-		const row = await db
-			.select()
-			.from(campaignCalendarItems)
-			.where(and(eq(campaignCalendarItems.id, req.params.itemId), eq(campaignCalendarItems.campaignId, req.params.id)))
-			.limit(1)
-			.all();
-		if (row.length === 0) return reply.code(404).send({ error: "not_found" });
-		const thread = await db
-			.select()
-			.from(messages)
-			.where(eq(messages.threadId, "thr_1"))
-			.limit(1)
-			.all();
-		await db.insert(messages).values({
-			id: createId(),
-			threadId: thread[0]?.threadId ?? "thr_1",
-			agentSessionId: null,
-			sender: "user",
-			type: "chat",
-			contentJson: JSON.stringify({ text: `Keszits briefet ehhez a calendar itemhez: ${row[0].id}` }),
-			ts: Date.now(),
-		});
-		broker.emit({ type: "chat_message", thread_id: thread[0]?.threadId ?? "thr_1" });
-		return reply.code(202).send({ ok: true });
-	});
-
 	app.post<{ Params: { msgId: string } }>("/api/proposals/:msgId/accept", async (req, reply) => {
 		const row = await db.select().from(messages).where(eq(messages.id, req.params.msgId)).limit(1).all();
 		if (row.length === 0) return reply.code(404).send({ error: "not_found" });
 		const msg = row[0];
 		const payload = JSON.parse(msg.contentJson) as Record<string, any>;
 
+		// Idempotency guard — double-click or retry returns ok without re-applying
+		if (payload.status === "accepted") return { ok: true };
+
 		if (msg.type === "plan_proposal") {
 			const p = payload.proposal;
-			const planId = createPlan(db, {
-				campaignId: p.campaign_id,
-				clientSlug: "default",
-				goal: p.goal,
-				goalType: p.goal_type,
-				audience: p.audience,
-				keyMessages: p.key_messages ?? [],
-				channelMix: p.channel_mix ?? [],
-				timelineStart: p.timeline_start ?? null,
-				timelineEnd: p.timeline_end ?? null,
-				kpi: p.kpi ?? "",
-			});
+			// epoch seconds → milliseconds normalisation (LLM sends seconds, codebase uses ms)
+			const toMs = (ts: number) => ts < 1e10 ? ts * 1000 : ts;
+			const existing = getPlanByCampaignId(db, p.campaign_id);
+			let planId: string;
+			if (existing) {
+				// Update existing plan with proposal data instead of silently ignoring
+				updatePlan(db, existing.id, {
+					goal: p.goal,
+					goalType: p.goal_type,
+					audience: p.audience,
+					keyMessages: p.key_messages ?? [],
+					channelMix: p.channel_mix ?? [],
+					timelineStart: p.timeline_start != null ? toMs(p.timeline_start) : null,
+					timelineEnd: p.timeline_end != null ? toMs(p.timeline_end) : null,
+					kpi: p.kpi ?? "",
+				});
+				planId = existing.id;
+			} else {
+				planId = createPlan(db, {
+					campaignId: p.campaign_id,
+					clientSlug: "default",
+					goal: p.goal,
+					goalType: p.goal_type,
+					audience: p.audience,
+					keyMessages: p.key_messages ?? [],
+					channelMix: p.channel_mix ?? [],
+					timelineStart: p.timeline_start != null ? toMs(p.timeline_start) : null,
+					timelineEnd: p.timeline_end != null ? toMs(p.timeline_end) : null,
+					kpi: p.kpi ?? "",
+				});
+			}
 			for (const item of p.calendar_items ?? []) {
 				createCalendarItem(db, {
 					planId,
@@ -181,7 +176,7 @@ export const plansRoutes: FastifyPluginAsync<PlansRoutesOpts> = async (app, opts
 					clientSlug: "default",
 					channel: item.channel,
 					deliverableType: item.deliverable_type ?? null,
-					targetDate: item.target_date,
+					targetDate: toMs(item.target_date),
 					intent: item.intent,
 					keyMessageRef: item.key_message_ref ?? null,
 				});

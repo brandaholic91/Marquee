@@ -9,6 +9,8 @@ import { deliverablesRoutes } from "./routes/deliverables.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { agentsRoutes } from "./routes/agents.js";
 import { plansRoutes } from "./routes/plans.js";
+import { calendarsRoutes } from "./routes/calendars.js";
+import { wikiRoutes } from "./routes/wiki.js";
 import { authMiddleware } from "./auth-middleware.js";
 import { registerSseRoute } from "./sse.js";
 import { AuthManager } from "../providers/auth.js";
@@ -72,7 +74,9 @@ export async function buildServer(opts: ServerOpts) {
 	});
 	await app.register(memoryRoutes, { db, dataDir: opts.dataDir });
 	await app.register(plansRoutes, { db, broker: flatBroker });
+	await app.register(calendarsRoutes, { db });
 	await app.register(agentsRoutes, { dataDir: opts.dataDir });
+	await app.register(wikiRoutes, { db, dataDir: opts.dataDir });
 
 	// SSE (uses typed AgencyDb + Broker directly)
 	registerSseRoute(app, { db: opts.db, broker: opts.broker });
